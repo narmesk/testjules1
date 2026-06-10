@@ -9,23 +9,35 @@ uses
 type
   TFormMain = class(TForm)
     PanelBottom: TPanel;
-    BtnLoad: TButton;
-    BtnProcess: TButton;
-    BtnSave: TButton;
-    EditIncrement: TEdit;
-    LabelIncrement: TLabel;
+    BtnLoadPrices: TButton;
+    BtnLoadTuning: TButton;
+    BtnApply: TButton;
+    BtnSaveTuning: TButton;
+    GridPricesFull: TStringGrid;
+    GridPricesSelf: TStringGrid;
+    GridTuningFull: TStringGrid;
+    GridTuningSelf: TStringGrid;
+    GridResultFull: TStringGrid;
+    GridResultSelf: TStringGrid;
+    Label1: TLabel;
+    Label2: TLabel;
+    Label3: TLabel;
+    Label4: TLabel;
+    Label5: TLabel;
+    Label6: TLabel;
     OpenDialog1: TOpenDialog;
     SaveDialog1: TSaveDialog;
-    StringGridPrices: TStringGrid;
-    procedure BtnLoadClick(Sender: TObject);
-    procedure BtnProcessClick(Sender: TObject);
-    procedure BtnSaveClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure BtnLoadPricesClick(Sender: TObject);
+    procedure BtnLoadTuningClick(Sender: TObject);
+    procedure BtnApplyClick(Sender: TObject);
+    procedure BtnSaveTuningClick(Sender: TObject);
   private
     { Private declarations }
-    FOriginalJSON: TJSONObject;
-    procedure JSONToGrid(AJSONObject: TJSONObject);
-    function GridToJSON: TJSONObject;
+    procedure InitGrid(AGrid: TStringGrid);
+    procedure JSONToGrids(AJSONObject: TJSONObject; AGridFull, AGridSelf: TStringGrid);
+    function GridsToJSON(AGridFull, AGridSelf: TStringGrid): TJSONObject;
+    procedure CalculateResult(APrices, ATuning, AResult: TStringGrid);
   public
     { Public declarations }
   end;
@@ -38,142 +50,174 @@ implementation
 {$R *.dfm}
 
 procedure TFormMain.FormCreate(Sender: TObject);
+var
+  i: Integer;
 begin
   Self.Scaled := True;
 
-  // Grid başlıklarını ayarla
-  StringGridPrices.Cells[0, 0] := 'Fiyat Tipi';
-  StringGridPrices.Cells[1, 0] := 'Değer A';
-  StringGridPrices.Cells[2, 0] := 'Değer B';
-  StringGridPrices.Cells[3, 0] := 'Değer C';
+  InitGrid(GridPricesFull);
+  InitGrid(GridPricesSelf);
+  InitGrid(GridTuningFull);
+  InitGrid(GridTuningSelf);
+  InitGrid(GridResultFull);
+  InitGrid(GridResultSelf);
 
-  StringGridPrices.ColWidths[0] := 150;
-  StringGridPrices.ColWidths[1] := 100;
-  StringGridPrices.ColWidths[2] := 100;
-  StringGridPrices.ColWidths[3] := 100;
-end;
-
-procedure TFormMain.JSONToGrid(AJSONObject: TJSONObject);
-var
-  i, Row: Integer;
-  Prefix: string;
-  FS: TFormatSettings;
-
-  procedure AddToGrid(APrefix: string; AIndex: Integer);
+  // Initialize row labels
+  for i := 1 to 8 do
   begin
-    StringGridPrices.Cells[0, Row] := APrefix + IntToStr(AIndex);
-    StringGridPrices.Cells[1, Row] := AJSONObject.GetValue<string>(APrefix + IntToStr(AIndex) + 'A', '0');
-    StringGridPrices.Cells[2, Row] := AJSONObject.GetValue<string>(APrefix + IntToStr(AIndex) + 'B', '0');
-    StringGridPrices.Cells[3, Row] := AJSONObject.GetValue<string>(APrefix + IntToStr(AIndex) + 'C', '0');
-    Inc(Row);
+    GridPricesFull.Cells[0, i] := 'FULLVAL' + IntToStr(i);
+    GridPricesSelf.Cells[0, i] := 'SELFVAL' + IntToStr(i);
+    GridTuningFull.Cells[0, i] := 'FULLVAL' + IntToStr(i);
+    GridTuningSelf.Cells[0, i] := 'SELFVAL' + IntToStr(i);
+    GridResultFull.Cells[0, i] := 'FULLVAL' + IntToStr(i);
+    GridResultSelf.Cells[0, i] := 'SELFVAL' + IntToStr(i);
   end;
-
-begin
-  FS := TFormatSettings.Invariant;
-  Row := 1;
-  StringGridPrices.RowCount := 17; // 1 başlık + 8 FULL + 8 SELF
-
-  for i := 1 to 8 do AddToGrid('FULLVAL', i);
-  for i := 1 to 8 do AddToGrid('SELFVAL', i);
 end;
 
-function TFormMain.GridToJSON: TJSONObject;
+procedure TFormMain.InitGrid(AGrid: TStringGrid);
+begin
+  AGrid.Cells[0, 0] := 'Type';
+  AGrid.Cells[1, 0] := 'Value A';
+  AGrid.Cells[2, 0] := 'Value B';
+  AGrid.Cells[3, 0] := 'Value C';
+
+  AGrid.ColWidths[0] := 100;
+  AGrid.ColWidths[1] := 80;
+  AGrid.ColWidths[2] := 80;
+  AGrid.ColWidths[3] := 80;
+end;
+
+procedure TFormMain.JSONToGrids(AJSONObject: TJSONObject; AGridFull, AGridSelf: TStringGrid);
 var
   i: Integer;
-  ResultJSON: TJSONObject;
-  KeyPrefix, ValA, ValB, ValC: string;
-begin
-  if Assigned(FOriginalJSON) then
-    ResultJSON := FOriginalJSON.Clone as TJSONObject
-  else
-    ResultJSON := TJSONObject.Create;
 
-  for i := 1 to StringGridPrices.RowCount - 1 do
+  procedure FillGrid(AGrid: TStringGrid; APrefix: string);
+  var
+    idx: Integer;
   begin
-    KeyPrefix := StringGridPrices.Cells[0, i];
-    ValA := StringGridPrices.Cells[1, i];
-    ValB := StringGridPrices.Cells[2, i];
-    ValC := StringGridPrices.Cells[3, i];
-
-    if KeyPrefix <> '' then
+    for idx := 1 to 8 do
     begin
-      ResultJSON.RemovePair(KeyPrefix + 'A').Free;
-      ResultJSON.AddPair(KeyPrefix + 'A', TJSONString.Create(ValA));
-
-      ResultJSON.RemovePair(KeyPrefix + 'B').Free;
-      ResultJSON.AddPair(KeyPrefix + 'B', TJSONString.Create(ValB));
-
-      ResultJSON.RemovePair(KeyPrefix + 'C').Free;
-      ResultJSON.AddPair(KeyPrefix + 'C', TJSONString.Create(ValC));
+      AGrid.Cells[0, idx] := APrefix + IntToStr(idx);
+      AGrid.Cells[1, idx] := AJSONObject.GetValue<string>(APrefix + IntToStr(idx) + 'A', '0');
+      AGrid.Cells[2, idx] := AJSONObject.GetValue<string>(APrefix + IntToStr(idx) + 'B', '0');
+      AGrid.Cells[3, idx] := AJSONObject.GetValue<string>(APrefix + IntToStr(idx) + 'C', '0');
     end;
   end;
 
+begin
+  FillGrid(AGridFull, 'FULLVAL');
+  FillGrid(AGridSelf, 'SELFVAL');
+end;
+
+function TFormMain.GridsToJSON(AGridFull, AGridSelf: TStringGrid): TJSONObject;
+var
+  ResultJSON: TJSONObject;
+
+  procedure AddFromGrid(AGrid: TStringGrid);
+  var
+    idx: Integer;
+    Prefix: string;
+  begin
+    for idx := 1 to 8 do
+    begin
+      Prefix := AGrid.Cells[0, idx];
+      ResultJSON.AddPair(Prefix + 'A', TJSONString.Create(AGrid.Cells[1, idx]));
+      ResultJSON.AddPair(Prefix + 'B', TJSONString.Create(AGrid.Cells[2, idx]));
+      ResultJSON.AddPair(Prefix + 'C', TJSONString.Create(AGrid.Cells[3, idx]));
+    end;
+  end;
+
+begin
+  ResultJSON := TJSONObject.Create;
+  AddFromGrid(AGridFull);
+  AddFromGrid(AGridSelf);
   Result := ResultJSON;
 end;
 
-procedure TFormMain.BtnLoadClick(Sender: TObject);
+procedure TFormMain.CalculateResult(APrices, ATuning, AResult: TStringGrid);
 var
-  JSONStr: string;
+  idx, col: Integer;
+  V1, V2: Double;
+  FS: TFormatSettings;
+begin
+  FS := TFormatSettings.Invariant;
+  for idx := 1 to 8 do
+  begin
+    AResult.Cells[0, idx] := APrices.Cells[0, idx];
+    for col := 1 to 3 do
+    begin
+      V1 := StrToFloatDef(APrices.Cells[col, idx], 0, FS);
+      V2 := StrToFloatDef(ATuning.Cells[col, idx], 0, FS);
+      AResult.Cells[col, idx] := FloatToStr(V1 + V2, FS);
+    end;
+  end;
+end;
+
+procedure TFormMain.BtnLoadPricesClick(Sender: TObject);
+var
   LStrings: TStringList;
+  JSON: TJSONObject;
 begin
   if OpenDialog1.Execute then
   begin
     LStrings := TStringList.Create;
     try
       LStrings.LoadFromFile(OpenDialog1.FileName);
-      JSONStr := LStrings.Text;
-
-      if Assigned(FOriginalJSON) then FOriginalJSON.Free;
-      FOriginalJSON := TJSONObject.ParseJSONValue(JSONStr) as TJSONObject;
-
-      if Assigned(FOriginalJSON) then
-        JSONToGrid(FOriginalJSON)
-      else
-        ShowMessage('Geçersiz JSON dosyası!');
+      JSON := TJSONObject.ParseJSONValue(LStrings.Text) as TJSONObject;
+      if Assigned(JSON) then
+      begin
+        JSONToGrids(JSON, GridPricesFull, GridPricesSelf);
+        JSON.Free;
+      end;
     finally
       LStrings.Free;
     end;
   end;
 end;
 
-procedure TFormMain.BtnProcessClick(Sender: TObject);
+procedure TFormMain.BtnLoadTuningClick(Sender: TObject);
 var
-  i: Integer;
-  ValA, Increment: Double;
-  FS: TFormatSettings;
+  LStrings: TStringList;
+  JSON: TJSONObject;
 begin
-  FS := TFormatSettings.Invariant;
-  Increment := StrToFloatDef(EditIncrement.Text, 0, FS);
-
-  for i := 1 to StringGridPrices.RowCount - 1 do
+  if OpenDialog1.Execute then
   begin
-    if StringGridPrices.Cells[0, i] <> '' then
-    begin
-      ValA := StrToFloatDef(StringGridPrices.Cells[1, i], 0, FS);
-      StringGridPrices.Cells[2, i] := FloatToStr(ValA + Increment, FS);
-      StringGridPrices.Cells[3, i] := FloatToStr(ValA + (Increment * 2), FS);
+    LStrings := TStringList.Create;
+    try
+      LStrings.LoadFromFile(OpenDialog1.FileName);
+      JSON := TJSONObject.ParseJSONValue(LStrings.Text) as TJSONObject;
+      if Assigned(JSON) then
+      begin
+        JSONToGrids(JSON, GridTuningFull, GridTuningSelf);
+        JSON.Free;
+      end;
+    finally
+      LStrings.Free;
     end;
   end;
-
-  ShowMessage('Hesaplama tamamlandı.');
 end;
 
-procedure TFormMain.BtnSaveClick(Sender: TObject);
+procedure TFormMain.BtnApplyClick(Sender: TObject);
+begin
+  CalculateResult(GridPricesFull, GridTuningFull, GridResultFull);
+  CalculateResult(GridPricesSelf, GridTuningSelf, GridResultSelf);
+end;
+
+procedure TFormMain.BtnSaveTuningClick(Sender: TObject);
 var
-  OutputJSON: TJSONObject;
+  JSON: TJSONObject;
   LStrings: TStringList;
 begin
   if SaveDialog1.Execute then
   begin
-    OutputJSON := GridToJSON;
+    JSON := GridsToJSON(GridTuningFull, GridTuningSelf);
     LStrings := TStringList.Create;
     try
-      LStrings.Text := OutputJSON.Format(2);
+      LStrings.Text := JSON.Format(2);
       LStrings.SaveToFile(SaveDialog1.FileName);
-      ShowMessage('Dosya başarıyla kaydedildi.');
     finally
       LStrings.Free;
-      OutputJSON.Free;
+      JSON.Free;
     end;
   end;
 end;

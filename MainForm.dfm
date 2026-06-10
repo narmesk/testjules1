@@ -1,9 +1,9 @@
 object FormMain: TFormMain
   Left = 0
   Top = 0
-  Caption = 'Fiyat Ayarlama Aracı'
-  ClientHeight = 500
-  ClientWidth = 650
+  Caption = 'Price Tuning Tool'
+  ClientHeight = 750
+  ClientWidth = 1000
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -13,84 +13,175 @@ object FormMain: TFormMain
   Position = poScreenCenter
   OnCreate = FormCreate
   TextHeight = 15
-  object StringGridPrices: TStringGrid
-    Left = 0
-    Top = 0
-    Width = 650
-    Height = 443
-    Align = alClient
+  object Label1: TLabel
+    Left = 10
+    Top = 10
+    Width = 120
+    Height = 15
+    Caption = 'Prices (FULL)'
+    Font.Style = [fsBold]
+  end
+  object Label2: TLabel
+    Left = 510
+    Top = 10
+    Width = 120
+    Height = 15
+    Caption = 'Prices (SELF)'
+    Font.Style = [fsBold]
+  end
+  object Label3: TLabel
+    Left = 10
+    Top = 240
+    Width = 120
+    Height = 15
+    Caption = 'Tuning (FULL) - Editable'
+    Font.Style = [fsBold]
+  end
+  object Label4: TLabel
+    Left = 510
+    Top = 240
+    Width = 120
+    Height = 15
+    Caption = 'Tuning (SELF) - Editable'
+    Font.Style = [fsBold]
+  end
+  object Label5: TLabel
+    Left = 10
+    Top = 470
+    Width = 120
+    Height = 15
+    Caption = 'Result (FULL)'
+    Font.Style = [fsBold]
+  end
+  object Label6: TLabel
+    Left = 510
+    Top = 470
+    Width = 120
+    Height = 15
+    Caption = 'Result (SELF)'
+    Font.Style = [fsBold]
+  end
+  object GridPricesFull: TStringGrid
+    Left = 10
+    Top = 30
+    Width = 480
+    Height = 200
     ColCount = 4
     FixedCols = 0
-    RowCount = 17
-    Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goEditing, goTabs]
+    RowCount = 9
+    Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goTabs]
     TabOrder = 0
-    ColWidths = (
-      150
-      100
-      100
-      100)
+  end
+  object GridPricesSelf: TStringGrid
+    Left = 510
+    Top = 30
+    Width = 480
+    Height = 200
+    ColCount = 4
+    FixedCols = 0
+    RowCount = 9
+    Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goTabs]
+    TabOrder = 1
+  end
+  object GridTuningFull: TStringGrid
+    Left = 10
+    Top = 260
+    Width = 480
+    Height = 200
+    ColCount = 4
+    FixedCols = 0
+    RowCount = 9
+    Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goEditing, goTabs]
+    TabOrder = 2
+  end
+  object GridTuningSelf: TStringGrid
+    Left = 510
+    Top = 260
+    Width = 480
+    Height = 200
+    ColCount = 4
+    FixedCols = 0
+    RowCount = 9
+    Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goEditing, goTabs]
+    TabOrder = 3
+  end
+  object GridResultFull: TStringGrid
+    Left = 10
+    Top = 490
+    Width = 480
+    Height = 200
+    ColCount = 4
+    FixedCols = 0
+    RowCount = 9
+    Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goTabs]
+    TabOrder = 4
+  end
+  object GridResultSelf: TStringGrid
+    Left = 510
+    Top = 490
+    Width = 480
+    Height = 200
+    ColCount = 4
+    FixedCols = 0
+    RowCount = 9
+    Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goTabs]
+    TabOrder = 5
   end
   object PanelBottom: TPanel
     Left = 0
-    Top = 443
-    Width = 650
+    Top = 693
+    Width = 1000
     Height = 57
     Align = alBottom
     BevelOuter = bvNone
-    TabOrder = 1
-    object LabelIncrement: TLabel
-      Left = 216
-      Top = 20
-      Width = 71
-      Height = 15
-      Caption = 'Artış Miktarı:'
-    end
-    object BtnLoad: TButton
-      Left = 8
+    TabOrder = 6
+    object BtnLoadPrices: TButton
+      Left = 10
       Top = 15
-      Width = 90
-      Height = 25
-      Caption = 'JSON Yükle'
+      Width = 120
+      Height = 30
+      Caption = 'Load Prices.json'
       TabOrder = 0
-      OnClick = BtnLoadClick
+      OnClick = BtnLoadPricesClick
     end
-    object BtnProcess: TButton
-      Left = 410
+    object BtnLoadTuning: TButton
+      Left = 140
       Top = 15
-      Width = 110
-      Height = 25
-      Caption = 'Hesapla'
+      Width = 120
+      Height = 30
+      Caption = 'Load Tuning.json'
       TabOrder = 1
-      OnClick = BtnProcessClick
+      OnClick = BtnLoadTuningClick
     end
-    object BtnSave: TButton
-      Left = 104
+    object BtnApply: TButton
+      Left = 270
       Top = 15
-      Width = 90
-      Height = 25
-      Caption = 'Kaydet'
+      Width = 100
+      Height = 30
+      Caption = 'Apply'
       TabOrder = 2
-      OnClick = BtnSaveClick
+      OnClick = BtnApplyClick
     end
-    object EditIncrement: TEdit
-      Left = 300
-      Top = 17
-      Width = 80
-      Height = 23
+    object BtnSaveTuning: TButton
+      Left = 380
+      Top = 15
+      Width = 120
+      Height = 30
+      Caption = 'Save Tuning.json'
       TabOrder = 3
-      Text = '0.5'
+      OnClick = BtnSaveTuningClick
     end
   end
   object OpenDialog1: TOpenDialog
     DefaultExt = 'json'
-    Filter = 'JSON Dosyaları (*.json)|*.json|Tüm Dosyalar (*.*)|*.*'
-    Left = 528
-    Top = 32
+    Filter = 'JSON Files (*.json)|*.json|All Files (*.*)|*.*'
+    Left = 700
+    Top = 150
   end
   object SaveDialog1: TSaveDialog
     DefaultExt = 'json'
-    Filter = 'JSON Dosyaları (*.json)|*.json|Tüm Dosyalar (*.*)|*.*'
-    Left = 528
-    Top = 88
+    Filter = 'JSON Files (*.json)|*.json|All Files (*.*)|*.*'
+    Left = 700
+    Top = 200
   end
 end
