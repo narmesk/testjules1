@@ -4,7 +4,8 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, System.JSON, Vcl.ExtCtrls, Vcl.Grids;
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, System.JSON, Vcl.ExtCtrls, Vcl.Grids,
+  VirtualKeyboardForm;
 
 type
   TFormMain = class(TForm)
@@ -32,12 +33,15 @@ type
     procedure BtnLoadTuningClick(Sender: TObject);
     procedure BtnApplyClick(Sender: TObject);
     procedure BtnSaveTuningClick(Sender: TObject);
+    procedure GridTuningSelectCell(Sender: TObject; ACol, ARow: Integer; var CanSelect: Boolean);
   private
     { Private declarations }
     procedure InitGrid(AGrid: TStringGrid);
     procedure JSONToGrids(AJSONObject: TJSONObject; AGridFull, AGridSelf: TStringGrid);
     function GridsToJSON(AGridFull, AGridSelf: TStringGrid): TJSONObject;
     procedure CalculateResult(APrices, ATuning, AResult: TStringGrid);
+    function FormatInternal(AValue: string): string; // Convert 333 to 3,33
+    function FormatExternal(AValue: string): string; // Convert 3,33 to 333
   public
     { Public declarations }
   end;
@@ -72,6 +76,10 @@ begin
     GridResultFull.Cells[0, i] := 'FULLVAL' + IntToStr(i);
     GridResultSelf.Cells[0, i] := 'SELFVAL' + IntToStr(i);
   end;
+
+  // Set event handlers for tuning grids
+  GridTuningFull.OnSelectCell := GridTuningSelectCell;
+  GridTuningSelf.OnSelectCell := GridTuningSelectCell;
 end;
 
 procedure TFormMain.InitGrid(AGrid: TStringGrid);
@@ -87,6 +95,26 @@ begin
   AGrid.ColWidths[3] := 80;
 end;
 
+function TFormMain.FormatInternal(AValue: string): string;
+var
+  V: Double;
+  FS: TFormatSettings;
+begin
+  FS := TFormatSettings.Create('tr-TR');
+  V := StrToFloatDef(AValue, 0) / 100.0;
+  Result := FloatToStr(V, FS);
+end;
+
+function TFormMain.FormatExternal(AValue: string): string;
+var
+  V: Double;
+  FS: TFormatSettings;
+begin
+  FS := TFormatSettings.Create('tr-TR');
+  V := StrToFloatDef(AValue, 0, FS) * 100.0;
+  Result := IntToStr(Round(V));
+end;
+
 procedure TFormMain.JSONToGrids(AJSONObject: TJSONObject; AGridFull, AGridSelf: TStringGrid);
 var
   i: Integer;
@@ -98,9 +126,9 @@ var
     for idx := 1 to 8 do
     begin
       AGrid.Cells[0, idx] := APrefix + IntToStr(idx);
-      AGrid.Cells[1, idx] := AJSONObject.GetValue<string>(APrefix + IntToStr(idx) + 'A', '0');
-      AGrid.Cells[2, idx] := AJSONObject.GetValue<string>(APrefix + IntToStr(idx) + 'B', '0');
-      AGrid.Cells[3, idx] := AJSONObject.GetValue<string>(APrefix + IntToStr(idx) + 'C', '0');
+      AGrid.Cells[1, idx] := FormatInternal(AJSONObject.GetValue<string>(APrefix + IntToStr(idx) + 'A', '0'));
+      AGrid.Cells[2, idx] := FormatInternal(AJSONObject.GetValue<string>(APrefix + IntToStr(idx) + 'B', '0'));
+      AGrid.Cells[3, idx] := FormatInternal(AJSONObject.GetValue<string>(APrefix + IntToStr(idx) + 'C', '0'));
     end;
   end;
 
@@ -121,9 +149,9 @@ var
     for idx := 1 to 8 do
     begin
       Prefix := AGrid.Cells[0, idx];
-      ResultJSON.AddPair(Prefix + 'A', TJSONString.Create(AGrid.Cells[1, idx]));
-      ResultJSON.AddPair(Prefix + 'B', TJSONString.Create(AGrid.Cells[2, idx]));
-      ResultJSON.AddPair(Prefix + 'C', TJSONString.Create(AGrid.Cells[3, idx]));
+      ResultJSON.AddPair(Prefix + 'A', TJSONString.Create(FormatExternal(AGrid.Cells[1, idx])));
+      ResultJSON.AddPair(Prefix + 'B', TJSONString.Create(FormatExternal(AGrid.Cells[2, idx])));
+      ResultJSON.AddPair(Prefix + 'C', TJSONString.Create(FormatExternal(AGrid.Cells[3, idx])));
     end;
   end;
 
@@ -140,7 +168,7 @@ var
   V1, V2: Double;
   FS: TFormatSettings;
 begin
-  FS := TFormatSettings.Invariant;
+  FS := TFormatSettings.Create('tr-TR');
   for idx := 1 to 8 do
   begin
     AResult.Cells[0, idx] := APrices.Cells[0, idx];
@@ -219,6 +247,23 @@ begin
       LStrings.Free;
       JSON.Free;
     end;
+  end;
+end;
+
+procedure TFormMain.GridTuningSelectCell(Sender: TObject; ACol, ARow: Integer; var CanSelect: Boolean);
+var
+  Grid: TStringGrid;
+  Val: string;
+begin
+  if (ACol >= 1) and (ARow >= 1) then
+  begin
+    Grid := TStringGrid(Sender);
+    Val := Grid.Cells[ACol, ARow];
+    if VKForm.Execute(Val) then
+    begin
+      Grid.Cells[ACol, ARow] := Val;
+    end;
+    CanSelect := False; // Prevent default editing
   end;
 end;
 
