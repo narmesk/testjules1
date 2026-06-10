@@ -9,22 +9,22 @@ uses
 type
   TVKForm = class(TForm)
     EditValue: TEdit;
-    GridPanel1: TGridPanel;
-    Btn1: TButton;
-    Btn2: TButton;
-    Btn3: TButton;
-    Btn4: TButton;
-    Btn5: TButton;
-    Btn6: TButton;
-    Btn7: TButton;
-    Btn8: TButton;
-    Btn9: TButton;
-    Btn0: TButton;
-    BtnComma: TButton;
-    BtnClear: TButton;
-    BtnEnter: TButton;
-    BtnCancel: TButton;
-    procedure BtnNumberClick(Sender: TObject);
+    PanelKeys: TPanel;
+    Btn1: TPanel;
+    Btn2: TPanel;
+    Btn3: TPanel;
+    Btn4: TPanel;
+    Btn5: TPanel;
+    Btn6: TPanel;
+    Btn7: TPanel;
+    Btn8: TPanel;
+    Btn9: TPanel;
+    Btn0: TPanel;
+    BtnComma: TPanel;
+    BtnClear: TPanel;
+    BtnEnter: TPanel;
+    BtnCancel: TPanel;
+    procedure PanelBtnClick(Sender: TObject);
     procedure BtnClearClick(Sender: TObject);
     procedure BtnEnterClick(Sender: TObject);
     procedure BtnCancelClick(Sender: TObject);
@@ -51,12 +51,15 @@ begin
     AValue := EditValue.Text;
 end;
 
-procedure TVKForm.BtnNumberClick(Sender: TObject);
+procedure TVKForm.PanelBtnClick(Sender: TObject);
+var
+  Caption: string;
 begin
+  Caption := (Sender as TPanel).Caption;
   if EditValue.Text = '0,00' then
-    EditValue.Text := TButton(Sender).Caption
+    EditValue.Text := Caption
   else
-    EditValue.Text := EditValue.Text + TButton(Sender).Caption;
+    EditValue.Text := EditValue.Text + Caption;
 end;
 
 procedure TVKForm.BtnCommaClick(Sender: TObject);

@@ -3,268 +3,208 @@ object VKForm: TVKForm
   Top = 0
   BorderStyle = bsDialog
   Caption = 'Virtual Keyboard'
-  ClientHeight = 400
-  ClientWidth = 300
-  Color = clBtnFace
+  ClientHeight = 450
+  ClientWidth = 350
+  Color = clSilver
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -16
+  Font.Height = -24
   Font.Name = 'Segoe UI'
-  Font.Style = []
+  Font.Style = [fsBold]
   Position = poMainFormCenter
-  TextHeight = 21
+  TextHeight = 32
   object EditValue: TEdit
     Left = 10
     Top = 10
-    Width = 280
-    Height = 33
+    Width = 330
+    Height = 50
     Alignment = taRightJustify
+    Color = clBlack
+    Font.Charset = DEFAULT_CHARSET
+    Font.Color = clLime
+    Font.Height = -32
+    Font.Name = 'Consolas'
+    Font.Style = [fsBold]
+    ParentFont = False
     ReadOnly = True
     TabOrder = 0
     Text = '0,00'
   end
-  object GridPanel1: TGridPanel
+  object PanelKeys: TPanel
     Left = 10
-    Top = 50
-    Width = 280
-    Height = 340
+    Top = 70
+    Width = 330
+    Height = 370
     BevelOuter = bvNone
-    ColumnCollection = <
-      item
-        Value = 33.333333333333330000
-      end
-      item
-        Value = 33.333333333333330000
-      end
-      item
-        Value = 33.333333333333340000
-      end>
-    ControlCollection = <
-      item
-        Column = 0
-        Control = Btn7
-        Row = 0
-      end
-      item
-        Column = 1
-        Control = Btn8
-        Row = 0
-      end
-      item
-        Column = 2
-        Control = Btn9
-        Row = 0
-      end
-      item
-        Column = 0
-        Control = Btn4
-        Row = 1
-      end
-      item
-        Column = 1
-        Control = Btn5
-        Row = 1
-      end
-      item
-        Column = 2
-        Control = Btn6
-        Row = 1
-      end
-      item
-        Column = 0
-        Control = Btn1
-        Row = 2
-      end
-      item
-        Column = 1
-        Control = Btn2
-        Row = 2
-      end
-      item
-        Column = 2
-        Control = Btn3
-        Row = 2
-      end
-      item
-        Column = 0
-        Control = Btn0
-        Row = 3
-      end
-      item
-        Column = 1
-        Control = BtnComma
-        Row = 3
-      end
-      item
-        Column = 2
-        Control = BtnClear
-        Row = 3
-      end
-      item
-        Column = 0
-        Control = BtnCancel
-        Row = 4
-      end
-      item
-        Column = 1
-        ColumnSpan = 2
-        Control = BtnEnter
-        Row = 4
-      end>
-    RowCollection = <
-      item
-        Value = 20.000000000000000000
-      end
-      item
-        Value = 20.000000000000000000
-      end
-      item
-        Value = 20.000000000000000000
-      end
-      item
-        Value = 20.000000000000000000
-      end
-      item
-        Value = 20.000000000000000000
-      end>
+    Color = clSilver
+    ParentBackground = False
     TabOrder = 1
-    object Btn7: TButton
+    object Btn7: TPanel
       Left = 0
       Top = 0
-      Width = 93
-      Height = 68
-      Align = alClient
+      Width = 100
+      Height = 70
       Caption = '7'
+      Color = clBlack
+      Font.Color = clWhite
+      ParentBackground = False
       TabOrder = 0
-      OnClick = BtnNumberClick
+      OnClick = PanelBtnClick
     end
-    object Btn8: TButton
-      Left = 93
+    object Btn8: TPanel
+      Left = 110
       Top = 0
-      Width = 93
-      Height = 68
-      Align = alClient
+      Width = 100
+      Height = 70
       Caption = '8'
+      Color = clBlack
+      Font.Color = clWhite
+      ParentBackground = False
       TabOrder = 1
-      OnClick = BtnNumberClick
+      OnClick = PanelBtnClick
     end
-    object Btn9: TButton
-      Left = 186
+    object Btn9: TPanel
+      Left = 220
       Top = 0
-      Width = 94
-      Height = 68
-      Align = alClient
+      Width = 100
+      Height = 70
       Caption = '9'
+      Color = clBlack
+      Font.Color = clWhite
+      ParentBackground = False
       TabOrder = 2
-      OnClick = BtnNumberClick
+      OnClick = PanelBtnClick
     end
-    object Btn4: TButton
+    object Btn4: TPanel
       Left = 0
-      Top = 68
-      Width = 93
-      Height = 68
-      Align = alClient
+      Top = 80
+      Width = 100
+      Height = 70
       Caption = '4'
+      Color = clBlack
+      Font.Color = clWhite
+      ParentBackground = False
       TabOrder = 3
-      OnClick = BtnNumberClick
+      OnClick = PanelBtnClick
     end
-    object Btn5: TButton
-      Left = 93
-      Top = 68
-      Width = 93
-      Height = 68
-      Align = alClient
+    object Btn5: TPanel
+      Left = 110
+      Top = 80
+      Width = 100
+      Height = 70
       Caption = '5'
+      Color = clBlack
+      Font.Color = clWhite
+      ParentBackground = False
       TabOrder = 4
-      OnClick = BtnNumberClick
+      OnClick = PanelBtnClick
     end
-    object Btn6: TButton
-      Left = 186
-      Top = 68
-      Width = 94
-      Height = 68
-      Align = alClient
+    object Btn6: TPanel
+      Left = 220
+      Top = 80
+      Width = 100
+      Height = 70
       Caption = '6'
+      Color = clBlack
+      Font.Color = clWhite
+      ParentBackground = False
       TabOrder = 5
-      OnClick = BtnNumberClick
+      OnClick = PanelBtnClick
     end
-    object Btn1: TButton
+    object Btn1: TPanel
       Left = 0
-      Top = 136
-      Width = 93
-      Height = 68
-      Align = alClient
+      Top = 160
+      Width = 100
+      Height = 70
       Caption = '1'
+      Color = clBlack
+      Font.Color = clWhite
+      ParentBackground = False
       TabOrder = 6
-      OnClick = BtnNumberClick
+      OnClick = PanelBtnClick
     end
-    object Btn2: TButton
-      Left = 93
-      Top = 136
-      Width = 93
-      Height = 68
-      Align = alClient
+    object Btn2: TPanel
+      Left = 110
+      Top = 160
+      Width = 100
+      Height = 70
       Caption = '2'
+      Color = clBlack
+      Font.Color = clWhite
+      ParentBackground = False
       TabOrder = 7
-      OnClick = BtnNumberClick
+      OnClick = PanelBtnClick
     end
-    object Btn3: TButton
-      Left = 186
-      Top = 136
-      Width = 94
-      Height = 68
-      Align = alClient
+    object Btn3: TPanel
+      Left = 220
+      Top = 160
+      Width = 100
+      Height = 70
       Caption = '3'
+      Color = clBlack
+      Font.Color = clWhite
+      ParentBackground = False
       TabOrder = 8
-      OnClick = BtnNumberClick
+      OnClick = PanelBtnClick
     end
-    object Btn0: TButton
+    object Btn0: TPanel
       Left = 0
-      Top = 204
-      Width = 93
-      Height = 68
-      Align = alClient
+      Top = 240
+      Width = 100
+      Height = 70
       Caption = '0'
+      Color = clBlack
+      Font.Color = clWhite
+      ParentBackground = False
       TabOrder = 9
-      OnClick = BtnNumberClick
+      OnClick = PanelBtnClick
     end
-    object BtnComma: TButton
-      Left = 93
-      Top = 204
-      Width = 93
-      Height = 68
-      Align = alClient
+    object BtnComma: TPanel
+      Left = 110
+      Top = 240
+      Width = 100
+      Height = 70
       Caption = ','
+      Color = clBlack
+      Font.Color = clWhite
+      ParentBackground = False
       TabOrder = 10
       OnClick = BtnCommaClick
     end
-    object BtnClear: TButton
-      Left = 186
-      Top = 204
-      Width = 94
-      Height = 68
-      Align = alClient
+    object BtnClear: TPanel
+      Left = 220
+      Top = 240
+      Width = 100
+      Height = 70
       Caption = 'CLR'
+      Color = clWhite
+      Font.Color = clBlack
+      ParentBackground = False
       TabOrder = 11
       OnClick = BtnClearClick
     end
-    object BtnCancel: TButton
+    object BtnCancel: TPanel
       Left = 0
-      Top = 272
-      Width = 93
-      Height = 68
-      Align = alClient
-      Caption = 'X'
+      Top = 320
+      Width = 100
+      Height = 50
+      Caption = 'CANCEL'
+      Color = clMaroon
+      Font.Color = clWhite
+      Font.Height = -16
+      ParentBackground = False
       TabOrder = 12
       OnClick = BtnCancelClick
     end
-    object BtnEnter: TButton
-      Left = 93
-      Top = 272
-      Width = 187
-      Height = 68
-      Align = alClient
-      Caption = 'ENTER'
+    object BtnEnter: TPanel
+      Left = 110
+      Top = 320
+      Width = 210
+      Height = 50
+      Caption = 'SEND'
+      Color = clHighlight
+      Font.Color = clWhite
+      ParentBackground = False
       TabOrder = 13
       OnClick = BtnEnterClick
     end
