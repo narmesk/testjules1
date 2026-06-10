@@ -1,0 +1,8 @@
+# MCC Configuration Placeholder for dsPIC33EP64MC504
+# mcc_mode: IDE
+# mcc_mode_version: v6.25
+# device_name: dsPIC33EP64MC504
+# compiler: XC16 2.10
+# mcc_version: 5.5.2
+# mcc_core_version: 5.7.1
+# content_manager_version: 5.0.1

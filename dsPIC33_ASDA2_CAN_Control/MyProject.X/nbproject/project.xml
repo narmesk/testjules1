@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://www.netbeans.org/ns/project/1">
+    <type>com.microchip.mplab.nbide.embedded.project</type>
+    <configuration>
+        <data xmlns="http://www.microchip.com/ns/make-project/1">
+            <name>dsPIC33_ASDA2_CAN_Control</name>
+            <creation-uuid>68612140-6060-449b-8f35-43a99252c6f1</creation-uuid>
+            <make-project-instance>
+                <make-project-target>default</make-project-target>
+            </make-project-instance>
+        </data>
+    </configuration>
+</project>
