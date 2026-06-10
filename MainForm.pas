@@ -4,11 +4,10 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, System.JSON, Vcl.ExtCtrls;
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, System.JSON, Vcl.ExtCtrls, Vcl.Grids;
 
 type
   TFormMain = class(TForm)
-    MemoJSON: TMemo;
     PanelBottom: TPanel;
     BtnLoad: TButton;
     BtnProcess: TButton;
@@ -17,13 +16,16 @@ type
     LabelIncrement: TLabel;
     OpenDialog1: TOpenDialog;
     SaveDialog1: TSaveDialog;
+    StringGridPrices: TStringGrid;
     procedure BtnLoadClick(Sender: TObject);
     procedure BtnProcessClick(Sender: TObject);
     procedure BtnSaveClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
   private
     { Private declarations }
-    procedure ProcessPrice(JSON: TJSONObject; Prefix: string; Index: Integer; Increment: Double);
+    FOriginalJSON: TJSONObject;
+    procedure JSONToGrid(AJSONObject: TJSONObject);
+    function GridToJSON: TJSONObject;
   public
     { Public declarations }
   end;
@@ -37,89 +39,142 @@ implementation
 
 procedure TFormMain.FormCreate(Sender: TObject);
 begin
-  // Delphi 12 handles High DPI scaling automatically if configured in project options.
-  // We ensure the form is set to scale.
   Self.Scaled := True;
+
+  // Grid başlıklarını ayarla
+  StringGridPrices.Cells[0, 0] := 'Fiyat Tipi';
+  StringGridPrices.Cells[1, 0] := 'Değer A';
+  StringGridPrices.Cells[2, 0] := 'Değer B';
+  StringGridPrices.Cells[3, 0] := 'Değer C';
+
+  StringGridPrices.ColWidths[0] := 150;
+  StringGridPrices.ColWidths[1] := 100;
+  StringGridPrices.ColWidths[2] := 100;
+  StringGridPrices.ColWidths[3] := 100;
+end;
+
+procedure TFormMain.JSONToGrid(AJSONObject: TJSONObject);
+var
+  i, Row: Integer;
+  Prefix: string;
+  FS: TFormatSettings;
+
+  procedure AddToGrid(APrefix: string; AIndex: Integer);
+  begin
+    StringGridPrices.Cells[0, Row] := APrefix + IntToStr(AIndex);
+    StringGridPrices.Cells[1, Row] := AJSONObject.GetValue<string>(APrefix + IntToStr(AIndex) + 'A', '0');
+    StringGridPrices.Cells[2, Row] := AJSONObject.GetValue<string>(APrefix + IntToStr(AIndex) + 'B', '0');
+    StringGridPrices.Cells[3, Row] := AJSONObject.GetValue<string>(APrefix + IntToStr(AIndex) + 'C', '0');
+    Inc(Row);
+  end;
+
+begin
+  FS := TFormatSettings.Invariant;
+  Row := 1;
+  StringGridPrices.RowCount := 17; // 1 başlık + 8 FULL + 8 SELF
+
+  for i := 1 to 8 do AddToGrid('FULLVAL', i);
+  for i := 1 to 8 do AddToGrid('SELFVAL', i);
+end;
+
+function TFormMain.GridToJSON: TJSONObject;
+var
+  i: Integer;
+  ResultJSON: TJSONObject;
+  KeyPrefix, ValA, ValB, ValC: string;
+begin
+  if Assigned(FOriginalJSON) then
+    ResultJSON := FOriginalJSON.Clone as TJSONObject
+  else
+    ResultJSON := TJSONObject.Create;
+
+  for i := 1 to StringGridPrices.RowCount - 1 do
+  begin
+    KeyPrefix := StringGridPrices.Cells[0, i];
+    ValA := StringGridPrices.Cells[1, i];
+    ValB := StringGridPrices.Cells[2, i];
+    ValC := StringGridPrices.Cells[3, i];
+
+    if KeyPrefix <> '' then
+    begin
+      ResultJSON.RemovePair(KeyPrefix + 'A').Free;
+      ResultJSON.AddPair(KeyPrefix + 'A', TJSONString.Create(ValA));
+
+      ResultJSON.RemovePair(KeyPrefix + 'B').Free;
+      ResultJSON.AddPair(KeyPrefix + 'B', TJSONString.Create(ValB));
+
+      ResultJSON.RemovePair(KeyPrefix + 'C').Free;
+      ResultJSON.AddPair(KeyPrefix + 'C', TJSONString.Create(ValC));
+    end;
+  end;
+
+  Result := ResultJSON;
 end;
 
 procedure TFormMain.BtnLoadClick(Sender: TObject);
+var
+  JSONStr: string;
+  LStrings: TStringList;
 begin
   if OpenDialog1.Execute then
   begin
-    MemoJSON.Lines.LoadFromFile(OpenDialog1.FileName);
-  end;
-end;
+    LStrings := TStringList.Create;
+    try
+      LStrings.LoadFromFile(OpenDialog1.FileName);
+      JSONStr := LStrings.Text;
 
-procedure TFormMain.BtnSaveClick(Sender: TObject);
-begin
-  if SaveDialog1.Execute then
-  begin
-    MemoJSON.Lines.SaveToFile(SaveDialog1.FileName);
-  end;
-end;
+      if Assigned(FOriginalJSON) then FOriginalJSON.Free;
+      FOriginalJSON := TJSONObject.ParseJSONValue(JSONStr) as TJSONObject;
 
-procedure TFormMain.ProcessPrice(JSON: TJSONObject; Prefix: string; Index: Integer; Increment: Double);
-var
-  ValA, ValB, ValC: Double;
-  KeyA, KeyB, KeyC: string;
-  PairA, PairB, PairC: TJSONPair;
-  FS: TFormatSettings;
-begin
-  FS := TFormatSettings.Invariant;
-
-  KeyA := Prefix + IntToStr(Index) + 'A';
-  KeyB := Prefix + IntToStr(Index) + 'B';
-  KeyC := Prefix + IntToStr(Index) + 'C';
-
-  PairA := JSON.Get(KeyA);
-  if Assigned(PairA) then
-  begin
-    ValA := StrToFloatDef(PairA.JsonValue.Value, 0, FS);
-    ValB := ValA + Increment;
-    ValC := ValB + Increment;
-
-    // Update or Add KeyB
-    JSON.RemovePair(KeyB).Free;
-    JSON.AddPair(KeyB, TJSONString.Create(FloatToStr(ValB, FS)));
-
-    // Update or Add KeyC
-    JSON.RemovePair(KeyC).Free;
-    JSON.AddPair(KeyC, TJSONString.Create(FloatToStr(ValC, FS)));
+      if Assigned(FOriginalJSON) then
+        JSONToGrid(FOriginalJSON)
+      else
+        ShowMessage('Geçersiz JSON dosyası!');
+    finally
+      LStrings.Free;
+    end;
   end;
 end;
 
 procedure TFormMain.BtnProcessClick(Sender: TObject);
 var
-  JSON: TJSONValue;
-  JSONObject: TJSONObject;
-  Increment: Double;
   i: Integer;
+  ValA, Increment: Double;
   FS: TFormatSettings;
 begin
   FS := TFormatSettings.Invariant;
   Increment := StrToFloatDef(EditIncrement.Text, 0, FS);
 
-  JSON := TJSONObject.ParseJSONValue(MemoJSON.Text);
-  try
-    if not (JSON is TJSONObject) then
+  for i := 1 to StringGridPrices.RowCount - 1 do
+  begin
+    if StringGridPrices.Cells[0, i] <> '' then
     begin
-      ShowMessage('Gecersiz JSON formatı!');
-      Exit;
+      ValA := StrToFloatDef(StringGridPrices.Cells[1, i], 0, FS);
+      StringGridPrices.Cells[2, i] := FloatToStr(ValA + Increment, FS);
+      StringGridPrices.Cells[3, i] := FloatToStr(ValA + (Increment * 2), FS);
     end;
+  end;
 
-    JSONObject := JSON as TJSONObject;
+  ShowMessage('Hesaplama tamamlandı.');
+end;
 
-    for i := 1 to 8 do
-    begin
-      ProcessPrice(JSONObject, 'FULLVAL', i, Increment);
-      ProcessPrice(JSONObject, 'SELFVAL', i, Increment);
+procedure TFormMain.BtnSaveClick(Sender: TObject);
+var
+  OutputJSON: TJSONObject;
+  LStrings: TStringList;
+begin
+  if SaveDialog1.Execute then
+  begin
+    OutputJSON := GridToJSON;
+    LStrings := TStringList.Create;
+    try
+      LStrings.Text := OutputJSON.Format(2);
+      LStrings.SaveToFile(SaveDialog1.FileName);
+      ShowMessage('Dosya başarıyla kaydedildi.');
+    finally
+      LStrings.Free;
+      OutputJSON.Free;
     end;
-
-    // Format and display the updated JSON
-    MemoJSON.Text := JSONObject.Format(2);
-    ShowMessage('Fiyatlar basariyla guncellendi.');
-  finally
-    JSON.Free;
   end;
 end;
 
