@@ -50,6 +50,7 @@ type
     procedure GridTuningSelectCell(Sender: TObject; ACol, ARow: Integer; var CanSelect: Boolean);
     procedure GridDrawCell(Sender: TObject; ACol, ARow: Integer; Rect: TRect; State: TGridDrawState);
     procedure FormResize(Sender: TObject);
+    procedure FormShow(Sender: TObject);
   private
     { Private declarations }
     procedure InitGrid(AGrid: TStringGrid);
@@ -138,6 +139,11 @@ begin
   UpdateGridColumns(GridTuningSelf);
   UpdateGridColumns(GridResultFull);
   UpdateGridColumns(GridResultSelf);
+end;
+
+procedure TFormMain.FormShow(Sender: TObject);
+begin
+  FormResize(nil);
 end;
 
 procedure TFormMain.GridDrawCell(Sender: TObject; ACol, ARow: Integer; Rect: TRect; State: TGridDrawState);

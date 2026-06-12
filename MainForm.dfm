@@ -11,8 +11,10 @@ object FormMain: TFormMain
   Font.Name = 'Segoe UI'
   Font.Style = []
   Position = poScreenCenter
+  WindowState = wsMaximized
   OnCreate = FormCreate
   OnResize = FormResize
+  OnShow = FormShow
   TextHeight = 15
   object PageControl1: TPageControl
     Left = 0
