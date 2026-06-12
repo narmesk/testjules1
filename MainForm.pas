@@ -32,6 +32,16 @@ type
     Label6: TLabel;
     OpenDialog1: TOpenDialog;
     SaveDialog1: TSaveDialog;
+    GridPanelPrices: TGridPanel;
+    GridPanelTuning: TGridPanel;
+    GridPanelResult: TGridPanel;
+    PanelPriceFull: TPanel;
+    PanelPriceSelf: TPanel;
+    PanelTuningFull: TPanel;
+    PanelTuningSelf: TPanel;
+    PanelResultFull: TPanel;
+    PanelResultSelf: TPanel;
+    FlowPanelButtons: TFlowPanel;
     procedure FormCreate(Sender: TObject);
     procedure BtnLoadPricesClick(Sender: TObject);
     procedure BtnLoadTuningClick(Sender: TObject);
@@ -39,6 +49,7 @@ type
     procedure BtnSaveTuningClick(Sender: TObject);
     procedure GridTuningSelectCell(Sender: TObject; ACol, ARow: Integer; var CanSelect: Boolean);
     procedure GridDrawCell(Sender: TObject; ACol, ARow: Integer; Rect: TRect; State: TGridDrawState);
+    procedure FormResize(Sender: TObject);
   private
     { Private declarations }
     procedure InitGrid(AGrid: TStringGrid);
@@ -47,6 +58,7 @@ type
     procedure CalculateResult;
     function FormatInternal(AValue: string): string;
     function FormatExternal(AValue: string): string;
+    procedure UpdateGridColumns(AGrid: TStringGrid);
   public
     { Public declarations }
   end;
@@ -101,11 +113,31 @@ begin
   AGrid.Cells[2, 0] := 'CASH B';
   AGrid.Cells[3, 0] := 'CASH C';
 
-  AGrid.ColWidths[0] := 110;
-  AGrid.ColWidths[1] := 115;
-  AGrid.ColWidths[2] := 115;
-  AGrid.ColWidths[3] := 115;
-  AGrid.DefaultRowHeight := 60; // Larger for tablet
+  UpdateGridColumns(AGrid);
+end;
+
+procedure TFormMain.UpdateGridColumns(AGrid: TStringGrid);
+var
+  W: Integer;
+begin
+  W := AGrid.ClientWidth;
+  AGrid.ColWidths[0] := W div 4;
+  AGrid.ColWidths[1] := W div 4;
+  AGrid.ColWidths[2] := W div 4;
+  AGrid.ColWidths[3] := W - (AGrid.ColWidths[0] + AGrid.ColWidths[1] + AGrid.ColWidths[2]) - 2;
+
+  // Row height adjustment based on grid height
+  AGrid.DefaultRowHeight := (AGrid.ClientHeight div 9) - 1;
+end;
+
+procedure TFormMain.FormResize(Sender: TObject);
+begin
+  UpdateGridColumns(GridPricesFull);
+  UpdateGridColumns(GridPricesSelf);
+  UpdateGridColumns(GridTuningFull);
+  UpdateGridColumns(GridTuningSelf);
+  UpdateGridColumns(GridResultFull);
+  UpdateGridColumns(GridResultSelf);
 end;
 
 procedure TFormMain.GridDrawCell(Sender: TObject; ACol, ARow: Integer; Rect: TRect; State: TGridDrawState);
@@ -116,21 +148,21 @@ begin
   Grid := TStringGrid(Sender);
   Text := Grid.Cells[ACol, ARow];
 
-  if ARow = 0 then // Header
+  if ARow = 0 then
   begin
     Grid.Canvas.Brush.Color := clBtnFace;
     Grid.Canvas.Font.Style := [fsBold];
     Grid.Canvas.Font.Color := clBlack;
-    Grid.Canvas.Font.Height := -16;
+    Grid.Canvas.Font.Height := -14;
   end
-  else if ACol = 0 then // Product Name
+  else if ACol = 0 then
   begin
     Grid.Canvas.Brush.Color := clBlack;
     Grid.Canvas.Font.Color := clWhite;
     Grid.Canvas.Font.Style := [fsBold];
-    Grid.Canvas.Font.Height := -18;
+    Grid.Canvas.Font.Height := -16;
   end
-  else // Price / Value
+  else
   begin
     Grid.Canvas.Brush.Color := clBlack;
     if ARow <= 4 then
@@ -139,7 +171,7 @@ begin
       Grid.Canvas.Font.Color := clLime;
 
     Grid.Canvas.Font.Name := 'Consolas';
-    Grid.Canvas.Font.Height := -36; // Big digital look
+    Grid.Canvas.Font.Height := -(Grid.DefaultRowHeight div 2); // Dynamic font size
     Grid.Canvas.Font.Style := [fsBold];
   end;
 
@@ -150,18 +182,12 @@ begin
   begin
     Grid.Canvas.Pen.Color := clHighlight;
     Grid.Canvas.Pen.Width := 2;
-    Grid.Canvas.MoveTo(Rect.Left, Rect.Top);
-    Grid.Canvas.LineTo(Rect.Right, Rect.Top);
-    Grid.Canvas.LineTo(Rect.Right, Rect.Bottom);
-    Grid.Canvas.LineTo(Rect.Left, Rect.Bottom);
-    Grid.Canvas.LineTo(Rect.Left, Rect.Top);
+    Grid.Canvas.Rectangle(Rect);
   end;
 end;
 
 function TFormMain.FormatInternal(AValue: string): string;
-var
-  V: Double;
-  FS: TFormatSettings;
+var V: Double; FS: TFormatSettings;
 begin
   FS := TFormatSettings.Create('tr-TR');
   V := StrToFloatDef(AValue, 0) / 100.0;
@@ -171,9 +197,7 @@ begin
 end;
 
 function TFormMain.FormatExternal(AValue: string): string;
-var
-  V: Double;
-  FS: TFormatSettings;
+var V: Double; FS: TFormatSettings;
 begin
   FS := TFormatSettings.Create('tr-TR');
   V := StrToFloatDef(AValue, 0, FS) * 100.0;
@@ -181,16 +205,14 @@ begin
 end;
 
 procedure TFormMain.JSONToGrids(AJSONObject: TJSONObject; AGridFull, AGridSelf: TStringGrid);
-var
-  i: Integer;
+var idx: Integer;
   procedure FillGrid(AGrid: TStringGrid; APrefix: string);
-  var idx: Integer;
+  var i: Integer;
   begin
-    for idx := 1 to 8 do
-    begin
-      AGrid.Cells[1, idx] := FormatInternal(AJSONObject.GetValue<string>(APrefix + IntToStr(idx) + 'A', '0'));
-      AGrid.Cells[2, idx] := FormatInternal(AJSONObject.GetValue<string>(APrefix + IntToStr(idx) + 'B', '0'));
-      AGrid.Cells[3, idx] := FormatInternal(AJSONObject.GetValue<string>(APrefix + IntToStr(idx) + 'C', '0'));
+    for i := 1 to 8 do begin
+      AGrid.Cells[1, i] := FormatInternal(AJSONObject.GetValue<string>(APrefix + IntToStr(i) + 'A', '0'));
+      AGrid.Cells[2, i] := FormatInternal(AJSONObject.GetValue<string>(APrefix + IntToStr(i) + 'B', '0'));
+      AGrid.Cells[3, i] := FormatInternal(AJSONObject.GetValue<string>(APrefix + IntToStr(i) + 'C', '0'));
     end;
   end;
 begin
@@ -199,16 +221,14 @@ begin
 end;
 
 function TFormMain.GridsToJSON(AGridFull, AGridSelf: TStringGrid): TJSONObject;
-var
-  ResultJSON: TJSONObject;
+var ResultJSON: TJSONObject;
   procedure AddFromGrid(AGrid: TStringGrid; APrefix: string);
-  var idx: Integer;
+  var i: Integer;
   begin
-    for idx := 1 to 8 do
-    begin
-      ResultJSON.AddPair(APrefix + IntToStr(idx) + 'A', TJSONString.Create(FormatExternal(AGrid.Cells[1, idx])));
-      ResultJSON.AddPair(APrefix + IntToStr(idx) + 'B', TJSONString.Create(FormatExternal(AGrid.Cells[2, idx])));
-      ResultJSON.AddPair(APrefix + IntToStr(idx) + 'C', TJSONString.Create(FormatExternal(AGrid.Cells[3, idx])));
+    for i := 1 to 8 do begin
+      ResultJSON.AddPair(APrefix + IntToStr(i) + 'A', TJSONString.Create(FormatExternal(AGrid.Cells[1, i])));
+      ResultJSON.AddPair(APrefix + IntToStr(i) + 'B', TJSONString.Create(FormatExternal(AGrid.Cells[2, i])));
+      ResultJSON.AddPair(APrefix + IntToStr(i) + 'C', TJSONString.Create(FormatExternal(AGrid.Cells[3, i])));
     end;
   end;
 begin
@@ -220,15 +240,11 @@ end;
 
 procedure TFormMain.CalculateResult;
   procedure Calc(APrices, ATuning, AResult: TStringGrid);
-  var idx, col: Integer;
-      V1, V2: Double;
-      FS: TFormatSettings;
+  var idx, col: Integer; V1, V2: Double; FS: TFormatSettings;
   begin
     FS := TFormatSettings.Create('tr-TR');
-    for idx := 1 to 8 do
-    begin
-      for col := 1 to 3 do
-      begin
+    for idx := 1 to 8 do begin
+      for col := 1 to 3 do begin
         V1 := StrToFloatDef(APrices.Cells[col, idx], 0, FS);
         V2 := StrToFloatDef(ATuning.Cells[col, idx], 0, FS);
         AResult.Cells[col, idx] := FloatToStr(V1 + V2, FS);
@@ -246,8 +262,7 @@ end;
 procedure TFormMain.BtnLoadPricesClick(Sender: TObject);
 var LStrings: TStringList; JSON: TJSONObject;
 begin
-  if OpenDialog1.Execute then
-  begin
+  if OpenDialog1.Execute then begin
     LStrings := TStringList.Create;
     try
       LStrings.LoadFromFile(OpenDialog1.FileName);
@@ -263,8 +278,7 @@ end;
 procedure TFormMain.BtnLoadTuningClick(Sender: TObject);
 var LStrings: TStringList; JSON: TJSONObject;
 begin
-  if OpenDialog1.Execute then
-  begin
+  if OpenDialog1.Execute then begin
     LStrings := TStringList.Create;
     try
       LStrings.LoadFromFile(OpenDialog1.FileName);
@@ -286,8 +300,7 @@ end;
 procedure TFormMain.BtnSaveTuningClick(Sender: TObject);
 var JSON: TJSONObject; LStrings: TStringList;
 begin
-  if SaveDialog1.Execute then
-  begin
+  if SaveDialog1.Execute then begin
     JSON := GridsToJSON(GridTuningFull, GridTuningSelf);
     LStrings := TStringList.Create;
     try
@@ -300,8 +313,7 @@ end;
 procedure TFormMain.GridTuningSelectCell(Sender: TObject; ACol, ARow: Integer; var CanSelect: Boolean);
 var Grid: TStringGrid; Val: string;
 begin
-  if (ACol >= 1) and (ARow >= 1) then
-  begin
+  if (ACol >= 1) and (ARow >= 1) then begin
     Grid := TStringGrid(Sender);
     Val := Grid.Cells[ACol, ARow];
     if VKForm.Execute(Val) then Grid.Cells[ACol, ARow] := Val;
