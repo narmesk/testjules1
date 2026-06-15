@@ -6,6 +6,7 @@ void SYSTEM_Initialize(void)
 {
     OSCILLATOR_Initialize();
     PIN_MANAGER_Initialize();
+    DMA_Initialize();
 
     // CAN and DMA must be enabled for dsPIC33EP ECAN
     CAN1_Initialize();
