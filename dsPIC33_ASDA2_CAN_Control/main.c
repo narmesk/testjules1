@@ -1,53 +1,46 @@
 #include "mcc_generated_files/system.h"
+#include "mcc_generated_files/timer5.h"
 #include "asda2_control.h"
-#include <xc.h>
 
 /**
- * TEŞHİS MODU (DIAGNOSTIC MODE)
- * Bu kod, donanımın nerede takıldığını LED patternleri ile anlatır.
+ * ASDA-A2 CNC Kontrol - Bağımsız Eksen Sürümü
+ * 64 MIPS / 1Mbps CAN
  */
 
 int main(void)
 {
-    // 1. Temel Saat
-    OSCILLATOR_Initialize();
+    // Donanım ve Sürücüleri Başlat
+    SYSTEM_Initialize();
 
-    // 2. Pinler ve Güç
-    PIN_MANAGER_Initialize();
-
-    // --- MANUEL TEST: 5 KEZ YAVAŞ BLINK ---
-    // Eğer bunu görüyorsan: Kristal ve Temel Boot Tamam.
-    for(int i=0; i<5; i++) {
-        LATBbits.LATB9 = 1; for(volatile uint32_t j=0; j<2000000; j++);
-        LATBbits.LATB9 = 0; for(volatile uint32_t j=0; j<2000000; j++);
-    }
-
-    // 3. DMA Başlatma
-    // LED 1 saniye sabit yanacak: DMA Init Başlıyor
-    LATBbits.LATB9 = 1; for(volatile uint32_t j=0; j<4000000; j++);
-    DMA_Initialize();
-    LATBbits.LATB9 = 0; for(volatile uint32_t j=0; j<2000000; j++);
-
-    // 4. CAN Başlatma
-    // LED 2 saniye sabit yanacak: CAN Init Başlıyor (Mode switch bekleniyor)
-    LATBbits.LATB9 = 1; for(volatile uint32_t j=0; j<8000000; j++);
-    CAN1_Initialize();
-    CAN1_TransmitEnable();
-    CAN1_ReceiveEnable();
-    LATBbits.LATB9 = 0; for(volatile uint32_t j=0; j<2000000; j++);
-
+    // ASDA2 Yapılarını Sıfırla
     ASDA2_Initialize();
+
+    // Timer5 (4ms Master Task) Başlat
+    Timer5_Initialize();
+
+    // Küresel Kesmeleri Aç
+    __builtin_enable_interrupts();
+
+    // Tüm CAN Node'larını Başlat
+    CANopen_Start_Nodes();
 
     while (1)
     {
-        // LED HIZLI TOGGLE: HER ŞEY YOLUNDA, VERİ GÖNDERİLİYOR
-        LATBbits.LATB9 = !LATBbits.LATB9;
+        // LED Heartbeat (CPU çalışıyor göstergesi)
+        static uint32_t counter = 0;
+        if(counter++ > 200000) {
+            LATBbits.LATB9 = !LATBbits.LATB9;
+            counter = 0;
+        }
 
-        // CAN MESAJI GÖNDER
-        Send_SYNC_Message();
-
-        // Çok hızlı delay (Logic analizörde veri görmen için)
-        for(volatile uint32_t i=0; i<500000; i++);
+        // ÖRNEK: X eksenini hareket ettir (Test için yorumu kaldırabilirsin)
+        /*
+        static bool move_triggered = false;
+        if(!move_triggered) {
+            move_single_axis_abs(AXIS_X, 100.0f, 1200.0f);
+            move_triggered = true;
+        }
+        */
     }
 
     return 0;

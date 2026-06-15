@@ -3,20 +3,20 @@
 
 void Timer5_Initialize(void)
 {
-    // Assuming 70 MIPS (Fcy = 70MHz)
+    // dsPIC33EP @ 64 MIPS (Fcy = 64MHz)
     // TMR5 period = 4ms
-    // Prescaler 1:64 -> 70,000,000 / 64 = 1,093,750 Hz
-    // 4ms * 1,093,750 = 4,375
+    // Prescaler 1:64 -> 64,000,000 / 64 = 1,000,000 Hz
+    // 4ms * 1,000,000 = 4,000 cycles
 
-    T5CONbits.TON = 0;      // Stop Timer
-    T5CONbits.TCS = 0;      // Internal Clock (Fcy)
-    T5CONbits.TCKPS = 0b10; // Prescaler 1:64
-    TMR5 = 0x00;            // Clear Timer
-    PR5 = 4375;             // Period match for 4ms
+    T5CONbits.TON = 0;
+    T5CONbits.TCS = 0;
+    T5CONbits.TCKPS = 0b10; // 1:64
+    TMR5 = 0x00;
+    PR5 = 3999;             // 4ms match
 
-    IPC7bits.T5IP = 5;      // Priority
-    IFS1bits.T5IF = 0;      // Clear Flag
-    IEC1bits.T5IE = 1;      // Enable Interrupt
+    IPC7bits.T5IP = 5;
+    IFS1bits.T5IF = 0;
+    IEC1bits.T5IE = 1;
 
-    T5CONbits.TON = 1;      // Start Timer
+    T5CONbits.TON = 1;
 }

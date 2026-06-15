@@ -3,13 +3,8 @@
 
 #define CAN1_TX_DMA_CHANNEL 1
 #define CAN1_RX_DMA_CHANNEL 0
-#define CAN1_MESSAGE_BUFFERS 4
+#define CAN1_MESSAGE_BUFFERS 16 // Artırılmış buffer (0-7 TX, 8-15 RX)
 
-/**
- * KRİTİK: dsPIC33EP DMA RAM Adreslemesi
- * can1msgBuf dizisini doğrudan 0x1000 (DMA RAM başlangıcı) adresine zorluyoruz.
- * __attribute__((address(0x1000))) ile linker'ı bypass edip donanıma mühürlüyoruz.
- */
 unsigned int can1msgBuf [CAN1_MESSAGE_BUFFERS][8] __attribute__((address(0x1000), aligned(128)));
 
 static void CAN1_DMACopy(uint8_t buffer_number, CAN_MSG_OBJ *message)
@@ -58,22 +53,24 @@ void CAN1_Initialize(void)
 {
     C1CTRL1bits.REQOP = 4;
     while(C1CTRL1bits.OPMODE != 4);
+    C1CTRL1bits.CANCKS = 0x1;
 
-    C1CTRL1bits.CANCKS = 0x1; // Fcan = Fcy = 64MHz
+    // 1Mbps @ 64MHz Fcy
+    // BRP=3 -> Tq=125ns. 1us/125ns = 8 Tq.
+    // Tq = 1 (Sync) + 1 (Prop) + 3 (Seg1) + 3 (Seg2) = 8 Tq.
+    C1CFG1 = 0x0003;
+    C1CFG2 = 0x0291; // SEG2PHTS=1, SEG2PH=2 (3Tq), SEG1PH=2 (3Tq), PRSEG=0 (1Tq) -> 1+1+3+3 = 8
 
-    // TEST: 250kbps (Lojik analizörde yakalamak çok daha kolaydır)
-    // Tq = 2 * (1 + 7) / 64M = 250ns. 1 / (250ns * 16 Tq) = 250kbps.
-    C1CFG1 = 0x0007; // BRP=7
-    C1CFG2 = 0x0298; // Total 16 Tq
+    C1FCTRL = 0x0003; // DMABS=16
 
-    C1FCTRL = 0x0001; // DMABS=4
+    // Buffer 0-7 Transmit olarak ayarla
+    C1TR01CONbits.TXEN0 = 1; C1TR01CONbits.TXEN1 = 1;
+    C1TR23CONbits.TXEN2 = 1; C1TR23CONbits.TXEN3 = 1;
+    C1TR45CONbits.TXEN4 = 1; C1TR45CONbits.TXEN5 = 1;
+    C1TR67CONbits.TXEN6 = 1; C1TR67CONbits.TXEN7 = 1;
 
-    C1TR01CONbits.TXEN0 = 1;
-    C1TR01CONbits.TXEN1 = 0;
-
-    // Loopback Modu (Harici ACK beklemeden sinyal basmak için)
-    C1CTRL1bits.REQOP = 2;
-    while(C1CTRL1bits.OPMODE != 2);
+    C1CTRL1bits.REQOP = 0;
+    while(C1CTRL1bits.OPMODE != 0);
 }
 
 void CAN1_TransmitEnable()
@@ -90,27 +87,34 @@ void CAN1_ReceiveEnable()
     DMA_ChannelEnable(CAN1_RX_DMA_CHANNEL);
 }
 
+// Belirli bir buffer üzerinden gönderim (Çakışmayı önlemek için)
+bool CAN1_TransmitToBuffer(uint8_t buffer_idx, CAN_MSG_OBJ *msg)
+{
+    if (buffer_idx > 7) return false;
+
+    // C1TRxxCON register pointer hesabı
+    volatile uint16_t *tr_reg = (volatile uint16_t *)(0x0460 + (buffer_idx / 2) * 2);
+    uint16_t shift = (buffer_idx % 2) * 8;
+
+    if (*tr_reg & (0x0008 << shift)) return false; // TXREQ bit kontrolü
+
+    CAN1_MessageToBuffer(&can1msgBuf[buffer_idx][0], msg);
+
+    *tr_reg |= (0x0008 << shift); // TXREQ set
+    return true;
+}
+
 CAN_TX_MSG_REQUEST_STATUS CAN1_Transmit(CAN_TX_PRIOIRTY priority, CAN_MSG_OBJ *sendCanMsg)
 {
-    // KRİTİK: C1TR01CON (0x0460) register'ına doğrudan saldırıyoruz.
-    if (*((uint16_t*)0x0460) & 0x0008) return CAN_TX_MSG_REQUEST_BUFFER_FULL;
-
-    CAN1_MessageToBuffer(&can1msgBuf[0][0], sendCanMsg);
-
-    // Priority ve TXREQ0 bitini manuel set et
-    uint16_t val = *((uint16_t*)0x0460);
-    val &= ~0x0003;
-    val |= (priority & 0x0003);
-    val |= 0x0008;  // TXREQ0 = 1
-    *((uint16_t*)0x0460) = val;
-
-    return CAN_TX_MSG_REQUEST_SUCCESS;
+    // Standart API: Sadece Buffer 0'ı kullanır (Eski uyumluluk)
+    if (CAN1_TransmitToBuffer(0, sendCanMsg)) return CAN_TX_MSG_REQUEST_SUCCESS;
+    return CAN_TX_MSG_REQUEST_BUFFER_FULL;
 }
 
 bool CAN1_Receive(CAN_MSG_OBJ *recCanMsg)
 {
     if (C1RXFUL1 != 0) {
-        for (int i=1 ; i < 4; i++) {
+        for (int i=8 ; i < 16; i++) {
             if ((C1RXFUL1 >> i) & 0x1) {
                CAN1_DMACopy(i, recCanMsg);
                C1RXFUL1 &= ~(1 << i);
