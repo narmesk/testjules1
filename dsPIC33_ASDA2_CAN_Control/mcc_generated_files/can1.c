@@ -16,7 +16,7 @@ typedef struct __attribute__((packed))
     unsigned transmit_enabled           :1;
 } CAN1_TX_CONTROLS;
 
-/* dsPIC33EP EDS (Extended Data Space) DMA Alignment */
+/* dsPIC33EP DMA RAM Alignment - Eds zorunlu */
 static unsigned int can1msgBuf [CAN1_MESSAGE_BUFFERS][8] __attribute__((space(eds), aligned(32)));
 
 static void CAN1_DMACopy(uint8_t buffer_number, CAN_MSG_OBJ *message)
@@ -68,19 +68,17 @@ void CAN1_Initialize(void)
     C1CTRL1bits.REQOP = CAN_CONFIGURATION_MODE;
     while(C1CTRL1bits.OPMODE != CAN_CONFIGURATION_MODE);
 
+    /* 64 MHz Fcy / 1Mbps */
     C1CFG1 = 0x0003;
     C1CFG2 = 0x0190;
-    C1FCTRL = 0x0002; // DMABS=8
+    C1FCTRL = 0x0002;
 
     C1TR01CONbits.TXEN0 = 1;
     C1TR01CONbits.TXEN1 = 0;
 
-    // TEST MODU: LOOPBACK (Transceiver olmadan sinyal görmek için)
-    // Eğer logic analizörde veri görüyorsan bu modu 0 (Normal) yapmalısın.
-    C1CTRL1bits.REQOP = CAN_LOOPBACK_MODE;
-    while(C1CTRL1bits.OPMODE != CAN_LOOPBACK_MODE);
-
-    IEC2bits.C1IE = 1;
+    // KRİTİK: Loopback Modu (Transceiver olmadan sinyal görmek için)
+    C1CTRL1bits.REQOP = 2;
+    while(C1CTRL1bits.OPMODE != 2);
 }
 
 void CAN1_TransmitEnable()
@@ -111,11 +109,9 @@ CAN_TX_MSG_REQUEST_STATUS CAN1_Transmit(CAN_TX_PRIOIRTY priority, CAN_MSG_OBJ *s
 
 bool CAN1_Receive(CAN_MSG_OBJ *recCanMsg)
 {
-    if(recCanMsg->data == (void*)0) return false;
-    uint16_t flags = C1RXFUL1;
-    if (flags != 0) {
+    if (C1RXFUL1 != 0) {
         for (int i=1 ; i < 8; i++) {
-            if ((flags >> i) & 0x1) {
+            if ((C1RXFUL1 >> i) & 0x1) {
                CAN1_DMACopy(i, recCanMsg);
                C1RXFUL1 &= ~(1 << i);
                return true;
