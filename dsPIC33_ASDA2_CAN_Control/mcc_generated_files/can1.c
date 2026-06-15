@@ -3,21 +3,9 @@
 
 #define CAN1_TX_DMA_CHANNEL 1
 #define CAN1_RX_DMA_CHANNEL 0
-#define CAN1_MESSAGE_BUFFERS 8
+#define CAN1_MESSAGE_BUFFERS 4
 
-typedef struct __attribute__((packed))
-{
-    unsigned priority                   :2;
-    unsigned remote_transmit_enable     :1;
-    unsigned send_request               :1;
-    unsigned error                      :1;
-    unsigned lost_arbitration           :1;
-    unsigned message_aborted            :1;
-    unsigned transmit_enabled           :1;
-} CAN1_TX_CONTROLS;
-
-/* dsPIC33EP DMA RAM Alignment */
-static unsigned int can1msgBuf [CAN1_MESSAGE_BUFFERS][8] __attribute__((aligned(128)));
+unsigned int can1msgBuf [CAN1_MESSAGE_BUFFERS][8] __attribute__((address(0x1000), aligned(128)));
 
 static void CAN1_DMACopy(uint8_t buffer_number, CAN_MSG_OBJ *message)
 {
@@ -63,56 +51,53 @@ static void CAN1_MessageToBuffer(uint16_t* buffer, CAN_MSG_OBJ* message)
 
 void CAN1_Initialize(void)
 {
-    // Mode Switch Timeout ekleyerek asılı kalmayı önlüyoruz
-    uint16_t timeout = 0;
-
     C1CTRL1bits.REQOP = 4;
-    while(C1CTRL1bits.OPMODE != 4 && timeout++ < 1000);
-
+    while(C1CTRL1bits.OPMODE != 4);
     C1CTRL1bits.CANCKS = 0x1;
-    C1CFG1 = 0x0003;
-    C1CFG2 = 0x0190;
-    C1FCTRL = 0x0002;
-
+    C1CFG1 = 0x0007;
+    C1CFG2 = 0x0298;
+    C1FCTRL = 0x0001;
     C1TR01CONbits.TXEN0 = 1;
     C1TR01CONbits.TXEN1 = 0;
-
-    // Loopback Modu
-    timeout = 0;
     C1CTRL1bits.REQOP = 2;
-    while(C1CTRL1bits.OPMODE != 2 && timeout++ < 1000);
+    while(C1CTRL1bits.OPMODE != 2);
 }
 
 void CAN1_TransmitEnable()
 {
     DMA_PeripheralAddressSet(CAN1_TX_DMA_CHANNEL, (uint16_t) &C1TXD);
-    DMA_StartAddressASet(CAN1_TX_DMA_CHANNEL, __builtin_dmaoffset(&can1msgBuf));
+    DMA_StartAddressASet(CAN1_TX_DMA_CHANNEL, (uint16_t)__builtin_dmaoffset(&can1msgBuf));
     DMA_ChannelEnable(CAN1_TX_DMA_CHANNEL);
 }
 
 void CAN1_ReceiveEnable()
 {
     DMA_PeripheralAddressSet(CAN1_RX_DMA_CHANNEL, (uint16_t) &C1RXD);
-    DMA_StartAddressASet(CAN1_RX_DMA_CHANNEL, __builtin_dmaoffset(&can1msgBuf) );
+    DMA_StartAddressASet(CAN1_RX_DMA_CHANNEL, (uint16_t)__builtin_dmaoffset(&can1msgBuf) );
     DMA_ChannelEnable(CAN1_RX_DMA_CHANNEL);
 }
 
 CAN_TX_MSG_REQUEST_STATUS CAN1_Transmit(CAN_TX_PRIOIRTY priority, CAN_MSG_OBJ *sendCanMsg)
 {
-    CAN1_TX_CONTROLS * pTxControls = (CAN1_TX_CONTROLS*)&C1TR01CON;
-    if (pTxControls->send_request == 0) {
-        CAN1_MessageToBuffer(&can1msgBuf[0][0], sendCanMsg);
-        pTxControls->priority = priority;
-        pTxControls->send_request = 1;
-        return CAN_TX_MSG_REQUEST_SUCCESS;
-    }
-    return CAN_TX_MSG_REQUEST_BUFFER_FULL;
+    // TXREQ0 bitini doğrudan kontrol et
+    if (*((uint16_t*)0x0460) & 0x0008) return CAN_TX_MSG_REQUEST_BUFFER_FULL;
+
+    CAN1_MessageToBuffer(&can1msgBuf[0][0], sendCanMsg);
+
+    // Priority ve TXREQ0 set et (C1TR01CON)
+    uint16_t val = *((uint16_t*)0x0460);
+    val &= ~0x0003; // Priority temizle
+    val |= (priority & 0x0003); // Yeni priority
+    val |= 0x0008;  // TXREQ0 set
+    *((uint16_t*)0x0460) = val;
+
+    return CAN_TX_MSG_REQUEST_SUCCESS;
 }
 
 bool CAN1_Receive(CAN_MSG_OBJ *recCanMsg)
 {
     if (C1RXFUL1 != 0) {
-        for (int i=1 ; i < 8; i++) {
+        for (int i=1 ; i < 4; i++) {
             if ((C1RXFUL1 >> i) & 0x1) {
                CAN1_DMACopy(i, recCanMsg);
                C1RXFUL1 &= ~(1 << i);
@@ -122,5 +107,3 @@ bool CAN1_Receive(CAN_MSG_OBJ *recCanMsg)
     }
     return false;
 }
-
-void __attribute__((__interrupt__, no_auto_psv)) _C1Interrupt(void) { IFS2bits.C1IF = 0; }
