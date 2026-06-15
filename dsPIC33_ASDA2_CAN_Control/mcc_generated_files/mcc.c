@@ -2,23 +2,28 @@
 
 void PIN_MANAGER_Initialize(void)
 {
-    // dsPIC33EP64MC504 Pin Başlatma
+    // dsPIC33EP64MC504 için En Güvenli Pin Başlatma
 
-    // 1. ANALOG ÖZELLİKLERİ KAPAT (KRİTİK!)
-    // Eğer bu register sıfırlanmazsa RB9 dahil birçok pin analog kalır ve çıkış vermez.
+    // Tüm Analogları Devre Dışı Bırak
     ANSELA = 0x0000;
     ANSELB = 0x0000;
     ANSELC = 0x0000;
 
-    // 2. PIN YÖNLENDİRME (TRIS)
-    TRISBbits.TRISB9 = 0;  // RB9 Çıkış (Senin LED'in)
-    TRISBbits.TRISB10 = 0; // ECAN1 TX Çıkış
+    // Pin Yönleri
+    TRISBbits.TRISB9 = 0;   // LED
+    TRISBbits.TRISB10 = 0;  // CAN TX (Output)
+    TRISBbits.TRISB12 = 1;  // CAN RX (Input)
 
-    // 3. PPS (Peripheral Pin Select)
+    // PPS Kilit Açma
     __builtin_write_OSCCONL(OSCCON & ~(1<<6));
 
-    RPINR26bits.C1RXR = 0x002C; // RB12 (RP44) -> RX
-    RPOR4bits.RP42R = 0x000E;   // RB10 (RP42) -> TX
+    // ECAN1 RX: RP44 (RB12) -> 44
+    RPINR26bits.C1RXR = 44;
 
+    // ECAN1 TX: RP42 (RB10) -> Function 0x0E (C1TX)
+    // dsPIC33EP'de RP42, RPOR5 içerisindedir (RPOR4 değil!)
+    _RP42R = 0x0E;
+
+    // PPS Kilitleme
     __builtin_write_OSCCONL(OSCCON | (1<<6));
 }

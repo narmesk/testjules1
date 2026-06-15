@@ -16,7 +16,6 @@ typedef struct __attribute__((packed))
     unsigned transmit_enabled           :1;
 } CAN1_TX_CONTROLS;
 
-/* dsPIC33EP DMA RAM Alignment - Eds zorunlu */
 static unsigned int can1msgBuf [CAN1_MESSAGE_BUFFERS][8] __attribute__((space(eds), aligned(32)));
 
 static void CAN1_DMACopy(uint8_t buffer_number, CAN_MSG_OBJ *message)
@@ -68,15 +67,18 @@ void CAN1_Initialize(void)
     C1CTRL1bits.REQOP = CAN_CONFIGURATION_MODE;
     while(C1CTRL1bits.OPMODE != CAN_CONFIGURATION_MODE);
 
-    /* 64 MHz Fcy / 1Mbps */
-    C1CFG1 = 0x0003;
+    // KRİTİK: CAN Clock Kaynağı
+    C1CTRL1bits.CANCKS = 0x1; // Fcan = Fcy (64MHz)
+
+    /* 1Mbps @ 64 MHz Fcy */
+    C1CFG1 = 0x0003; // BRP=3
     C1CFG2 = 0x0190;
     C1FCTRL = 0x0002;
 
     C1TR01CONbits.TXEN0 = 1;
     C1TR01CONbits.TXEN1 = 0;
 
-    // KRİTİK: Loopback Modu (Transceiver olmadan sinyal görmek için)
+    // KRİTİK: Test için Loopback Modu
     C1CTRL1bits.REQOP = 2;
     while(C1CTRL1bits.OPMODE != 2);
 }
