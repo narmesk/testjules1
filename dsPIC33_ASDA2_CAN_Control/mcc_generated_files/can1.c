@@ -16,11 +16,7 @@ typedef struct __attribute__((packed))
     unsigned transmit_enabled           :1;
 } CAN1_TX_CONTROLS;
 
-/**
- * dsPIC33EP DMA Alignment -
- * KRİTİK: DMA Peripheral Indirect modunda, buffer başlangıcı
- * toplam buffer boyutunun (8*8*2 = 128 byte) yarısına veya bir katına hizalanmalıdır.
- */
+/* dsPIC33EP DMA RAM Alignment */
 static unsigned int can1msgBuf [CAN1_MESSAGE_BUFFERS][8] __attribute__((aligned(128)));
 
 static void CAN1_DMACopy(uint8_t buffer_number, CAN_MSG_OBJ *message)
@@ -67,20 +63,24 @@ static void CAN1_MessageToBuffer(uint16_t* buffer, CAN_MSG_OBJ* message)
 
 void CAN1_Initialize(void)
 {
+    // Mode Switch Timeout ekleyerek asılı kalmayı önlüyoruz
+    uint16_t timeout = 0;
+
     C1CTRL1bits.REQOP = 4;
-    while(C1CTRL1bits.OPMODE != 4);
+    while(C1CTRL1bits.OPMODE != 4 && timeout++ < 1000);
 
     C1CTRL1bits.CANCKS = 0x1;
     C1CFG1 = 0x0003;
     C1CFG2 = 0x0190;
-    C1FCTRL = 0x0002; // DMABS=8
+    C1FCTRL = 0x0002;
 
     C1TR01CONbits.TXEN0 = 1;
     C1TR01CONbits.TXEN1 = 0;
 
     // Loopback Modu
+    timeout = 0;
     C1CTRL1bits.REQOP = 2;
-    while(C1CTRL1bits.OPMODE != 2);
+    while(C1CTRL1bits.OPMODE != 2 && timeout++ < 1000);
 }
 
 void CAN1_TransmitEnable()
@@ -122,3 +122,5 @@ bool CAN1_Receive(CAN_MSG_OBJ *recCanMsg)
     }
     return false;
 }
+
+void __attribute__((__interrupt__, no_auto_psv)) _C1Interrupt(void) { IFS2bits.C1IF = 0; }

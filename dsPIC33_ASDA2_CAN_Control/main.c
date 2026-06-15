@@ -3,54 +3,51 @@
 #include <xc.h>
 
 /**
- * CAN DONANIM DOĞRULAMA (RB10 ve RB9)
+ * TEŞHİS MODU (DIAGNOSTIC MODE)
+ * Bu kod, donanımın nerede takıldığını LED patternleri ile anlatır.
  */
 
 int main(void)
 {
-    // 1. Saat ve Port Başlatma
+    // 1. Temel Saat
     OSCILLATOR_Initialize();
 
-    // Analogları Kapat
-    ANSELA = 0; ANSELB = 0; ANSELC = 0;
+    // 2. Pinler ve Güç
+    PIN_MANAGER_Initialize();
 
-    // Pin Yönleri
-    TRISBbits.TRISB9 = 0;  // LED
-    TRISBbits.TRISB10 = 0; // CAN TX (RB10)
-
-    // PPS Eşleme (Hard-coded Safe)
-    __builtin_write_OSCCONL(OSCCON & ~(1<<6));
-    RPINR26bits.C1RXR = 44;
-    _RP42R = 0x0E;
-    __builtin_write_OSCCONL(OSCCON | (1<<6));
-
-    // --- MANUEL TEST: 5 KEZ BLINK ---
+    // --- MANUEL TEST: 5 KEZ YAVAŞ BLINK ---
+    // Eğer bunu görüyorsan: Kristal ve Temel Boot Tamam.
     for(int i=0; i<5; i++) {
-        LATBbits.LATB9 = 1; LATBbits.LATB10 = 1;
-        for(volatile uint32_t j=0; j<2000000; j++);
-        LATBbits.LATB9 = 0; LATBbits.LATB10 = 0;
-        for(volatile uint32_t j=0; j<2000000; j++);
+        LATBbits.LATB9 = 1; for(volatile uint32_t j=0; j<2000000; j++);
+        LATBbits.LATB9 = 0; for(volatile uint32_t j=0; j<2000000; j++);
     }
 
-    // --- CAN BAŞLATMA ---
+    // 3. DMA Başlatma
+    // LED 1 saniye sabit yanacak: DMA Init Başlıyor
+    LATBbits.LATB9 = 1; for(volatile uint32_t j=0; j<4000000; j++);
     DMA_Initialize();
+    LATBbits.LATB9 = 0; for(volatile uint32_t j=0; j<2000000; j++);
+
+    // 4. CAN Başlatma
+    // LED 2 saniye sabit yanacak: CAN Init Başlıyor (Mode switch bekleniyor)
+    LATBbits.LATB9 = 1; for(volatile uint32_t j=0; j<8000000; j++);
     CAN1_Initialize();
     CAN1_TransmitEnable();
     CAN1_ReceiveEnable();
+    LATBbits.LATB9 = 0; for(volatile uint32_t j=0; j<2000000; j++);
 
     ASDA2_Initialize();
 
     while (1)
     {
-        // LED DURUMUNU EVİR
+        // LED HIZLI TOGGLE: HER ŞEY YOLUNDA, VERİ GÖNDERİLİYOR
         LATBbits.LATB9 = !LATBbits.LATB9;
 
-        // CAN MESAJI GÖNDER (Sürekli)
-        // Eğer CAN modülü düzgün yapılandırıldıysa RB10'da trafik görmelisin.
+        // CAN MESAJI GÖNDER
         Send_SYNC_Message();
 
-        // Hızlı Delay (Gözle görülür hızlı yanıp sönme)
-        for(volatile uint32_t i=0; i<2000000; i++);
+        // Çok hızlı delay (Logic analizörde veri görmen için)
+        for(volatile uint32_t i=0; i<500000; i++);
     }
 
     return 0;
