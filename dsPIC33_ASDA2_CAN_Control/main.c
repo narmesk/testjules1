@@ -1,27 +1,26 @@
 #include "mcc_generated_files/system.h"
-#include "mcc_generated_files/timer5.h"
-#include "asda2_control.h"
+#include <xc.h>
+
+/**
+ * BASİT LED TESTİ (RB9)
+ * Bu kodun tek amacı RB9 pinindeki LED'in yanıp söndüğünü görmektir.
+ * Eğer LED yanmıyorsa donanım (kristal, besleme, mclr) sorunludur.
+ */
 
 int main(void)
 {
+    // Sistem saatini ve Pinleri başlat
     SYSTEM_Initialize();
-    ASDA2_Initialize();
-    CANopen_Start_Nodes();
-    Timer5_Initialize();
-
-    __builtin_enable_interrupts();
 
     while (1)
     {
-        // CPU YAŞIYOR MU? - Ana Döngü Kalp Atışı
-        // RB15'i toggle et. Eğer lojik analizörde burayı görüyorsan kod buraya kadar geliyor demektir.
-        LATBbits.LATB15 = !LATBbits.LATB15;
+        // RB9 PININI TOGGLE ET
+        LATBbits.LATB9 = !LATBbits.LATB9;
 
-        // Basit bir gecikme ekle ki çok hızlı toggle etmesin (Test amaçlı)
-        for(volatile uint32_t i=0; i<100000; i++);
-
-        // CAN Test: Periyodik SYNC gönder
-        Send_SYNC_Message();
+        // Uzun bir gecikme (64 MIPS'te yaklaşık 0.5 saniye)
+        for(volatile uint32_t i=0; i<4000000; i++) {
+            Nop();
+        }
     }
 
     return 0;
