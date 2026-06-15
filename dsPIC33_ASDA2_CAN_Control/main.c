@@ -4,33 +4,24 @@
 
 int main(void)
 {
-    // Initialize the device
     SYSTEM_Initialize();
-
-    // ASDA-A2 kontrol yapılarını sıfırla
     ASDA2_Initialize();
-
-    // Tüm sürücülere "Start" komutu gönder (Global NMT)
     CANopen_Start_Nodes();
-
-    // Master Timer (4ms) başlat
     Timer5_Initialize();
 
-    // Küresel kesmeleri (Global Interrupts) aktif et - KRİTİK!
     __builtin_enable_interrupts();
 
     while (1)
     {
-        // G01/G00 Komut işleme ve Seri Haberleşme buraya gelecek
+        // CPU YAŞIYOR MU? - Ana Döngü Kalp Atışı
+        // RB15'i toggle et. Eğer lojik analizörde burayı görüyorsan kod buraya kadar geliyor demektir.
+        LATBbits.LATB15 = !LATBbits.LATB15;
 
-        // ÖRNEK: X eksenini 100mm'ye 1200mm/dk hızla gönder
-        /*
-        static bool started = false;
-        if(!started) {
-            move_single_axis_abs(AXIS_X, 100.0f, 1200.0f);
-            started = true;
-        }
-        */
+        // Basit bir gecikme ekle ki çok hızlı toggle etmesin (Test amaçlı)
+        for(volatile uint32_t i=0; i<100000; i++);
+
+        // CAN Test: Periyodik SYNC gönder
+        Send_SYNC_Message();
     }
 
     return 0;
