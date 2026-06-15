@@ -1,57 +1,179 @@
-#include "can1.h"
-
 /**
- * dsPIC33EP ECAN DMA RAM Tanımlaması
- * Bu alanın xc16-ld tarafından DMA-uyumlu (aligned) olarak atanması gerekir.
- * Not: Uygulama sırasında linker script veya __attribute__((space(dma))) kullanılır.
- */
-/*
-__eds__ uint16_t ECAN1_MsgBuf[4][8] __attribute__((space(eds), aligned(128)));
+  CAN1 Generated Driver File
 */
+
+#include "can1.h"
+#include "dma.h"
+
+#define CAN1_TX_DMA_CHANNEL 1
+#define CAN1_RX_DMA_CHANNEL 0
+
+/* Valid options are 4, 6, 8, 12, 16, 24, or 32. */
+#define CAN1_MESSAGE_BUFFERS         4
+#define CAN1_TX_BUFFER_COUNT 1
+
+typedef struct __attribute__((packed))
+{
+    unsigned priority                   :2;
+    unsigned remote_transmit_enable     :1;
+    unsigned send_request               :1;
+    unsigned error                      :1;
+    unsigned lost_arbitration           :1;
+    unsigned message_aborted            :1;
+    unsigned transmit_enabled           :1;
+} CAN1_TX_CONTROLS;
+
+static unsigned int can1msgBuf [CAN1_MESSAGE_BUFFERS][8] __attribute__((aligned(4 * 8 * 2)));
+
+static void (*CAN1_BusWakeUpActivityInterruptHandler)(void) = (void*)0;
+
+static void CAN1_DMACopy(uint8_t buffer_number, CAN_MSG_OBJ *message)
+{
+    uint16_t ide=0;
+    uint16_t rtr=0;
+    uint32_t id=0;
+
+    ide=can1msgBuf[buffer_number][0] & 0x0001U;
+
+    if(ide==0U)
+    {
+        message->msgId =(can1msgBuf[buffer_number][0] & 0x1FFCU) >> 2U;
+        message->field.idType = CAN_FRAME_STD;
+        rtr=can1msgBuf[buffer_number][0] & 0x0002U;
+    }
+    else
+    {
+        id=can1msgBuf[buffer_number][0] & 0x1FFCU;
+        message->msgId = id << 16U;
+        message->msgId += ( ((uint32_t) can1msgBuf[buffer_number][1] & (uint32_t)0x0FFF) << 6U );
+        message->msgId += ( ((uint32_t) can1msgBuf[buffer_number][2] & (uint32_t)0xFC00U) >> 10U );
+        message->field.idType = CAN_FRAME_EXT;
+        rtr=can1msgBuf[buffer_number][2] & 0x0200;
+    }
+    if(rtr != 0U)
+    {
+        message->field.frameType = CAN_FRAME_RTR;
+    }
+    else
+    {
+        message->field.frameType = CAN_FRAME_DATA;
+        message->data[0] =(uint8_t) can1msgBuf[buffer_number][3];
+        message->data[1] =(uint8_t) ((can1msgBuf[buffer_number][3] & 0xFF00U) >> 8U);
+        message->data[2] =(uint8_t) can1msgBuf[buffer_number][4];
+        message->data[3] =(uint8_t) ((can1msgBuf[buffer_number][4] & 0xFF00U) >> 8U);
+        message->data[4] =(uint8_t) can1msgBuf[buffer_number][5];
+        message->data[5] =(uint8_t) ((can1msgBuf[buffer_number][5] & 0xFF00U) >> 8U);
+        message->data[6] =(uint8_t) can1msgBuf[buffer_number][6];
+        message->data[7] =(uint8_t) ((can1msgBuf[buffer_number][6] & 0xFF00U) >> 8U);
+        message->field.dlc =(uint8_t) (can1msgBuf[buffer_number][2] & 0x000FU);
+    }
+}
+
+static void CAN1_MessageToBuffer(uint16_t* buffer, CAN_MSG_OBJ* message)
+{
+    if(message->field.idType == CAN_FRAME_STD)
+    {
+        buffer[0]= ((message->msgId & 0x000007FF) << 2) + ((uint16_t)(message->field.frameType << 1) & 0x0002);
+        buffer[1]= 0;
+        buffer[2]= message->field.dlc & 0x0F;
+    }
+    else
+    {
+        buffer[0]= ( ( (uint16_t)(message->msgId >> 16 ) & 0x1FFC ) ) | 0x3;
+        buffer[1]= (uint16_t)(message->msgId >> 6) & 0x0FFF;
+        buffer[2]= (message->field.dlc & 0x0F) + ( (uint16_t)(message->msgId << 10) & 0xFC00) + ((uint16_t)(message->field.frameType << 9) & 0x0200);
+    }
+
+    if(message->data != (void*)0)
+    {
+        buffer[3]= ((message->data[1])<<8) + message->data[0];
+        buffer[4]= ((message->data[3])<<8) + message->data[2];
+        buffer[5]= ((message->data[5])<<8) + message->data[4];
+        buffer[6]= ((message->data[7])<<8) + message->data[6];
+    }
+}
 
 void CAN1_Initialize(void)
 {
-    // 1. Modülü Yapılandırma Moduna Al
-    C1CTRL1bits.REQOP = 4;
-    while(C1CTRL1bits.OPMODE != 4);
+    IEC2bits.C1IE = 0;
+    C1INTE = 0;
 
-    // 2. Baud Rate Ayarları (70 MIPS için 1Mbps Örneği)
-    C1CFG1 = 0x0003; // BRP = 3
-    C1CFG2 = 0x0290; // PH2=3, PH1=3, PR=1
+    C1CTRL1bits.REQOP = CAN_CONFIGURATION_MODE;
+    while(C1CTRL1bits.OPMODE != CAN_CONFIGURATION_MODE);
 
-    // 3. Filtre ve Maske Ayarları
-    C1FMSKSEL1 = 0x0000; // Mask 0 kullan
-    C1BUFPNT1 = 0x0000;  // Filtre 0 -> Buffer 0
+    C1CFG1 = 0x03;
+    C1CFG2 = 0x198;
+    C1FCTRL = 0x01;
+    C1CTRL1 = 0x00;
 
-    // 4. DMA üzerinden Mesaj Penceresi Ayarları (dsPIC33EP'ye özel)
-    // C1FCTRLbits.FSA = 0; // FIFO başlangıcı
-    // C1FCTRLbits.DMABS = 0; // 4 mesajlık buffer
+    C1TR01CONbits.TXEN0 = 0x1;
+    C1TR01CONbits.TXEN1 = 0x0;
 
-    // 5. Normal Modu İste
-    C1CTRL1bits.REQOP = 0;
-    while(C1CTRL1bits.OPMODE != 0);
+    C1RXFUL1 = 0x0000;
+    C1RXFUL2 = 0x0000;
+    C1INTFbits.RBIF = 0;
+
+    C1CTRL1bits.REQOP = CAN_NORMAL_OPERATION_MODE;
+    while(C1CTRL1bits.OPMODE != CAN_NORMAL_OPERATION_MODE);
+
+    IEC2bits.C1IE = 1;
 }
 
-/**
- * Transmit Fonksiyonu (Taslak)
- * dsPIC33EP'de veri doğrudan C1TX registers yerine DMA RAM'e yazılır.
- */
-bool CAN1_Transmit(CAN1_MSG_OBJ *msg)
+void CAN1_TransmitEnable()
 {
-    // Özet İşleyiş:
-    // 1. DMA RAM'deki uygun Buffer'a (örn: Buffer 0) veriyi kopyala
-    // 2. C1TR01CONbits.TXREQ0 = 1 set et
-    // 3. Donanım veriyi DMA üzerinden çekip hatta basacaktır.
-
-    return false; // DMA entegrasyonu sonrası true dönecek
+    DMA_PeripheralAddressSet(CAN1_TX_DMA_CHANNEL, (uint16_t) &C1TXD);
+    DMA_StartAddressASet(CAN1_TX_DMA_CHANNEL, __builtin_dmaoffset(&can1msgBuf));
+    DMA_ChannelEnable(CAN1_TX_DMA_CHANNEL);
 }
 
-bool CAN1_Receive(CAN1_MSG_OBJ *msg)
+void CAN1_ReceiveEnable()
 {
-    // Özet İşleyiş:
-    // 1. C1RXFUL1 bitlerini kontrol et
-    // 2. Mesaj varsa DMA RAM'den oku
-    // 3. Bit'i temizle (C1RXFUL1bits.RXFUL0 = 0)
+    DMA_PeripheralAddressSet(CAN1_RX_DMA_CHANNEL, (uint16_t) &C1RXD);
+    DMA_StartAddressASet(CAN1_RX_DMA_CHANNEL, __builtin_dmaoffset(&can1msgBuf) );
+    DMA_ChannelEnable(CAN1_RX_DMA_CHANNEL);
+}
 
-    return false;
+CAN_TX_MSG_REQUEST_STATUS CAN1_Transmit(CAN_TX_PRIOIRTY priority, CAN_MSG_OBJ *sendCanMsg)
+{
+    CAN_TX_MSG_REQUEST_STATUS txMsgStatus = CAN_TX_MSG_REQUEST_SUCCESS;
+    CAN1_TX_CONTROLS * pTxControls = (CAN1_TX_CONTROLS*)&C1TR01CON;
+    bool messageSent = false;
+
+    if(sendCanMsg->field.dlc > CAN_DLC_8) txMsgStatus |= CAN_TX_MSG_REQUEST_DLC_ERROR;
+
+    if (pTxControls->transmit_enabled == 1 && pTxControls->send_request == 0)
+    {
+        CAN1_MessageToBuffer(&can1msgBuf[0][0], sendCanMsg);
+        pTxControls->priority = priority;
+        pTxControls->send_request = 1;
+        messageSent = true;
+    }
+
+    if(messageSent == false) txMsgStatus |= CAN_TX_MSG_REQUEST_BUFFER_FULL;
+    return txMsgStatus;
+}
+
+bool CAN1_Receive(CAN_MSG_OBJ *recCanMsg)
+{
+    bool messageReceived = false;
+    uint16_t receptionFlags = C1RXFUL1;
+    if (receptionFlags != 0)
+    {
+        for (int i=0 ; i < 4; i++)
+        {
+            if ((receptionFlags >> i) & 0x1)
+            {
+               CAN1_DMACopy(i, recCanMsg);
+               C1RXFUL1 &= ~(1 << i);
+               messageReceived = true;
+               break;
+            }
+        }
+    }
+    return (messageReceived);
+}
+
+void __attribute__((__interrupt__, no_auto_psv)) _C1Interrupt(void)
+{
+    IFS2bits.C1IF = 0;
 }
