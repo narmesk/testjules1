@@ -3,7 +3,7 @@
 
 #define CAN1_TX_DMA_CHANNEL 1
 #define CAN1_RX_DMA_CHANNEL 0
-#define CAN1_MESSAGE_BUFFERS 8 // Toplam 8 buffer (1 TX, 7 RX)
+#define CAN1_MESSAGE_BUFFERS 8
 
 typedef struct __attribute__((packed))
 {
@@ -16,7 +16,6 @@ typedef struct __attribute__((packed))
     unsigned transmit_enabled           :1;
 } CAN1_TX_CONTROLS;
 
-/* dsPIC33EP DMA RAM Alignment (32 * 2 bytes alignment for 8 msg buffers) */
 static unsigned int can1msgBuf [CAN1_MESSAGE_BUFFERS][8] __attribute__((aligned(32)));
 
 static void CAN1_DMACopy(uint8_t buffer_number, CAN_MSG_OBJ *message)
@@ -68,25 +67,24 @@ void CAN1_Initialize(void)
     C1CTRL1bits.REQOP = CAN_CONFIGURATION_MODE;
     while(C1CTRL1bits.OPMODE != CAN_CONFIGURATION_MODE);
 
-    /* 1Mbps @ 70 MIPS (Fcy=70MHz) */
-    /* Total Tq = 7. BRP = 4. Tq = 142.8ns. 1us / 142.8ns = 7 Tq. */
-    /* PRSEG=0 (1Tq), SEG1PH=2 (3Tq), SEG2PH=2 (3Tq). 1+1+3+3 = 8 Tq (C1CFG2=0x0188 -> Total 7Tq) */
-    C1CFG1 = 0x0004;
-    C1CFG2 = 0x0188;
+    /* 1Mbps @ 64 MIPS (Fcy=64MHz) */
+    /* Total Tq = 8. BRP = 3. Tq = 2*(1+3)/64M = 125ns. 1us / 125ns = 8 Tq. */
+    /* PRSEG=0 (1Tq), SEG1PH=2 (3Tq), SEG2PH=2 (3Tq). Toplam 8 Tq. */
+    C1CFG1 = 0x0003;
+    C1CFG2 = 0x0190;
 
-    C1FCTRL = 0x0002; // DMABS=8 (128 words)
+    C1FCTRL = 0x0002; // DMABS=8 mesajlık yer ayır
 
     C1CTRL1bits.WIN = 1;
-    C1RXM0SID = 0xFFE0;
-    C1RXF0SID = (0x0400 << 2);
-    C1RXF1SID = (0x0500 << 2);
-    C1FEN1 = 0x0003;
+    C1RXM0SID = 0xFFE0; // Standard ID Mask
+    C1RXF0SID = (0x180 << 2); // RxPDO statuslerini dinlemek için (0x180 base)
+    C1FEN1 = 0x0001;
     C1FMSKSEL1 = 0x0000;
-    C1BUFPNT1 = 0x0011;  // Filter 0 ve 1 Buffer 1 kullanır (Buffer 0 TX olduğu için)
+    C1BUFPNT1 = 0x0001;  // Filter 0 -> Buffer 1
     C1CTRL1bits.WIN = 0;
 
-    C1TR01CONbits.TXEN0 = 1; // Buffer 0 TX
-    C1TR01CONbits.TXEN1 = 0; // Buffer 1 RX
+    C1TR01CONbits.TXEN0 = 1;
+    C1TR01CONbits.TXEN1 = 0;
 
     C1RXFUL1 = 0x0000;
     C1INTFbits.RBIF = 0;
@@ -113,7 +111,6 @@ void CAN1_ReceiveEnable()
 CAN_TX_MSG_REQUEST_STATUS CAN1_Transmit(CAN_TX_PRIOIRTY priority, CAN_MSG_OBJ *sendCanMsg)
 {
     CAN1_TX_CONTROLS * pTxControls = (CAN1_TX_CONTROLS*)&C1TR01CON;
-    if(sendCanMsg->field.dlc > CAN_DLC_8) return CAN_TX_MSG_REQUEST_DLC_ERROR;
     if (pTxControls->send_request == 0) {
         CAN1_MessageToBuffer(&can1msgBuf[0][0], sendCanMsg);
         pTxControls->priority = priority;

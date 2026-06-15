@@ -1,25 +1,10 @@
-/**
- * asda2_control.c - Donanım Entegrasyon Notları (PLIB vs ECAN/DMA)
- *
- * ESKİ YAPI (dsPIC33F / LantoCAN):
- * - CAN1Initialize() gibi PLIB fonksiyonları kullanılıyordu.
- * - Veri doğrudan C1TX registers üzerinden gönderiliyordu.
- * - DMA zorunluluğu yoktu.
- *
- * YENİ YAPI (dsPIC33EP / ECAN):
- * 1. DMA Zorunluluğu: dsPIC33EP serisinde CAN modülü bir "Peripheral Indirect" aygıttır.
- *    Veriyi C1TXD'ye yazmak yerine, DMA RAM'de (can1msgBuf) ayrılan alana yazıp,
- *    DMA kanalını (DMA1) tetiklemek gerekir.
- * 2. Baud Rate Hesaplama: 70 MIPS (140MHz) hızında 1Mbps için Tq (Time Quanta)
- *    hesabı çok daha hassastır. C1CFG1=0x0004 ve C1CFG2=0x0190 ile 7 Tq'luk
- *    en hızlı ve kararlı profil oluşturulmuştur.
- * 3. Pin Mapping: PPS (Peripheral Pin Select) üzerinden RP54/RP55 eşlemesi yapılmıştır.
- *
- * Bu dosyadaki hareket mantığı, alttaki DMA tabanlı CAN sürücüsü ile tam uyumlu hale getirilmiştir.
- */
 #include "asda2_control.h"
 #include "mcc_generated_files/can1.h"
 #include <stdlib.h>
+
+/**
+ * asda2_control.c - 64 MHz Fcy / 1Mbps Optimize Mod
+ */
 
 ASDA2_Axis_t axes_state[NUM_AXES];
 
@@ -48,7 +33,9 @@ bool move_single_axis_abs(uint8_t axis_idx, float target_mm, float feed_rate_mm_
     ax->vel_target_hz = (uint32_t)((feed_rate_mm_min / 60.0f) * STEPS_PER_MM);
     uint16_t accel_cycles = ACCEL_TIME_MS / MASTER_PERIOD_MS;
     uint32_t vel_diff = (ax->vel_target_hz > MIN_PULSE_FREQ_HZ) ? (ax->vel_target_hz - MIN_PULSE_FREQ_HZ) : 0;
+
     ax->vel_step_fp = (accel_cycles > 0) ? (((uint64_t)vel_diff << FP_SCALE) / accel_cycles) : 0;
+
     uint32_t accel_dist = (uint32_t)(((uint64_t)(MIN_PULSE_FREQ_HZ + ax->vel_target_hz) * ACCEL_TIME_MS) / 2000);
     if (ax->steps_remaining >= (accel_dist * 2)) ax->decel_start_steps = accel_dist;
     else ax->decel_start_steps = ax->steps_remaining / 2;

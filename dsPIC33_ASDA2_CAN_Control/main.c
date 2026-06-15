@@ -7,28 +7,30 @@ int main(void)
     // Initialize the device
     SYSTEM_Initialize();
 
-    // Initialize Servo structures and CANopen state
+    // ASDA-A2 kontrol yapılarını sıfırla
     ASDA2_Initialize();
 
-    // Start CANopen nodes (Global NMT Start)
+    // Tüm sürücülere "Start" komutu gönder (Global NMT)
     CANopen_Start_Nodes();
 
-    // Initialize Master Timer (4ms)
+    // Master Timer (4ms) başlat
     Timer5_Initialize();
+
+    // Küresel kesmeleri (Global Interrupts) aktif et - KRİTİK!
+    __builtin_enable_interrupts();
 
     while (1)
     {
-        // Placeholder for PC Application communication parser
-        // Example: If G01 command received, call move_to_absolute_position(...)
+        // G01/G00 Komut işleme ve Seri Haberleşme buraya gelecek
 
+        // ÖRNEK: X eksenini 100mm'ye 1200mm/dk hızla gönder
         /*
-        float example_target[4] = {100.5f, 200.0f, 0.0f, 50.0f};
-        if (!plan_check_full_buffer()) {
-            move_to_absolute_position(example_target, 1200.0f); // 1200 mm/min
+        static bool started = false;
+        if(!started) {
+            move_single_axis_abs(AXIS_X, 100.0f, 1200.0f);
+            started = true;
         }
         */
-
-        // Background tasks and housekeeping
     }
 
     return 0;
