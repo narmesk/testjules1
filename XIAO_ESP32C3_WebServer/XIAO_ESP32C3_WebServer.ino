@@ -1,3 +1,4 @@
+#include <WiFi.h>
 #include "ESPAsyncWebServer.h"
 #include "SPIFFS.h"
 #include "ArduinoJson.h"
@@ -102,7 +103,11 @@ String processor(const String& var){
  * WiFiEvent_t için not: ESP32 Core 3.x sürümünde imza değişmiş olabilir.
  * Eğer derleme hatası alırsanız 'WiFiEvent_t event, WiFiEventInfo_t info' şeklinde güncelleyin.
  */
+#if defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR >= 3
+void OnWiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info){
+#else
 void OnWiFiEvent(WiFiEvent_t event){
+#endif
      //Serial.printf("WiFi-event - %d : ",event);
       serverlog("WiFi-event - ","");
       serverlog((String)event,"");
@@ -225,7 +230,7 @@ String ledconfigstr;
   //Serial.println(ledconfigstr);
 file.close();
 
-DynamicJsonDocument doc(8192);
+JsonDocument doc;
  //char json[] ="{\"sensor\":\"gps\",\"time\":1351824120,\"data\":[48.756080,2.302038]}";
 // Deserialize the JSON document
   DeserializationError error = deserializeJson(doc, ledconfigstr);
@@ -315,7 +320,7 @@ int x=0;
 //JsonArray setts = doc["esp32sett"].as<JsonArray>();
 JsonObject root = doc["esp32sett"].as<JsonObject>();
 
-    for (JsonPair kv : root) {
+    for (auto kv : root) {
       JsonString key = kv.key();
       espsettings[x].key = key.c_str();
       JsonString val = kv.value();
@@ -732,7 +737,7 @@ void initserver(){
           int z=0;
           for(int i=0;i<paramsNr;i++){
 
-               AsyncWebParameter* p = request->getParam(i);
+               const AsyncWebParameter* p = request->getParam(i);
                serverlog(p->name(),"");
                serverlog(":","");
                serverlog(p->value(),"");
