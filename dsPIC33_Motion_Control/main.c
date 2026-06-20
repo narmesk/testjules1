@@ -8,9 +8,9 @@
 #include <libpic30.h>
 
 /*
- * dsPIC33EP Motion Control Projesi - V15 (Kesin Hareket ve Tam Uyumluluk)
+ * dsPIC33EP Motion Control Projesi - V16 (V5 Temelli Sürekli Hareket)
  * Delta ASDA-A2 Sürücü Kontrolü (CANopen DS402)
- * Fix: Pozisyon senkronizasyonu, Multi-Node desteği ve Orijinal IO/ISR koruması.
+ * Akış: 1 Tam Tur -> 2sn Bekleme -> Her 4ms'de +18 Pulse Artış
  */
 
 // ---- Uygulama Değişkenleri ----
@@ -29,12 +29,23 @@ extern UdpServerStep UdpServerStep1;
 extern unsigned char uart_cnt;
 unsigned char other_cnt;
 
-// Eksen Kontrol Verileri (4 Eksen)
+// Hareket Durumları
+typedef enum {
+    MOTION_STATE_INIT,
+    MOTION_STATE_FULL_TURN,
+    MOTION_STATE_WAIT,
+    MOTION_STATE_STREAMING
+} motion_state_t;
+
+motion_state_t system_motion_state = MOTION_STATE_INIT;
+uint32_t motion_timer = 0;
+
+// Eksen Verileri
 int32_t axis_target_pos[5] = {0, 0, 0, 0, 0};
 int32_t axis_actual_pos[5] = {0, 0, 0, 0, 0};
 uint16_t axis_status[5] = {0, 0, 0, 0, 0};
 
-// ---- CANopen Yardımcı Fonksiyonlar ----
+// ---- CANopen Çekirdek Fonksiyonlar ----
 
 void CAN_WriteSDO(uint8_t nodeId, uint16_t index, uint8_t subindex, uint32_t data, uint8_t len)
 {
@@ -59,43 +70,10 @@ void CAN_WriteSDO(uint8_t nodeId, uint16_t index, uint8_t subindex, uint32_t dat
     DelayMs(15);
 }
 
-/**
- * SDO Okuma (Senkronizasyon için)
- */
-int32_t Drive_ReadActualPos_Blocking(uint8_t nodeId)
-{
-    CAN_MSG_OBJ msg = {0};
-    uint8_t sdo_data[8] = {0x40, 0x64, 0x60, 0x00, 0, 0, 0, 0};
-    msg.msgId = 0x600 + nodeId;
-    msg.field.dlc = 8;
-    msg.data = sdo_data;
-    msg.field.frameType = CAN_FRAME_DATA;
-    msg.field.idType = CAN_FRAME_STD;
-
-    CAN1_Transmit(CAN_PRIORITY_HIGH, &msg);
-    DelayMs(50);
-
-    CAN_MSG_OBJ rx;
-    uint8_t rxData[8];
-    rx.data = rxData;
-    // Buffer'daki ilgili mesajı bulana kadar tara
-    for(int i=0; i<10; i++)
-    {
-        if(CAN1_Receive(&rx))
-        {
-            if(rx.msgId == (0x580 + nodeId) && rx.data[1] == 0x64 && rx.data[2] == 0x60)
-            {
-                return (int32_t)rx.data[4] | ((int32_t)rx.data[5] << 8) | ((int32_t)rx.data[6] << 16) | ((int32_t)rx.data[7] << 24);
-            }
-        }
-    }
-    return 0;
-}
-
 void Drive_SendPDO(uint8_t nodeId, uint16_t cw, int32_t pos)
 {
     CAN_MSG_OBJ msg = {0};
-    uint8_t pdo_data[8] = {0}; // Driver over-read koruması (8 byte)
+    uint8_t pdo_data[8] = {0};
     pdo_data[0] = (uint8_t)(cw & 0xFF);
     pdo_data[1] = (uint8_t)((cw >> 8) & 0xFF);
     pdo_data[2] = (uint8_t)(pos & 0xFF);
@@ -110,9 +88,9 @@ void Drive_SendPDO(uint8_t nodeId, uint16_t cw, int32_t pos)
     CAN1_Transmit(CAN_PRIORITY_HIGH, &msg);
 }
 
-void Drive_Init_CSP(uint8_t nodeId)
+void Drive_Init_V5(uint8_t nodeId)
 {
-    // 1. PDO Mapping
+    // PDO Mapping (6040+607A / 6041+6064)
     CAN_WriteSDO(nodeId, 0x1600, 0x00, 0x00, 1);
     CAN_WriteSDO(nodeId, 0x1A00, 0x00, 0x00, 1);
     CAN_WriteSDO(nodeId, 0x1600, 0x01, 0x60400010, 4);
@@ -122,25 +100,24 @@ void Drive_Init_CSP(uint8_t nodeId)
     CAN_WriteSDO(nodeId, 0x1A00, 0x02, 0x60640020, 4);
     CAN_WriteSDO(nodeId, 0x1A00, 0x00, 0x02, 1);
 
-    // 2. CSP Modu (0x0C)
-    CAN_WriteSDO(nodeId, 0x6060, 0x00, 0x0C, 1);
+    // V5 Profil Ayarları (Çalışan Değerler)
+    CAN_WriteSDO(nodeId, 0x6060, 0x00, 0x01, 1); // PP Mode
+    CAN_WriteSDO(nodeId, 0x6081, 0x00, 1280000, 4);
+    CAN_WriteSDO(nodeId, 0x6083, 0x00, 3200000, 4);
 
-    // 3. Mevcut Pozisyonu Al (Hareketi sıfırdan değil, kaldığı yerden başlatmak için)
-    axis_target_pos[nodeId] = Drive_ReadActualPos_Blocking(nodeId);
-
-    // 4. NMT Start
+    // NMT Start
     CAN_MSG_OBJ nmt = {0};
-    uint8_t nmt_data[2] = {0x01, nodeId};
+    uint8_t nmt_data[2] = {0x01, 0x00};
     nmt.msgId = 0x000; nmt.field.dlc = 2; nmt.data = nmt_data;
     nmt.field.frameType = CAN_FRAME_DATA; nmt.field.idType = CAN_FRAME_STD;
     CAN1_Transmit(CAN_PRIORITY_HIGH, &nmt);
     DelayMs(100);
 
-    // 5. DS402 Servo-On (Mevcut pozisyonda kalmasını söyleyerek)
-    Drive_SendPDO(nodeId, 0x0080, axis_target_pos[nodeId]); DelayMs(100);
-    Drive_SendPDO(nodeId, 0x0006, axis_target_pos[nodeId]); DelayMs(100);
-    Drive_SendPDO(nodeId, 0x0007, axis_target_pos[nodeId]); DelayMs(100);
-    Drive_SendPDO(nodeId, 0x000F, axis_target_pos[nodeId]); DelayMs(200);
+    // Power-Up Sırası
+    Drive_SendPDO(nodeId, 0x0080, 0); DelayMs(100);
+    Drive_SendPDO(nodeId, 0x0006, 0); DelayMs(100);
+    Drive_SendPDO(nodeId, 0x0007, 0); DelayMs(100);
+    Drive_SendPDO(nodeId, 0x000F, 0); DelayMs(200);
 }
 
 // ---- Sistem Fonksiyonları ----
@@ -157,13 +134,13 @@ int main(void)
 
     TMR3_SetInterruptHandler(Timer3ISR);
     TMR3_SoftwareCounterClear();
-    IEC0bits.T3IE = false; // Orijinal Timeout ISR yönetimi
+    IEC0bits.T3IE = false; // Orijinal stabilite hali
 
     INTERRUPT_GlobalEnable();
     LEDLIVE_SetHigh();
     PLC_VaribleClear();
 
-    // Ethernet (V5/Orijinal Stabil Blok)
+    // Ethernet (Orijinal Yapı)
     memset((void*) &AppConfig, 0x00, sizeof (AppConfig));
     AppConfig.Flags.bIsDHCPEnabled = TRUE;
     AppConfig.Flags.bInConfigMode = TRUE;
@@ -188,8 +165,9 @@ int main(void)
     CAN1_OperationModeSet(CAN_NORMAL_OPERATION_MODE);
     DelayMs(100);
 
-    // Eksen 1'i Başlat
-    Drive_Init_CSP(1);
+    // Sürücü İlklendirme
+    Drive_Init_V5(1);
+    system_motion_state = MOTION_STATE_FULL_TURN;
 
     while (1)
     {
@@ -197,7 +175,7 @@ int main(void)
         UdpServerTask();
         read_input();
 
-        // --- TAM IO EŞLEŞMESİ (12-Bit PLC Mantığı) ---
+        // --- TAM IO EŞLEŞMESİ (12-Bit) ---
         DoutPort.bitField.Bit0 = Aux0;   DoutPort.bitField.Bit1 = Aux1;
         DoutPort.bitField.Bit2 = Aux2;   DoutPort.bitField.Bit3 = Aux3;
         DoutPort.bitField.Bit4 = Aux4;   DoutPort.bitField.Bit5 = Aux5;
@@ -209,18 +187,41 @@ int main(void)
         OUTPUTSH_VAL = (unsigned char)((DoutPort.allvalue >> 8) & 0xFF);
         set_outpus();
 
-        // 4ms Senkronizasyon (uart_cnt heartbeat üzerinden)
+        // --- HAREKET STATE MACHINE (4ms Senkron) ---
         uart_cnt++;
         if (uart_cnt >= 40)
         {
             UdpServerStep1 = UDP_SERVER_REQUEST_RECEIVED;
             uart_cnt = 0;
 
-            // --- CSP HAREKET AKIŞI (+18 Pulse) ---
-            axis_target_pos[1] += 18;
-            Drive_SendPDO(1, 0x000F, axis_target_pos[1]);
+            switch(system_motion_state)
+            {
+                case MOTION_STATE_FULL_TURN:
+                    // 1. ADIM: 1 Tam Tur At (1,280,000 pulse)
+                    Drive_SendPDO(1, 0x005F, 1280000); // Relative + Start
+                    system_motion_state = MOTION_STATE_WAIT;
+                    motion_timer = 0;
+                    break;
 
-            // Global SYNC
+                case MOTION_STATE_WAIT:
+                    // 2. ADIM: 2 Saniye Bekle (500 * 4ms)
+                    if (++motion_timer >= 500) {
+                        system_motion_state = MOTION_STATE_STREAMING;
+                        axis_target_pos[1] = 1280000; // Mevcut pozisyondan başla
+                    }
+                    break;
+
+                case MOTION_STATE_STREAMING:
+                    // 3. ADIM: Sürekli +18 Pulse Artış
+                    axis_target_pos[1] += 18;
+                    // PP Modunda continuous update için bit 5 (Immediate) aktif
+                    Drive_SendPDO(1, 0x003F, axis_target_pos[1]);
+                    break;
+
+                default: break;
+            }
+
+            // SYNC
             CAN_MSG_OBJ sync = {0};
             sync.msgId = 0x080; sync.field.dlc = 0;
             sync.field.frameType = CAN_FRAME_DATA; sync.field.idType = CAN_FRAME_STD;
@@ -230,7 +231,7 @@ int main(void)
             if (other_cnt >= 20) { other_cnt = 0; LEDLIVE_Toggle(); }
         }
 
-        // CAN Receiver Dispatcher (Hızlı Feedback Parse)
+        // CAN Receiver Dispatcher
         while (CAN1_ReceivedMessageCountGet() > 0)
         {
             CAN_MSG_OBJ rxMsg; uint8_t rxData[8]; rxMsg.data = rxData;
@@ -260,7 +261,6 @@ void PLC_VaribleClear(void)
 
 void Timer3ISR(void)
 {
-    // Orijinal UART/UDP Zamanlama Mantığı - DEĞİŞTİRİLMEMELİ
     IEC0bits.U1RXIE = 0;
     IFS0bits.U1RXIF = 0;
     uart_cnt = 0;
