@@ -439,8 +439,8 @@ void initap(){
 
 	if(WiFi.status()!= WL_CONNECTED){
 
-   WiFi.disconnect();
-  WiFi.mode(WIFI_AP);
+   // WiFi.disconnect(); // Do not disconnect, we might be in AP_STA mode
+  WiFi.mode(WIFI_AP_STA);
   /*-----------WIFI not connected so try AP---------*/
 
     if(WiFi.status() != WL_CONNECTED)
@@ -514,7 +514,7 @@ void initwifi(){
 
 	if(mode_apsta=="apsta"){
 
-  WiFi.mode(WIFI_STA);
+  WiFi.mode(WIFI_AP_STA);
 
   /*-----------WIFI connect try first----------*/
 
@@ -837,6 +837,13 @@ for (int x = 0; x <= sizeof(espsettings)/sizeof(espsettings[0]); x++) {
     //request->send(200, "text/plain", "{\"35\":\"csrok\"}");
     });
 
+  // Global 404 Handler
+  server.onNotFound([](AsyncWebServerRequest *request) {
+    String message = "Hata: Sayfa Bulunamadı (404)\n\n";
+    message += "URL: " + request->url() + "\n";
+    message += "Method: " + String((request->method() == HTTP_GET) ? "GET" : "POST") + "\n";
+    request->send(404, "text/plain", message);
+  });
 
   // Start server
   server.begin();
@@ -1181,6 +1188,18 @@ void setup(){
   if(!SPIFFS.begin(true)){
     serverlog("An Error has occurred while mounting SPIFFS","ln");
     return;
+  }
+
+  // List SPIFFS files for debugging
+  serverlog("Listing files on SPIFFS:","ln");
+  File rootDir = SPIFFS.open("/");
+  File fileInfo = rootDir.openNextFile();
+  while(fileInfo){
+      serverlog("File: ","");
+      serverlog(fileInfo.name(),"");
+      serverlog(" - Size: ","");
+      serverlog(String(fileInfo.size()),"ln");
+      fileInfo = rootDir.openNextFile();
   }
 
   //CONFIG OKU
