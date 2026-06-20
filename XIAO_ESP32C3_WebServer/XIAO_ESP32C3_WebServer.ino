@@ -1,6 +1,6 @@
 #include <WiFi.h>
 #include "ESPAsyncWebServer.h"
-#include "SPIFFS.h"
+#include <LittleFS.h>
 #include <ArduinoJson.h>
 #include <HTTPClient.h>
 #include "driver/uart.h"
@@ -33,7 +33,7 @@ String ptype="";//FOR SERVER SEND RECEİVEPACKET
 String parameters[48] ;
 //String espsettings[] ;
 String sid=""; //gstationid
-String devprod="p"; //d or p
+String devprod="d"; //d or p - Loglar için 'd' (debug) olarak ayarlandı
 String logs ="";
 String mode_apsta ="apsta"; //ap:only AP, apsta:both AP and STA
 String ap_ssid_buff_def= "Ledovate-Price-Change";
@@ -191,9 +191,9 @@ for (int i = 0; i < receivepacket.length(); i++) {
 
 int FileWriteF(String txt, String path){
 
- File file = SPIFFS.open(path, FILE_WRITE);
+ File file = LittleFS.open(path, FILE_WRITE);
   if(!file){
-    serverlog("Failed to open file for reading","ln");
+    serverlog("Failed to open file for writing","ln");
     //return "";
   }
 
@@ -214,7 +214,7 @@ int FileWriteF(String txt, String path){
 String WriteLedConfig(const String proct){
 
 /**/
-File file = SPIFFS.open("/ledconfig.json");
+File file = LittleFS.open("/ledconfig.json", "r");
   if(!file){
     serverlog("Failed to open ledconfig.json for reading","ln");
     //return "";
@@ -663,35 +663,53 @@ void initserver(){
   // Route for root / web page
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
     serverlog("HTTP_GET /","ln");
-    request->send(SPIFFS, "/index.html", String(), false, processor);
+    if(LittleFS.exists("/index.html"))
+      request->send(LittleFS, "/index.html", String(), false, processor);
+    else
+      request->send(404, "text/plain", "Hata: /index.html LittleFS icinde bulunamadi! Lutfen 'Data Upload' yaptiginizdan emin olun.");
   });
 
   server.on("/parameters", HTTP_GET, [](AsyncWebServerRequest *request){
     serverlog("HTTP_GET /parameters","ln");
-    request->send(SPIFFS, "/parameters.html", String(), false, processor);
+    if(LittleFS.exists("/parameters.html"))
+      request->send(LittleFS, "/parameters.html", String(), false, processor);
+    else
+      request->send(404, "text/plain", "Hata: /parameters.html bulunamadi.");
   });
 
   server.on("/settings", HTTP_GET, [](AsyncWebServerRequest *request){
     serverlog("HTTP_GET /settings","ln");
-    request->send(SPIFFS, "/settings.html", String(), false, processor);
+    if(LittleFS.exists("/settings.html"))
+      request->send(LittleFS, "/settings.html", String(), false, processor);
+    else
+      request->send(404, "text/plain", "Hata: /settings.html bulunamadi.");
   });
 
   // Route to load style.css file
   server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request){
     serverlog("HTTP_GET /style.css","ln");
-    request->send(SPIFFS, "/style.css", "text/css");
+    if(LittleFS.exists("/style.css"))
+      request->send(LittleFS, "/style.css", "text/css");
+    else
+      request->send(404, "text/plain", "Hata: /style.css bulunamadi.");
   });
 
     // Route to load style.css file
   server.on("/js.js", HTTP_GET, [](AsyncWebServerRequest *request){
     serverlog("HTTP_GET /js.js","ln");
-    request->send(SPIFFS, "/js.js", "text/javascript");
+    if(LittleFS.exists("/js.js"))
+      request->send(LittleFS, "/js.js", "text/javascript");
+    else
+      request->send(404, "text/plain", "Hata: /js.js bulunamadi.");
   });
 
     // Route to load style.css file
   server.on("/getledconfig", HTTP_GET, [](AsyncWebServerRequest *request){
     serverlog("HTTP_GET /getledconfig","ln");
-    request->send(SPIFFS, "/ledconfig.json", "text/plain");
+    if(LittleFS.exists("/ledconfig.json"))
+      request->send(LittleFS, "/ledconfig.json", "text/plain");
+    else
+      request->send(404, "text/plain", "Hata: /ledconfig.json bulunamadi.");
   });
 
     // Send a POST request to <IP>/post with a form field message set to <message>
@@ -1184,31 +1202,31 @@ void setup(){
   //Hardware Serial of ESP32
   Serial1.begin(9600, SERIAL_8N1, RXD2, TXD2);
 
-  // Initialize SPIFFS
-  if(!SPIFFS.begin(true)){
-    serverlog("An Error has occurred while mounting SPIFFS","ln");
+  // Serial port for debugging purposes - moved earlier to capture early logs
+  Serial.begin(115200);
+  delay(100);
+
+  // Initialize LittleFS
+  serverlog("Initializing LittleFS...","ln");
+  if(!LittleFS.begin(true)){
+    serverlog("CRITICAL ERROR: LittleFS mount failed!","ln");
     return;
   }
 
-  // List SPIFFS files for debugging
-  serverlog("Listing files on SPIFFS:","ln");
-  File rootDir = SPIFFS.open("/");
-  File fileInfo = rootDir.openNextFile();
-  while(fileInfo){
+  // List LittleFS files for debugging
+  serverlog("Listing files on LittleFS:","ln");
+  File rootDir = LittleFS.open("/");
+  while (File fileInfo = rootDir.openNextFile()) {
       serverlog("File: ","");
       serverlog(fileInfo.name(),"");
       serverlog(" - Size: ","");
       serverlog(String(fileInfo.size()),"ln");
-      fileInfo = rootDir.openNextFile();
   }
 
   //CONFIG OKU
   WriteLedConfig(String("x"));
 
-  // Serial port for debugging purposes
-  if(devprod=="d" || devprod=="D")
-	Serial.begin(115200);
-  delay(100);
+  serverlog("System setup continuing...","ln");
 
   /*if(Serial)
     serverlog("system started","ln");
