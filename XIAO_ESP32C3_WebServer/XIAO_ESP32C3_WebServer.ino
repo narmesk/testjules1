@@ -230,7 +230,7 @@ String ledconfigstr;
   //Serial.println(ledconfigstr);
 file.close();
 
-DynamicJsonDocument doc(8192);
+JsonDocument doc;
  //char json[] ="{\"sensor\":\"gps\",\"time\":1351824120,\"data\":[48.756080,2.302038]}";
 // Deserialize the JSON document
   DeserializationError error = deserializeJson(doc, ledconfigstr);
@@ -319,8 +319,8 @@ for(int i=0;i<48;i++)
 int x=0;
 JsonObject root = doc["esp32sett"].as<JsonObject>();
 
-    for (JsonPair kv : root) {
-      espsettings[x].key = kv.key().as<String>();
+    for (auto kv : root) {
+      espsettings[x].key = kv.key().c_str();
       espsettings[x].value = kv.value().as<String>();
       x+=1;
       if(x >= 12) break; // Dizi sınırını koru
