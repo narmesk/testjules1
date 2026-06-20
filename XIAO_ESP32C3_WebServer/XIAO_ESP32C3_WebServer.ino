@@ -1,7 +1,7 @@
 #include <WiFi.h>
 #include "ESPAsyncWebServer.h"
 #include "SPIFFS.h"
-#include "ArduinoJson.h"
+#include <ArduinoJson.h>
 #include <HTTPClient.h>
 #include "driver/uart.h"
 #include <WiFiClientSecure.h>
@@ -230,7 +230,7 @@ String ledconfigstr;
   //Serial.println(ledconfigstr);
 file.close();
 
-JsonDocument doc;
+DynamicJsonDocument doc(8192);
  //char json[] ="{\"sensor\":\"gps\",\"time\":1351824120,\"data\":[48.756080,2.302038]}";
 // Deserialize the JSON document
   DeserializationError error = deserializeJson(doc, ledconfigstr);
@@ -317,17 +317,13 @@ for(int i=0;i<48;i++)
   }
 
 int x=0;
-//JsonArray setts = doc["esp32sett"].as<JsonArray>();
 JsonObject root = doc["esp32sett"].as<JsonObject>();
 
-    for (auto kv : root) {
-      JsonString key = kv.key();
-      espsettings[x].key = key.c_str();
-      JsonString val = kv.value();
-   espsettings[x].value = val.c_str();
-    x+=1;
- //   JsonString key = kv.key();
- // Serial.println(key.c_str());
+    for (JsonPair kv : root) {
+      espsettings[x].key = kv.key().as<String>();
+      espsettings[x].value = kv.value().as<String>();
+      x+=1;
+      if(x >= 12) break; // Dizi sınırını koru
     }
 devprod =  getvfrom_espsettings("devprod");
 
