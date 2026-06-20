@@ -8,9 +8,10 @@
 #include <libpic30.h>
 
 /*
- * dsPIC33EP Motion Control Projesi - V20.1 (Hibrid Hareket & Tam Stabilite)
+ * dsPIC33EP Motion Control Projesi - V22 (Nokta Atışı & 4-Eksen Modüler)
  * Delta ASDA-A2 Sürücü Kontrolü (CANopen DS402)
- * Senaryo: 1 Tur (PP Modu) -> 2sn Bekle -> CSP Moduna Geç -> +18 Pulse Akış
+ * Akış: 1 Tam Tur -> 2sn Bekle -> +18 Pulse Sürekli Akış
+ * Önemli: Ethernet/UDP ve IO yapısı orijinal haliyle korunmuştur.
  */
 
 // ---- Uygulama Değişkenleri ----
@@ -31,22 +32,22 @@ unsigned char other_cnt;
 
 // Hareket Durum Makinesi
 typedef enum {
-    M_INIT_DRIVE,
-    M_EXEC_FULL_TURN,
-    M_WAIT_TURN_DONE,
-    M_PREPARE_CSP,
-    M_RUN_CSP_STREAM
+    M_START_TURN,
+    M_WAIT_TURN,
+    M_PREPARE_STREAM,
+    M_STREAMING
 } motion_state_t;
 
-motion_state_t m_state = M_INIT_DRIVE;
+motion_state_t m_state = M_START_TURN;
 uint32_t m_timer = 0;
+bool m_toggle[5] = {false, false, false, false, false};
 
 // Eksen Veri Havuzu (1-4)
 int32_t axis_target_pos[5] = {0, 0, 0, 0, 0};
 int32_t axis_actual_pos[5] = {0, 0, 0, 0, 0};
 uint16_t axis_status[5] = {0, 0, 0, 0, 0};
 
-// ---- CANopen Altyapı Fonksiyonları ----
+// ---- CANopen Çekirdek Fonksiyonlar ----
 
 void CAN_WriteSDO(uint8_t nodeId, uint16_t index, uint8_t subindex, uint32_t data, uint8_t len)
 {
@@ -76,7 +77,7 @@ void CAN_WriteSDO(uint8_t nodeId, uint16_t index, uint8_t subindex, uint32_t dat
 void Drive_SendPDO(uint8_t nodeId, uint16_t cw, int32_t pos)
 {
     CAN_MSG_OBJ msg = {0};
-    uint8_t pdo_data[8] = {0};
+    uint8_t pdo_data[8] = {0}; // Driver güvenliği için 8 byte
     pdo_data[0] = (uint8_t)(cw & 0xFF);
     pdo_data[1] = (uint8_t)((cw >> 8) & 0xFF);
     pdo_data[2] = (uint8_t)(pos & 0xFF);
@@ -92,7 +93,10 @@ void Drive_SendPDO(uint8_t nodeId, uint16_t cw, int32_t pos)
     CAN1_Transmit(CAN_PRIORITY_HIGH, &msg);
 }
 
-void Drive_Setup_Initial(uint8_t nodeId)
+/**
+ * Belirlenen ivme, hız ve eksen parametrelerine göre motoru ilklendirir.
+ */
+void Drive_Init(uint8_t nodeId, uint32_t velocity, uint32_t accel)
 {
     // 1. PDO Mapping
     CAN_WriteSDO(nodeId, 0x1600, 0x00, 0x00, 1);
@@ -104,10 +108,10 @@ void Drive_Setup_Initial(uint8_t nodeId)
     CAN_WriteSDO(nodeId, 0x1A00, 0x02, 0x60640020, 4); // Actual Position
     CAN_WriteSDO(nodeId, 0x1A00, 0x00, 0x02, 1);
 
-    // 2. Başlangıçta Profil Pozisyon Modu (PP)
-    CAN_WriteSDO(nodeId, 0x6060, 0x00, 0x01, 1);
-    CAN_WriteSDO(nodeId, 0x6081, 0x00, 1280000, 4); // Hız
-    CAN_WriteSDO(nodeId, 0x6083, 0x00, 3200000, 4); // İvme
+    // 2. Profil Ayarları
+    CAN_WriteSDO(nodeId, 0x6060, 0x00, 0x01, 1);     // PP Mode
+    CAN_WriteSDO(nodeId, 0x6081, 0x00, velocity, 4);
+    CAN_WriteSDO(nodeId, 0x6083, 0x00, accel, 4);
 
     // 3. NMT Start
     CAN_MSG_OBJ nmt = {0};
@@ -117,11 +121,11 @@ void Drive_Setup_Initial(uint8_t nodeId)
     CAN1_Transmit(CAN_PRIORITY_HIGH, &nmt);
     DelayMs(100);
 
-    // 4. Servo-On
-    Drive_SendPDO(nodeId, 0x0080, 0); DelayMs(100); // Fault Reset
-    Drive_SendPDO(nodeId, 0x0006, 0); DelayMs(100); // Shutdown
-    Drive_SendPDO(nodeId, 0x0007, 0); DelayMs(100); // Switched On
-    Drive_SendPDO(nodeId, 0x000F, 0); DelayMs(200); // Operation Enabled
+    // 4. DS402 Servo-On
+    Drive_SendPDO(nodeId, 0x0080, 0); DelayMs(100);
+    Drive_SendPDO(nodeId, 0x0006, 0); DelayMs(100);
+    Drive_SendPDO(nodeId, 0x0007, 0); DelayMs(100);
+    Drive_SendPDO(nodeId, 0x000F, 0); DelayMs(200);
 }
 
 // ---- Sistem Fonksiyonları ----
@@ -167,8 +171,9 @@ int main(void)
     CAN1_OperationModeSet(CAN_NORMAL_OPERATION_MODE);
     DelayMs(100);
 
-    // Başlangıç Kurulumu
-    m_state = M_INIT_DRIVE;
+    // Eksen 1'i istenen hız ve ivme ile ilklendir
+    Drive_Init(1, 1280000, 3200000);
+    m_state = M_START_TURN;
 
     while (1)
     {
@@ -176,7 +181,7 @@ int main(void)
         UdpServerTask();
         read_input();
 
-        // --- TAM IO (12-Bit PLC Mantığı) ---
+        // --- TAM IO EŞLEŞMESİ (12-Bit) ---
         DoutPort.bitField.Bit0 = Aux0;   DoutPort.bitField.Bit1 = Aux1;
         DoutPort.bitField.Bit2 = Aux2;   DoutPort.bitField.Bit3 = Aux3;
         DoutPort.bitField.Bit4 = Aux4;   DoutPort.bitField.Bit5 = Aux5;
@@ -196,42 +201,37 @@ int main(void)
             uart_cnt = 0;
 
             switch(m_state) {
-                case M_INIT_DRIVE:
-                    Drive_Setup_Initial(1);
-                    m_state = M_EXEC_FULL_TURN;
-                    break;
-
-                case M_EXEC_FULL_TURN:
-                    // V5'te çalışan 1 tur bağıl hareketi
+                case M_START_TURN:
+                    // 1 Tam Tur (V5 Bağıl Hareket)
                     Drive_SendPDO(1, 0x005F, 1280000);
-                    m_state = M_WAIT_TURN_DONE;
+                    m_state = M_WAIT_TURN;
                     m_timer = 0;
                     break;
 
-                case M_WAIT_TURN_DONE:
-                    if (++m_timer >= 500) { // 2sn bekle
-                        m_state = M_PREPARE_CSP;
-                    }
+                case M_WAIT_TURN:
+                    if (++m_timer >= 500) m_state = M_PREPARE_STREAM; // 2 saniye bekle
                     break;
 
-                case M_PREPARE_CSP:
-                    // CSP Moduna Geç (0x0C)
-                    CAN_WriteSDO(1, 0x6060, 0x00, 0x0C, 1);
-                    // Hedefi anlık pozisyonla senkronla
+                case M_PREPARE_STREAM:
+                    // Streaming öncesi hedefi mevcut pozisyona eşitle
                     axis_target_pos[1] = axis_actual_pos[1];
-                    m_state = M_RUN_CSP_STREAM;
+                    m_state = M_STREAMING;
                     break;
 
-                case M_RUN_CSP_STREAM:
-                    // +18 Pulse Akışı
+                case M_STREAMING:
+                    // +18 Pulse Artış
                     axis_target_pos[1] += 18;
-                    Drive_SendPDO(1, 0x000F, axis_target_pos[1]);
+                    // PP Modunda continuous update: Bit 4 (New Setpoint) toggle edilmelidir.
+                    // Bit 5 (Immediate) ile sarsıntısız geçiş.
+                    m_toggle[1] = !m_toggle[1];
+                    uint16_t cw = 0x002F | (m_toggle[1] ? 0x0010 : 0x0000);
+                    Drive_SendPDO(1, cw, axis_target_pos[1]);
                     break;
 
                 default: break;
             }
 
-            // SYNC
+            // SYNC (Senkronizasyon Şart)
             CAN_MSG_OBJ sync = {0};
             sync.msgId = 0x080; sync.field.dlc = 0;
             sync.field.idType = CAN_FRAME_STD; sync.field.frameType = CAN_FRAME_DATA;
