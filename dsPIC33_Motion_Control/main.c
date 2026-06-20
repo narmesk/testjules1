@@ -7,9 +7,9 @@
 #include <libpic30.h>
 
 /*
- * dsPIC33EP Motion Control Projesi - Hareket İyileştirmesi (V4)
- * Delta ASDA-A2 Sürücü Kontrolü (CANopen DS402)
- * Bağıl Pozisyonlama (Relative) ve Tork Sınırı İyileştirmesi
+ * dsPIC33EP Motion Control Projesi - Delta ASDA-A2 Optimize (V5)
+ * 1 Mbit/s CANopen Haberleşme - Profile Position (PP) Modu
+ * Delta ASDA-A2 varsayılan 1,280,000 pulse/tur çözünürlüğüne göre ayarlanmıştır.
  */
 
 // ---- Uygulama Değişkenleri ----
@@ -30,29 +30,27 @@ unsigned char other_cnt;
 // ---- CANopen Sabitleri ----
 #define NODE_ID         0x601
 #define RXPDO1_CW       0x201
+#define SYNC_ID         0x080
 
-// SDO Yapılandırması
-uint8_t sdo6060[8] = {0x2F, 0x60, 0x60, 0x00, 0x01, 0x00, 0x00, 0x00}; // Profile Position
-uint8_t sdo6072[8] = {0x2B, 0x72, 0x60, 0x00, 0xE8, 0x03, 0x00, 0x00}; // Max Torque: 1000 (100.0%)
-uint8_t sdo6081[8] = {0x23, 0x81, 0x60, 0x00, 0x40, 0x9C, 0x00, 0x00}; // 40000 unit/s (Hız artırıldı)
-uint8_t sdo6083[8] = {0x23, 0x83, 0x60, 0x00, 0x40, 0x9C, 0x00, 0x00};
-uint8_t sdo6084[8] = {0x23, 0x84, 0x60, 0x00, 0x40, 0x9C, 0x00, 0x00};
+// SDO Yapılandırması (Object Dictionary)
+uint8_t sdo6060[8] = {0x2F, 0x60, 0x60, 0x00, 0x01, 0x00, 0x00, 0x00}; // Profile Position Modu
+uint8_t sdo6072[8] = {0x2B, 0x72, 0x60, 0x00, 0xE8, 0x03, 0x00, 0x00}; // Max Torque: 1000 (%100)
+uint8_t sdo6081[8] = {0x23, 0x81, 0x60, 0x00, 0x00, 0x87, 0x13, 0x00}; // Profile Velocity: 1,280,000 (1 Tur/sn = 60 RPM)
+uint8_t sdo6083[8] = {0x23, 0x83, 0x60, 0x00, 0x00, 0x4E, 0xC3, 0x00}; // Profile Accel: 12,800,000 (0.1 sn'de hıza ulaşma)
+uint8_t sdo6084[8] = {0x23, 0x84, 0x60, 0x00, 0x00, 0x4E, 0xC3, 0x00}; // Profile Decel: 12,800,000
 
-// SDO ile Hedef Pozisyon (0x607A) - 1,000,000 pulse
-uint8_t sdo607A[8] = {0x23, 0x7A, 0x60, 0x00, 0x40, 0x42, 0x0F, 0x00};
+// Hedef Pozisyon (0x607A) - 1,280,000 pulse (Tam 1 Tur)
+uint8_t sdo607A[8] = {0x23, 0x7A, 0x60, 0x00, 0x00, 0x87, 0x13, 0x00};
 
 // NMT
 uint8_t nmtStart[2] = {0x01, 0x00};
 
-// Controlword (0x6040) Komutları
+// Controlword (0x6040)
 uint8_t cw_fault_reset[8] = {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 uint8_t cw_shutdown[8]    = {0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 uint8_t cw_ready[8]       = {0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 uint8_t cw_enable[8]      = {0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-uint8_t cw_start_rel[8]   = {0x5F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // New Set-Point (bit 4) + Relative (bit 6)
-
-// Okuma Komutları
-uint8_t read_6064[8] = {0x40, 0x64, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00};
+uint8_t cw_start_rel[8]   = {0x5F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // New Set-Point + Relative Move
 
 // ---- Fonksiyonlar ----
 void CAN_SendMessage(uint32_t msgId, uint8_t dlc, uint8_t *data)
@@ -87,7 +85,7 @@ int main(void)
     LEDLIVE_SetHigh();
     PLC_VaribleClear();
 
-    // Ethernet Yapılandırması
+    // Ethernet
     memset((void*) &AppConfig, 0x00, sizeof (AppConfig));
     AppConfig.Flags.bIsDHCPEnabled = TRUE;
     AppConfig.Flags.bInConfigMode = TRUE;
@@ -101,6 +99,7 @@ int main(void)
     CAN1_TransmitEnable();
     CAN1_ReceiveEnable();
 
+    // Donanım Hazırlığı
     DelayMs(3000);
 
     CAN1_OperationModeSet(CAN_CONFIGURATION_MODE);
@@ -108,32 +107,35 @@ int main(void)
     CAN1_OperationModeSet(CAN_NORMAL_2_0_MODE);
     DelayMs(100);
 
-    // ----- ADIM 1: SDO Yapılandırması -----
-    CAN_SendMessage(NODE_ID, 8, sdo6060); DelayMs(150);
-    CAN_SendMessage(NODE_ID, 8, sdo6072); DelayMs(150); // Max Torque (0x60E0/E1 yerine)
-    CAN_SendMessage(NODE_ID, 8, sdo6081); DelayMs(150);
-    CAN_SendMessage(NODE_ID, 8, sdo6083); DelayMs(150);
-    CAN_SendMessage(NODE_ID, 8, sdo6084); DelayMs(150);
+    // ----- ADIM 1: Nesne Sözlüğü (OD) Yapılandırması -----
+    CAN_SendMessage(NODE_ID, 8, sdo6060); DelayMs(150); // PP Mode
+    CAN_SendMessage(NODE_ID, 8, sdo6072); DelayMs(150); // Max Torque
+    CAN_SendMessage(NODE_ID, 8, sdo6081); DelayMs(150); // Profile Velocity
+    CAN_SendMessage(NODE_ID, 8, sdo6083); DelayMs(150); // Accel
+    CAN_SendMessage(NODE_ID, 8, sdo6084); DelayMs(150); // Decel
 
-    // ----- ADIM 2: NMT Start -----
+    // ----- ADIM 2: Haberleşme Durumunu Başlat (NMT Operational) -----
     CAN_SendMessage(0x000, 2, nmtStart);
     DelayMs(500);
 
-    // ----- ADIM 3: DS402 Servo-On -----
+    // ----- ADIM 3: DS402 Servo-On Sıralaması -----
     CAN_SendMessage(RXPDO1_CW, 8, cw_fault_reset); DelayMs(300);
     CAN_SendMessage(RXPDO1_CW, 8, cw_shutdown);    DelayMs(200);
     CAN_SendMessage(RXPDO1_CW, 8, cw_ready);       DelayMs(200);
     CAN_SendMessage(RXPDO1_CW, 8, cw_enable);      DelayMs(500);
 
-    // ----- ADIM 4: HAREKET TETİKLEME -----
-    // 1. Hedef pozisyonu gönder (1 Milyon pulse)
+    // ----- ADIM 4: HAREKET BAŞLATMA (SYNC İle) -----
+    // 1. Hedef pozisyonu yaz (1,280,000 pulse - 1 Tur)
     CAN_SendMessage(NODE_ID, 8, sdo607A); DelayMs(200);
 
-    // 2. New Set-Point'i tetikle (Bit 4) + Relative (Bit 6)
+    // 2. Rising Edge Handshake (Bit 4: 0 -> 1)
     CAN_SendMessage(RXPDO1_CW, 8, cw_start_rel); DelayMs(300);
 
-    // 3. New Set-Point'i temizle
+    // 3. Falling Edge Handshake (Bit 4: 1 -> 0)
     CAN_SendMessage(RXPDO1_CW, 8, cw_enable); DelayMs(100);
+
+    // 4. Periyodik Tetikleme (İsteğe Bağlı)
+    CAN_SendMessage(SYNC_ID, 0, NULL); DelayMs(50);
 
     while (1)
     {
@@ -141,7 +143,7 @@ int main(void)
         UdpServerTask();
         read_input();
 
-        // IO Atamaları
+        // Sanal IO Atamaları
         DoutPort.bitField.Bit0 = Aux0;
         DoutPort.bitField.Bit1 = Aux1;
         DoutPort.bitField.Bit2 = Aux2;
@@ -170,7 +172,8 @@ int main(void)
             {
                 other_cnt = 0;
                 LEDLIVE_Toggle();
-                CAN_SendMessage(NODE_ID, 8, read_6064);
+                // Gerçek pozisyonu periyodik sorgula
+                CAN_SendMessage(NODE_ID, 8, (uint8_t[]){0x40, 0x64, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00});
             }
         }
     }
@@ -188,7 +191,6 @@ void PLC_VaribleClear(void)
     Aux0 = 0; Aux1 = 0; Aux2 = 0; Aux3 = 0;
     Aux4 = 0; Aux5 = 0; Aux6 = 0; Aux7 = 0;
     Aux8 = 0; Aux9 = 0; Aux10 = 0; Aux11 = 0;
-    Aux_Value_In = 0;
 }
 
 void Timer3ISR(void)
