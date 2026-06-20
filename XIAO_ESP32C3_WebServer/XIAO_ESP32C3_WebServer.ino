@@ -136,12 +136,10 @@ void OnWiFiEvent(WiFiEvent_t event){
 }
 
 String StringDeleteChar(String words, char no){
-    char c;
-    //char no = '.'; //character I want removed.
-    for (int i=0; i<words.length();++i){
-        c = words.charAt(i);
-        if(c==no){
+    for (int i=0; i < (int)words.length(); i++){
+        if(words.charAt(i) == no){
             words.remove(i, 1);
+            i--; // Karakter silindiği için aynı indeksi tekrar kontrol et
         }
     }
     return words;
@@ -217,23 +215,13 @@ String WriteLedConfig(const String proct){
 File file = LittleFS.open("/ledconfig.json", "r");
   if(!file){
     serverlog("Failed to open ledconfig.json for reading","ln");
-    //return "";
+    return "";
   }
-
-String ledconfigstr;
-
-  serverlog("ledconfig.json Read Success","ln");
-  while(file.available()){
-    //Serial.write(file.read());
-    ledconfigstr+=String((char)file.read());
-  }
-  //Serial.println(ledconfigstr);
-file.close();
 
 JsonDocument doc;
- //char json[] ="{\"sensor\":\"gps\",\"time\":1351824120,\"data\":[48.756080,2.302038]}";
-// Deserialize the JSON document
-  DeserializationError error = deserializeJson(doc, ledconfigstr);
+// Deserialize the JSON document directly from file to save memory
+  DeserializationError error = deserializeJson(doc, file);
+  file.close();
  // Test if parsing succeeds.
   if (error) {
     serverlog("deserializeJson() failed: ","");
@@ -1339,13 +1327,6 @@ if(poolres=="1")
 }
 
 
-/*---------TEST MODBUS SERIAL EVRY 1 SEC---------------*/
-
-if ((millis() - cTime_serverpool >= intv_serverpool)) {
-  cTime_serverpool=millis();
-   // modbustask = 's';
-	//ModbusTaskStart();
-}
 
 
 /*---------RESTART NORMAL---------------*/
