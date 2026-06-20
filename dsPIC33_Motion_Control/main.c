@@ -7,9 +7,9 @@
 #include <libpic30.h>
 
 /*
- * dsPIC33EP Motion Control Projesi - Hareket İyileştirmesi (V3)
+ * dsPIC33EP Motion Control Projesi - Hareket İyileştirmesi (V4)
  * Delta ASDA-A2 Sürücü Kontrolü (CANopen DS402)
- * Pozisyonlama El Sıkışması ve SDO ile Hedef Gönderimi
+ * Bağıl Pozisyonlama (Relative) ve Tork Sınırı İyileştirmesi
  */
 
 // ---- Uygulama Değişkenleri ----
@@ -30,16 +30,16 @@ unsigned char other_cnt;
 // ---- CANopen Sabitleri ----
 #define NODE_ID         0x601
 #define RXPDO1_CW       0x201
-#define RXPDO2_TPOS     0x301
 
-// SDO Yazma Bufferları
+// SDO Yapılandırması
 uint8_t sdo6060[8] = {0x2F, 0x60, 0x60, 0x00, 0x01, 0x00, 0x00, 0x00}; // Profile Position
-uint8_t sdo6081[8] = {0x23, 0x81, 0x60, 0x00, 0x20, 0x4E, 0x00, 0x00}; // 20000 unit/s (Hız artırıldı)
-uint8_t sdo6083[8] = {0x23, 0x83, 0x60, 0x00, 0x20, 0x4E, 0x00, 0x00}; // Accel
-uint8_t sdo6084[8] = {0x23, 0x84, 0x60, 0x00, 0x20, 0x4E, 0x00, 0x00}; // Decel
+uint8_t sdo6072[8] = {0x2B, 0x72, 0x60, 0x00, 0xE8, 0x03, 0x00, 0x00}; // Max Torque: 1000 (100.0%)
+uint8_t sdo6081[8] = {0x23, 0x81, 0x60, 0x00, 0x40, 0x9C, 0x00, 0x00}; // 40000 unit/s (Hız artırıldı)
+uint8_t sdo6083[8] = {0x23, 0x83, 0x60, 0x00, 0x40, 0x9C, 0x00, 0x00};
+uint8_t sdo6084[8] = {0x23, 0x84, 0x60, 0x00, 0x40, 0x9C, 0x00, 0x00};
 
-// SDO ile Hedef Pozisyon Gönderimi (0x607A) - Daha güvenilir
-uint8_t sdo607A[8] = {0x23, 0x7A, 0x60, 0x00, 0x10, 0x27, 0x00, 0x00}; // 10000 pulse
+// SDO ile Hedef Pozisyon (0x607A) - 1,000,000 pulse
+uint8_t sdo607A[8] = {0x23, 0x7A, 0x60, 0x00, 0x40, 0x42, 0x0F, 0x00};
 
 // NMT
 uint8_t nmtStart[2] = {0x01, 0x00};
@@ -49,11 +49,10 @@ uint8_t cw_fault_reset[8] = {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 uint8_t cw_shutdown[8]    = {0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 uint8_t cw_ready[8]       = {0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 uint8_t cw_enable[8]      = {0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-uint8_t cw_start[8]       = {0x1F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // New Set-Point + Absolute
+uint8_t cw_start_rel[8]   = {0x5F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // New Set-Point (bit 4) + Relative (bit 6)
 
 // Okuma Komutları
-uint8_t read_6064[8] = {0x40, 0x64, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00}; // Actual Position
-uint8_t read_6041[8] = {0x40, 0x41, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00}; // Statusword
+uint8_t read_6064[8] = {0x40, 0x64, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00};
 
 // ---- Fonksiyonlar ----
 void CAN_SendMessage(uint32_t msgId, uint8_t dlc, uint8_t *data)
@@ -102,7 +101,6 @@ int main(void)
     CAN1_TransmitEnable();
     CAN1_ReceiveEnable();
 
-    // Sürücü boot bekleme
     DelayMs(3000);
 
     CAN1_OperationModeSet(CAN_CONFIGURATION_MODE);
@@ -110,8 +108,9 @@ int main(void)
     CAN1_OperationModeSet(CAN_NORMAL_2_0_MODE);
     DelayMs(100);
 
-    // ----- ADIM 1: Temel SDO Yapılandırması -----
+    // ----- ADIM 1: SDO Yapılandırması -----
     CAN_SendMessage(NODE_ID, 8, sdo6060); DelayMs(150);
+    CAN_SendMessage(NODE_ID, 8, sdo6072); DelayMs(150); // Max Torque (0x60E0/E1 yerine)
     CAN_SendMessage(NODE_ID, 8, sdo6081); DelayMs(150);
     CAN_SendMessage(NODE_ID, 8, sdo6083); DelayMs(150);
     CAN_SendMessage(NODE_ID, 8, sdo6084); DelayMs(150);
@@ -126,17 +125,14 @@ int main(void)
     CAN_SendMessage(RXPDO1_CW, 8, cw_ready);       DelayMs(200);
     CAN_SendMessage(RXPDO1_CW, 8, cw_enable);      DelayMs(500);
 
-    // ----- ADIM 4: HAREKET TETİKLEME (El Sıkışması İle) -----
-    // 1. Hedef pozisyonu SDO üzerinden gönder (Kesin çözüm)
+    // ----- ADIM 4: HAREKET TETİKLEME -----
+    // 1. Hedef pozisyonu gönder (1 Milyon pulse)
     CAN_SendMessage(NODE_ID, 8, sdo607A); DelayMs(200);
 
-    // 2. New Set-Point'i tetikle (Bit 4)
-    CAN_SendMessage(RXPDO1_CW, 8, cw_start); DelayMs(200);
+    // 2. New Set-Point'i tetikle (Bit 4) + Relative (Bit 6)
+    CAN_SendMessage(RXPDO1_CW, 8, cw_start_rel); DelayMs(300);
 
-    // 3. Statusword oku (Set-point acknowledge kontrolü için)
-    CAN_SendMessage(NODE_ID, 8, read_6041); DelayMs(100);
-
-    // 4. New Set-Point'i temizle (Toggle işlemi)
+    // 3. New Set-Point'i temizle
     CAN_SendMessage(RXPDO1_CW, 8, cw_enable); DelayMs(100);
 
     while (1)
@@ -174,8 +170,6 @@ int main(void)
             {
                 other_cnt = 0;
                 LEDLIVE_Toggle();
-
-                // Pozisyon sorgula
                 CAN_SendMessage(NODE_ID, 8, read_6064);
             }
         }
