@@ -8,7 +8,7 @@
 #include <libpic30.h>
 
 /*
- * dsPIC33EP Motion Control Projesi - Modüler 4-Eksen Yapısı (V6)
+ * dsPIC33EP Motion Control Projesi - Tam Fonksiyonel 4-Eksen Yapısı (V8.1)
  * Delta ASDA-A2 Sürücü Kontrolü (CANopen DS402)
  */
 
@@ -22,27 +22,26 @@ unsigned char INPUTSL_VAL;
 
 APP_CONFIG AppConfig;
 static ROM BYTE SerializedMACAddress[6] = {MY_DEFAULT_MAC_BYTE1, MY_DEFAULT_MAC_BYTE2, MY_DEFAULT_MAC_BYTE3, MY_DEFAULT_MAC_BYTE4, MY_DEFAULT_MAC_BYTE5, MY_DEFAULT_MAC_BYTE6};
+static unsigned short wOriginalAppConfigChecksum;
 
 extern UdpServerStep UdpServerStep1;
 extern unsigned char uart_cnt;
 unsigned char other_cnt;
 
-// Eksen Verileri (Örnek takip için)
-int32_t axis_actual_pos[5] = {0, 0, 0, 0, 0}; // 1-4 arası node'lar için
+// Eksen Geri Besleme Verileri
+int32_t axis_actual_pos[5] = {0, 0, 0, 0, 0};
 uint16_t axis_status[5] = {0, 0, 0, 0, 0};
 
-// ---- CANopen Yardımcı Fonksiyonları ----
+// ---- CANopen Altyapı Fonksiyonları ----
 
 /**
  * Belirli bir node'a SDO yazma komutu gönderir.
- * len: 1, 2 veya 4 byte
  */
 void CAN_WriteSDO(uint8_t nodeId, uint16_t index, uint8_t subindex, uint32_t data, uint8_t len)
 {
-    CAN_MSG_OBJ msg;
+    CAN_MSG_OBJ msg = {0};
     uint8_t sdo_data[8] = {0};
 
-    // Command specifier belirleme
     if (len == 1) sdo_data[0] = 0x2F;
     else if (len == 2) sdo_data[0] = 0x2B;
     else sdo_data[0] = 0x23;
@@ -62,7 +61,7 @@ void CAN_WriteSDO(uint8_t nodeId, uint16_t index, uint8_t subindex, uint32_t dat
     msg.data = sdo_data;
 
     CAN1_Transmit(CAN_PRIORITY_HIGH, &msg);
-    DelayMs(10); // Sürücünün işleme süresi
+    DelayMs(15);
 }
 
 /**
@@ -70,7 +69,7 @@ void CAN_WriteSDO(uint8_t nodeId, uint16_t index, uint8_t subindex, uint32_t dat
  */
 void CAN_ReadSDO_Request(uint8_t nodeId, uint16_t index, uint8_t subindex)
 {
-    CAN_MSG_OBJ msg;
+    CAN_MSG_OBJ msg = {0};
     uint8_t sdo_data[8] = {0x40, 0, 0, 0, 0, 0, 0, 0};
 
     sdo_data[1] = (uint8_t)(index & 0xFF);
@@ -84,6 +83,7 @@ void CAN_ReadSDO_Request(uint8_t nodeId, uint16_t index, uint8_t subindex)
     msg.data = sdo_data;
 
     CAN1_Transmit(CAN_PRIORITY_HIGH, &msg);
+    DelayMs(5);
 }
 
 /**
@@ -91,73 +91,62 @@ void CAN_ReadSDO_Request(uint8_t nodeId, uint16_t index, uint8_t subindex)
  */
 void Drive_SendControlword(uint8_t nodeId, uint16_t cw)
 {
-    CAN_MSG_OBJ msg;
-    uint8_t data[2];
-    data[0] = (uint8_t)(cw & 0xFF);
-    data[1] = (uint8_t)((cw >> 8) & 0xFF);
+    CAN_MSG_OBJ msg = {0};
+    uint8_t data_bytes[2];
+    data_bytes[0] = (uint8_t)(cw & 0xFF);
+    data_bytes[1] = (uint8_t)((cw >> 8) & 0xFF);
 
     msg.msgId = 0x200 + nodeId;
     msg.field.frameType = CAN_FRAME_DATA;
     msg.field.idType = CAN_FRAME_STD;
     msg.field.dlc = 2;
-    msg.data = data;
+    msg.data = data_bytes;
 
     CAN1_Transmit(CAN_PRIORITY_HIGH, &msg);
 }
 
-// ---- Hareket Kontrol Fonksiyonları ----
+// ---- Hareket Kontrol API ----
 
 /**
  * Belirtilen motoru ilklendirir ve Servo-On yapar.
  */
 void Drive_Init(uint8_t nodeId)
 {
-    // 1. Mod Ayarı: Profile Position
-    CAN_WriteSDO(nodeId, 0x6060, 0x00, 0x01, 1);
+    CAN_WriteSDO(nodeId, 0x6060, 0x00, 0x01, 1); // Profile Position Modu
+    CAN_WriteSDO(nodeId, 0x6072, 0x00, 1000, 2); // Max Torque %100
 
-    // 2. Maksimum Tork Sınırı (%100)
-    CAN_WriteSDO(nodeId, 0x6072, 0x00, 1000, 2);
-
-    // 3. NMT Operational Moduna Geçir
-    CAN_MSG_OBJ nmt;
+    // NMT Operational - Tam İlklendirme (Fix: CAN_MSG_OBJ init)
+    CAN_MSG_OBJ nmt = {0};
     uint8_t nmt_data[2] = {0x01, nodeId};
     nmt.msgId = 0x000;
+    nmt.field.frameType = CAN_FRAME_DATA;
+    nmt.field.idType = CAN_FRAME_STD;
     nmt.field.dlc = 2;
     nmt.data = nmt_data;
     CAN1_Transmit(CAN_PRIORITY_HIGH, &nmt);
     DelayMs(100);
 
-    // 4. DS402 Servo-On Sıralaması
-    Drive_SendControlword(nodeId, 0x0080); DelayMs(100); // Fault Reset
-    Drive_SendControlword(nodeId, 0x0006); DelayMs(100); // Shutdown
-    Drive_SendControlword(nodeId, 0x0007); DelayMs(100); // Switch On
-    Drive_SendControlword(nodeId, 0x000F); DelayMs(100); // Enable Operation
+    // DS402 Servo-On Sıralaması
+    Drive_SendControlword(nodeId, 0x0080); DelayMs(150);
+    Drive_SendControlword(nodeId, 0x0006); DelayMs(150);
+    Drive_SendControlword(nodeId, 0x0007); DelayMs(150);
+    Drive_SendControlword(nodeId, 0x000F); DelayMs(200);
 }
 
 /**
  * Belirtilen motoru hareket ettirir.
- * position: hedef (pulse)
- * velocity: hız (pulse/sn)
- * accel: ivme (pulse/sn^2)
- * relative: true ise bağıl, false ise mutlak hareket
  */
 void Drive_Move(uint8_t nodeId, int32_t position, uint32_t velocity, uint32_t accel, bool relative)
 {
-    // 1. Profil Parametrelerini Ayarla
     CAN_WriteSDO(nodeId, 0x6081, 0x00, velocity, 4);
     CAN_WriteSDO(nodeId, 0x6083, 0x00, accel, 4);
     CAN_WriteSDO(nodeId, 0x6084, 0x00, accel, 4);
-
-    // 2. Hedef Pozisyonu Yaz
     CAN_WriteSDO(nodeId, 0x607A, 0x00, (uint32_t)position, 4);
 
-    // 3. Hareketi Tetikle (Bit 4: New Set-point)
     uint16_t cw = relative ? 0x005F : 0x001F;
     Drive_SendControlword(nodeId, cw);
-    DelayMs(50);
-
-    // 4. Handshake: Tetiklemeyi temizle (Bit 4: 0)
-    Drive_SendControlword(nodeId, 0x000F);
+    DelayMs(100);
+    Drive_SendControlword(nodeId, 0x000F); // Handshake reset
 }
 
 /**
@@ -166,7 +155,6 @@ void Drive_Move(uint8_t nodeId, int32_t position, uint32_t velocity, uint32_t ac
 void Drive_QueryStatus(uint8_t nodeId)
 {
     CAN_ReadSDO_Request(nodeId, 0x6064, 0x00); // Actual Position
-    DelayMs(5);
     CAN_ReadSDO_Request(nodeId, 0x6041, 0x00); // Statusword
 }
 
@@ -190,33 +178,34 @@ int main(void)
     LEDLIVE_SetHigh();
     PLC_VaribleClear();
 
-    // Ethernet
+    // Ethernet Yapılandırması (Geri Yüklenen Orijinal Parametreler)
     memset((void*) &AppConfig, 0x00, sizeof (AppConfig));
     AppConfig.Flags.bIsDHCPEnabled = TRUE;
+    AppConfig.Flags.bInConfigMode = TRUE;
+    memcpypgm2ram((void*) &AppConfig.MyMACAddr, (ROM void*) SerializedMACAddress, sizeof (AppConfig.MyMACAddr));
     AppConfig.MyIPAddr.Val = MY_DEFAULT_IP_ADDR_BYTE1 | MY_DEFAULT_IP_ADDR_BYTE2 << 8ul | MY_DEFAULT_IP_ADDR_BYTE3 << 16ul | MY_DEFAULT_IP_ADDR_BYTE4 << 24ul;
     AppConfig.DefaultIPAddr.Val = AppConfig.MyIPAddr.Val;
     AppConfig.MyMask.Val = MY_DEFAULT_MASK_BYTE1 | MY_DEFAULT_MASK_BYTE2 << 8ul | MY_DEFAULT_MASK_BYTE3 << 16ul | MY_DEFAULT_MASK_BYTE4 << 24ul;
     AppConfig.DefaultMask.Val = AppConfig.MyMask.Val;
+    AppConfig.MyGateway.Val = MY_DEFAULT_GATE_BYTE1 | MY_DEFAULT_GATE_BYTE2 << 8ul | MY_DEFAULT_GATE_BYTE3 << 16ul | MY_DEFAULT_GATE_BYTE4 << 24ul;
+    AppConfig.PrimaryDNSServer.Val = MY_DEFAULT_PRIMARY_DNS_BYTE1 | MY_DEFAULT_PRIMARY_DNS_BYTE2 << 8ul | MY_DEFAULT_PRIMARY_DNS_BYTE3 << 16ul | MY_DEFAULT_PRIMARY_DNS_BYTE4 << 24ul;
+    AppConfig.SecondaryDNSServer.Val = MY_DEFAULT_SECONDARY_DNS_BYTE1 | MY_DEFAULT_SECONDARY_DNS_BYTE2 << 8ul | MY_DEFAULT_SECONDARY_DNS_BYTE3 << 16ul | MY_DEFAULT_SECONDARY_DNS_BYTE4 << 24ul;
+    wOriginalAppConfigChecksum = CalcIPChecksum((BYTE*) & AppConfig, sizeof (AppConfig));
     StackInit();
 
     CAN1_TransmitEnable();
     CAN1_ReceiveEnable();
 
-    DelayMs(3000); // Sürücülerin boot süresi
+    DelayMs(3000);
 
     CAN1_OperationModeSet(CAN_CONFIGURATION_MODE);
     DelayMs(100);
     CAN1_OperationModeSet(CAN_NORMAL_2_0_MODE);
     DelayMs(100);
 
-    // ----- ADIM 1: Sürücüleri İlklendir (Örn: Node 1) -----
+    // Eksen 1 Başlat ve Test Hareketi
     Drive_Init(1);
-    // Drive_Init(2); // Varsa diğer eksenler
-    // Drive_Init(3);
-    // Drive_Init(4);
-
-    // ----- ADIM 2: Test Hareketi (Node 1, 1 tur, hız 1M pulse/sn) -----
-    Drive_Move(1, 1280000, 1000000, 5000000, true);
+    Drive_Move(1, 1280000, 640000, 1280000, true);
 
     while (1)
     {
@@ -225,19 +214,15 @@ int main(void)
         read_input();
 
         // IO Atamaları
-        DoutPort.bitField.Bit0 = Aux0;
-        DoutPort.bitField.Bit1 = Aux1;
-        DoutPort.bitField.Bit2 = Aux2;
-        DoutPort.bitField.Bit3 = Aux3;
-        DoutPort.bitField.Bit4 = Aux4;
-        DoutPort.bitField.Bit5 = Aux5;
-        DoutPort.bitField.Bit6 = Aux6;
-        DoutPort.bitField.Bit7 = Aux7;
-        DoutPort.bitField.Bit8 = Aux8;
+        DoutPort.bitField.Bit0 = Aux0; DoutPort.bitField.Bit1 = Aux1;
+        DoutPort.bitField.Bit2 = Aux2; DoutPort.bitField.Bit3 = Aux3;
+        DoutPort.bitField.Bit4 = Aux4; DoutPort.bitField.Bit5 = Aux5;
+        DoutPort.bitField.Bit6 = Aux6; // EMG için
+        DoutPort.bitField.Bit7 = Aux7; // İleri
+        DoutPort.bitField.Bit8 = Aux8; // Geri
 
         OUTPUTSL_VAL = (unsigned char)(DoutPort.allvalue & 0xFF);
         OUTPUTSH_VAL = (unsigned char)((DoutPort.allvalue >> 8) & 0xFF);
-
         set_outpus();
 
         uart_cnt++;
@@ -246,38 +231,38 @@ int main(void)
             UdpServerStep1 = UDP_SERVER_REQUEST_RECEIVED;
             uart_cnt = 0;
             other_cnt++;
-            if (other_cnt >= 10)
+            if (other_cnt >= 20)
             {
                 other_cnt = 0;
                 LEDLIVE_Toggle();
-
-                // Durum sorgulama (SDO üzerinden periyodik)
                 Drive_QueryStatus(1);
             }
         }
 
-        // CAN Okuma ve Ayrıştırma (Dispatcher)
-        if (CAN1_ReceiveCountGet() > 0)
+        // CAN Receiver Dispatcher
+        while (CAN1_ReceivedMessageCountGet() > 0)
         {
             CAN_MSG_OBJ rxMsg;
+            uint8_t rxData[8];
+            rxMsg.data = rxData;
+
             if (CAN1_Receive(&rxMsg))
             {
-                // SDO Cevabı mı? (0x580 + nodeId)
                 if (rxMsg.msgId >= 0x581 && rxMsg.msgId <= 0x584)
                 {
-                    uint8_t nodeId = rxMsg.msgId - 0x580;
-                    uint16_t index = rxMsg.data[1] | (rxMsg.data[2] << 8);
+                    uint8_t nodeId = (uint8_t)(rxMsg.msgId - 0x580);
+                    uint16_t index = (uint16_t)rxMsg.data[1] | ((uint16_t)rxMsg.data[2] << 8);
 
-                    if (index == 0x6064) // Actual Position
+                    if (index == 0x6064)
                     {
                         axis_actual_pos[nodeId] = (int32_t)rxMsg.data[4] |
                                                   ((int32_t)rxMsg.data[5] << 8) |
                                                   ((int32_t)rxMsg.data[6] << 16) |
                                                   ((int32_t)rxMsg.data[7] << 24);
                     }
-                    else if (index == 0x6041) // Statusword
+                    else if (index == 0x6041)
                     {
-                        axis_status[nodeId] = rxMsg.data[4] | (rxMsg.data[5] << 8);
+                        axis_status[nodeId] = (uint16_t)rxMsg.data[4] | ((uint16_t)rxMsg.data[5] << 8);
                     }
                 }
             }
