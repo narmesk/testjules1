@@ -4,12 +4,12 @@
 #include "mcc_generated_files/system.h"
 #include "mcc_generated_files/can1.h"
 #include <stdint.h>
+#include <stdbool.h>
 #include <libpic30.h>
 
 /*
- * dsPIC33EP Motion Control Projesi - Delta ASDA-A2 Optimize (V5)
- * 1 Mbit/s CANopen Haberleşme - Profile Position (PP) Modu
- * Delta ASDA-A2 varsayılan 1,280,000 pulse/tur çözünürlüğüne göre ayarlanmıştır.
+ * dsPIC33EP Motion Control Projesi - Modüler 4-Eksen Yapısı (V6)
+ * Delta ASDA-A2 Sürücü Kontrolü (CANopen DS402)
  */
 
 // ---- Uygulama Değişkenleri ----
@@ -27,42 +27,150 @@ extern UdpServerStep UdpServerStep1;
 extern unsigned char uart_cnt;
 unsigned char other_cnt;
 
-// ---- CANopen Sabitleri ----
-#define NODE_ID         0x601
-#define RXPDO1_CW       0x201
-#define SYNC_ID         0x080
+// Eksen Verileri (Örnek takip için)
+int32_t axis_actual_pos[5] = {0, 0, 0, 0, 0}; // 1-4 arası node'lar için
+uint16_t axis_status[5] = {0, 0, 0, 0, 0};
 
-// SDO Yapılandırması (Object Dictionary)
-uint8_t sdo6060[8] = {0x2F, 0x60, 0x60, 0x00, 0x01, 0x00, 0x00, 0x00}; // Profile Position Modu
-uint8_t sdo6072[8] = {0x2B, 0x72, 0x60, 0x00, 0xE8, 0x03, 0x00, 0x00}; // Max Torque: 1000 (%100)
-uint8_t sdo6081[8] = {0x23, 0x81, 0x60, 0x00, 0x00, 0x87, 0x13, 0x00}; // Profile Velocity: 1,280,000 (1 Tur/sn = 60 RPM)
-uint8_t sdo6083[8] = {0x23, 0x83, 0x60, 0x00, 0x00, 0x4E, 0xC3, 0x00}; // Profile Accel: 12,800,000 (0.1 sn'de hıza ulaşma)
-uint8_t sdo6084[8] = {0x23, 0x84, 0x60, 0x00, 0x00, 0x4E, 0xC3, 0x00}; // Profile Decel: 12,800,000
+// ---- CANopen Yardımcı Fonksiyonları ----
 
-// Hedef Pozisyon (0x607A) - 1,280,000 pulse (Tam 1 Tur)
-uint8_t sdo607A[8] = {0x23, 0x7A, 0x60, 0x00, 0x00, 0x87, 0x13, 0x00};
-
-// NMT
-uint8_t nmtStart[2] = {0x01, 0x00};
-
-// Controlword (0x6040)
-uint8_t cw_fault_reset[8] = {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-uint8_t cw_shutdown[8]    = {0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-uint8_t cw_ready[8]       = {0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-uint8_t cw_enable[8]      = {0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-uint8_t cw_start_rel[8]   = {0x5F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // New Set-Point + Relative Move
-
-// ---- Fonksiyonlar ----
-void CAN_SendMessage(uint32_t msgId, uint8_t dlc, uint8_t *data)
+/**
+ * Belirli bir node'a SDO yazma komutu gönderir.
+ * len: 1, 2 veya 4 byte
+ */
+void CAN_WriteSDO(uint8_t nodeId, uint16_t index, uint8_t subindex, uint32_t data, uint8_t len)
 {
     CAN_MSG_OBJ msg;
-    msg.msgId = msgId;
+    uint8_t sdo_data[8] = {0};
+
+    // Command specifier belirleme
+    if (len == 1) sdo_data[0] = 0x2F;
+    else if (len == 2) sdo_data[0] = 0x2B;
+    else sdo_data[0] = 0x23;
+
+    sdo_data[1] = (uint8_t)(index & 0xFF);
+    sdo_data[2] = (uint8_t)((index >> 8) & 0xFF);
+    sdo_data[3] = subindex;
+    sdo_data[4] = (uint8_t)(data & 0xFF);
+    sdo_data[5] = (uint8_t)((data >> 8) & 0xFF);
+    sdo_data[6] = (uint8_t)((data >> 16) & 0xFF);
+    sdo_data[7] = (uint8_t)((data >> 24) & 0xFF);
+
+    msg.msgId = 0x600 + nodeId;
     msg.field.frameType = CAN_FRAME_DATA;
     msg.field.idType = CAN_FRAME_STD;
-    msg.field.dlc = dlc;
-    msg.data = data;
+    msg.field.dlc = 8;
+    msg.data = sdo_data;
+
+    CAN1_Transmit(CAN_PRIORITY_HIGH, &msg);
+    DelayMs(10); // Sürücünün işleme süresi
+}
+
+/**
+ * SDO üzerinden veri okuma isteği gönderir.
+ */
+void CAN_ReadSDO_Request(uint8_t nodeId, uint16_t index, uint8_t subindex)
+{
+    CAN_MSG_OBJ msg;
+    uint8_t sdo_data[8] = {0x40, 0, 0, 0, 0, 0, 0, 0};
+
+    sdo_data[1] = (uint8_t)(index & 0xFF);
+    sdo_data[2] = (uint8_t)((index >> 8) & 0xFF);
+    sdo_data[3] = subindex;
+
+    msg.msgId = 0x600 + nodeId;
+    msg.field.frameType = CAN_FRAME_DATA;
+    msg.field.idType = CAN_FRAME_STD;
+    msg.field.dlc = 8;
+    msg.data = sdo_data;
+
     CAN1_Transmit(CAN_PRIORITY_HIGH, &msg);
 }
+
+/**
+ * PDO kullanarak hızlı Controlword gönderimi.
+ */
+void Drive_SendControlword(uint8_t nodeId, uint16_t cw)
+{
+    CAN_MSG_OBJ msg;
+    uint8_t data[2];
+    data[0] = (uint8_t)(cw & 0xFF);
+    data[1] = (uint8_t)((cw >> 8) & 0xFF);
+
+    msg.msgId = 0x200 + nodeId;
+    msg.field.frameType = CAN_FRAME_DATA;
+    msg.field.idType = CAN_FRAME_STD;
+    msg.field.dlc = 2;
+    msg.data = data;
+
+    CAN1_Transmit(CAN_PRIORITY_HIGH, &msg);
+}
+
+// ---- Hareket Kontrol Fonksiyonları ----
+
+/**
+ * Belirtilen motoru ilklendirir ve Servo-On yapar.
+ */
+void Drive_Init(uint8_t nodeId)
+{
+    // 1. Mod Ayarı: Profile Position
+    CAN_WriteSDO(nodeId, 0x6060, 0x00, 0x01, 1);
+
+    // 2. Maksimum Tork Sınırı (%100)
+    CAN_WriteSDO(nodeId, 0x6072, 0x00, 1000, 2);
+
+    // 3. NMT Operational Moduna Geçir
+    CAN_MSG_OBJ nmt;
+    uint8_t nmt_data[2] = {0x01, nodeId};
+    nmt.msgId = 0x000;
+    nmt.field.dlc = 2;
+    nmt.data = nmt_data;
+    CAN1_Transmit(CAN_PRIORITY_HIGH, &nmt);
+    DelayMs(100);
+
+    // 4. DS402 Servo-On Sıralaması
+    Drive_SendControlword(nodeId, 0x0080); DelayMs(100); // Fault Reset
+    Drive_SendControlword(nodeId, 0x0006); DelayMs(100); // Shutdown
+    Drive_SendControlword(nodeId, 0x0007); DelayMs(100); // Switch On
+    Drive_SendControlword(nodeId, 0x000F); DelayMs(100); // Enable Operation
+}
+
+/**
+ * Belirtilen motoru hareket ettirir.
+ * position: hedef (pulse)
+ * velocity: hız (pulse/sn)
+ * accel: ivme (pulse/sn^2)
+ * relative: true ise bağıl, false ise mutlak hareket
+ */
+void Drive_Move(uint8_t nodeId, int32_t position, uint32_t velocity, uint32_t accel, bool relative)
+{
+    // 1. Profil Parametrelerini Ayarla
+    CAN_WriteSDO(nodeId, 0x6081, 0x00, velocity, 4);
+    CAN_WriteSDO(nodeId, 0x6083, 0x00, accel, 4);
+    CAN_WriteSDO(nodeId, 0x6084, 0x00, accel, 4);
+
+    // 2. Hedef Pozisyonu Yaz
+    CAN_WriteSDO(nodeId, 0x607A, 0x00, (uint32_t)position, 4);
+
+    // 3. Hareketi Tetikle (Bit 4: New Set-point)
+    uint16_t cw = relative ? 0x005F : 0x001F;
+    Drive_SendControlword(nodeId, cw);
+    DelayMs(50);
+
+    // 4. Handshake: Tetiklemeyi temizle (Bit 4: 0)
+    Drive_SendControlword(nodeId, 0x000F);
+}
+
+/**
+ * Motor durumlarını sorgular.
+ */
+void Drive_QueryStatus(uint8_t nodeId)
+{
+    CAN_ReadSDO_Request(nodeId, 0x6064, 0x00); // Actual Position
+    DelayMs(5);
+    CAN_ReadSDO_Request(nodeId, 0x6041, 0x00); // Statusword
+}
+
+// ---- Sistem Fonksiyonları ----
 
 void PLC_VaribleClear(void);
 void Timer3ISR(void);
@@ -72,10 +180,7 @@ void set_outpus(void);
 int main(void)
 {
     SYSTEM_Initialize();
-
-    IEC0bits.U1TXIE = 0;
-    IEC0bits.U1RXIE = 0;
-    IEC4bits.U1EIE = 0;
+    IEC0bits.U1TXIE = 0; IEC0bits.U1RXIE = 0; IEC4bits.U1EIE = 0;
 
     TMR3_SetInterruptHandler(Timer3ISR);
     IEC0bits.T3IE = false;
@@ -88,8 +193,6 @@ int main(void)
     // Ethernet
     memset((void*) &AppConfig, 0x00, sizeof (AppConfig));
     AppConfig.Flags.bIsDHCPEnabled = TRUE;
-    AppConfig.Flags.bInConfigMode = TRUE;
-    memcpypgm2ram((void*) &AppConfig.MyMACAddr, (ROM void*) SerializedMACAddress, sizeof (AppConfig.MyMACAddr));
     AppConfig.MyIPAddr.Val = MY_DEFAULT_IP_ADDR_BYTE1 | MY_DEFAULT_IP_ADDR_BYTE2 << 8ul | MY_DEFAULT_IP_ADDR_BYTE3 << 16ul | MY_DEFAULT_IP_ADDR_BYTE4 << 24ul;
     AppConfig.DefaultIPAddr.Val = AppConfig.MyIPAddr.Val;
     AppConfig.MyMask.Val = MY_DEFAULT_MASK_BYTE1 | MY_DEFAULT_MASK_BYTE2 << 8ul | MY_DEFAULT_MASK_BYTE3 << 16ul | MY_DEFAULT_MASK_BYTE4 << 24ul;
@@ -99,43 +202,21 @@ int main(void)
     CAN1_TransmitEnable();
     CAN1_ReceiveEnable();
 
-    // Donanım Hazırlığı
-    DelayMs(3000);
+    DelayMs(3000); // Sürücülerin boot süresi
 
     CAN1_OperationModeSet(CAN_CONFIGURATION_MODE);
     DelayMs(100);
     CAN1_OperationModeSet(CAN_NORMAL_2_0_MODE);
     DelayMs(100);
 
-    // ----- ADIM 1: Nesne Sözlüğü (OD) Yapılandırması -----
-    CAN_SendMessage(NODE_ID, 8, sdo6060); DelayMs(150); // PP Mode
-    CAN_SendMessage(NODE_ID, 8, sdo6072); DelayMs(150); // Max Torque
-    CAN_SendMessage(NODE_ID, 8, sdo6081); DelayMs(150); // Profile Velocity
-    CAN_SendMessage(NODE_ID, 8, sdo6083); DelayMs(150); // Accel
-    CAN_SendMessage(NODE_ID, 8, sdo6084); DelayMs(150); // Decel
+    // ----- ADIM 1: Sürücüleri İlklendir (Örn: Node 1) -----
+    Drive_Init(1);
+    // Drive_Init(2); // Varsa diğer eksenler
+    // Drive_Init(3);
+    // Drive_Init(4);
 
-    // ----- ADIM 2: Haberleşme Durumunu Başlat (NMT Operational) -----
-    CAN_SendMessage(0x000, 2, nmtStart);
-    DelayMs(500);
-
-    // ----- ADIM 3: DS402 Servo-On Sıralaması -----
-    CAN_SendMessage(RXPDO1_CW, 8, cw_fault_reset); DelayMs(300);
-    CAN_SendMessage(RXPDO1_CW, 8, cw_shutdown);    DelayMs(200);
-    CAN_SendMessage(RXPDO1_CW, 8, cw_ready);       DelayMs(200);
-    CAN_SendMessage(RXPDO1_CW, 8, cw_enable);      DelayMs(500);
-
-    // ----- ADIM 4: HAREKET BAŞLATMA (SYNC İle) -----
-    // 1. Hedef pozisyonu yaz (1,280,000 pulse - 1 Tur)
-    CAN_SendMessage(NODE_ID, 8, sdo607A); DelayMs(200);
-
-    // 2. Rising Edge Handshake (Bit 4: 0 -> 1)
-    CAN_SendMessage(RXPDO1_CW, 8, cw_start_rel); DelayMs(300);
-
-    // 3. Falling Edge Handshake (Bit 4: 1 -> 0)
-    CAN_SendMessage(RXPDO1_CW, 8, cw_enable); DelayMs(100);
-
-    // 4. Periyodik Tetikleme (İsteğe Bağlı)
-    CAN_SendMessage(SYNC_ID, 0, NULL); DelayMs(50);
+    // ----- ADIM 2: Test Hareketi (Node 1, 1 tur, hız 1M pulse/sn) -----
+    Drive_Move(1, 1280000, 1000000, 5000000, true);
 
     while (1)
     {
@@ -143,7 +224,7 @@ int main(void)
         UdpServerTask();
         read_input();
 
-        // Sanal IO Atamaları
+        // IO Atamaları
         DoutPort.bitField.Bit0 = Aux0;
         DoutPort.bitField.Bit1 = Aux1;
         DoutPort.bitField.Bit2 = Aux2;
@@ -153,9 +234,6 @@ int main(void)
         DoutPort.bitField.Bit6 = Aux6;
         DoutPort.bitField.Bit7 = Aux7;
         DoutPort.bitField.Bit8 = Aux8;
-        DoutPort.bitField.Bit9 = Aux9;
-        DoutPort.bitField.Bit10 = Aux10;
-        DoutPort.bitField.Bit11 = Aux11;
 
         OUTPUTSL_VAL = (unsigned char)(DoutPort.allvalue & 0xFF);
         OUTPUTSH_VAL = (unsigned char)((DoutPort.allvalue >> 8) & 0xFF);
@@ -168,12 +246,40 @@ int main(void)
             UdpServerStep1 = UDP_SERVER_REQUEST_RECEIVED;
             uart_cnt = 0;
             other_cnt++;
-            if (other_cnt >= 6)
+            if (other_cnt >= 10)
             {
                 other_cnt = 0;
                 LEDLIVE_Toggle();
-                // Gerçek pozisyonu periyodik sorgula
-                CAN_SendMessage(NODE_ID, 8, (uint8_t[]){0x40, 0x64, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00});
+
+                // Durum sorgulama (SDO üzerinden periyodik)
+                Drive_QueryStatus(1);
+            }
+        }
+
+        // CAN Okuma ve Ayrıştırma (Dispatcher)
+        if (CAN1_ReceiveCountGet() > 0)
+        {
+            CAN_MSG_OBJ rxMsg;
+            if (CAN1_Receive(&rxMsg))
+            {
+                // SDO Cevabı mı? (0x580 + nodeId)
+                if (rxMsg.msgId >= 0x581 && rxMsg.msgId <= 0x584)
+                {
+                    uint8_t nodeId = rxMsg.msgId - 0x580;
+                    uint16_t index = rxMsg.data[1] | (rxMsg.data[2] << 8);
+
+                    if (index == 0x6064) // Actual Position
+                    {
+                        axis_actual_pos[nodeId] = (int32_t)rxMsg.data[4] |
+                                                  ((int32_t)rxMsg.data[5] << 8) |
+                                                  ((int32_t)rxMsg.data[6] << 16) |
+                                                  ((int32_t)rxMsg.data[7] << 24);
+                    }
+                    else if (index == 0x6041) // Statusword
+                    {
+                        axis_status[nodeId] = rxMsg.data[4] | (rxMsg.data[5] << 8);
+                    }
+                }
             }
         }
     }
@@ -186,8 +292,6 @@ void PLC_VaribleClear(void)
     OUTPUTSH_VAL = 0; OUTPUTSL_VAL = 0;
     INPUTSH_VAL = 0; INPUTSL_VAL = 0;
     DinPort.allvalue = 0; DoutPort.allvalue = 0;
-    LastBit.allvalue = 0; AuxBit.allvalue = 0;
-    TmrEnBits.allvalue = 0; TmrBits.allvalue = 0;
     Aux0 = 0; Aux1 = 0; Aux2 = 0; Aux3 = 0;
     Aux4 = 0; Aux5 = 0; Aux6 = 0; Aux7 = 0;
     Aux8 = 0; Aux9 = 0; Aux10 = 0; Aux11 = 0;
