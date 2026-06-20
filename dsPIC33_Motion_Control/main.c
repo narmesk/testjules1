@@ -7,9 +7,9 @@
 #include <libpic30.h>
 
 /*
- * dsPIC33EP Motion Control Projesi - Güncellenmiş (V2)
+ * dsPIC33EP Motion Control Projesi - Hareket İyileştirmesi (V3)
  * Delta ASDA-A2 Sürücü Kontrolü (CANopen DS402)
- * Sanal IO ve Pozisyonlama İyileştirmeleri
+ * Pozisyonlama El Sıkışması ve SDO ile Hedef Gönderimi
  */
 
 // ---- Uygulama Değişkenleri ----
@@ -34,27 +34,26 @@ unsigned char other_cnt;
 
 // SDO Yazma Bufferları
 uint8_t sdo6060[8] = {0x2F, 0x60, 0x60, 0x00, 0x01, 0x00, 0x00, 0x00}; // Profile Position
-uint8_t sdo6081[8] = {0x23, 0x81, 0x60, 0x00, 0xE8, 0x03, 0x00, 0x00}; // 1000 unit/s
-uint8_t sdo6083[8] = {0x23, 0x83, 0x60, 0x00, 0xE8, 0x03, 0x00, 0x00};
-uint8_t sdo6084[8] = {0x23, 0x84, 0x60, 0x00, 0xE8, 0x03, 0x00, 0x00};
-uint8_t sdo60E0[8] = {0x23, 0xE0, 0x60, 0x00, 0xE8, 0x03, 0x00, 0x00};
-uint8_t sdo60E1[8] = {0x23, 0xE1, 0x60, 0x00, 0xE8, 0x03, 0x00, 0x00};
+uint8_t sdo6081[8] = {0x23, 0x81, 0x60, 0x00, 0x20, 0x4E, 0x00, 0x00}; // 20000 unit/s (Hız artırıldı)
+uint8_t sdo6083[8] = {0x23, 0x83, 0x60, 0x00, 0x20, 0x4E, 0x00, 0x00}; // Accel
+uint8_t sdo6084[8] = {0x23, 0x84, 0x60, 0x00, 0x20, 0x4E, 0x00, 0x00}; // Decel
+
+// SDO ile Hedef Pozisyon Gönderimi (0x607A) - Daha güvenilir
+uint8_t sdo607A[8] = {0x23, 0x7A, 0x60, 0x00, 0x10, 0x27, 0x00, 0x00}; // 10000 pulse
 
 // NMT
 uint8_t nmtStart[2] = {0x01, 0x00};
 
 // Controlword (0x6040) Komutları
-uint8_t cw_fault_reset[8] = {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Reset Fault
-uint8_t cw_shutdown[8]    = {0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Shutdown
-uint8_t cw_ready[8]       = {0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Switch On
-uint8_t cw_enable[8]      = {0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // Enable Operation (Servo On)
-uint8_t cw_start[8]       = {0x1F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // New Set-Point
-
-// Hareket Verileri
-uint8_t target_pos[8]  = {0x10, 0x27, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // 10000
+uint8_t cw_fault_reset[8] = {0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+uint8_t cw_shutdown[8]    = {0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+uint8_t cw_ready[8]       = {0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+uint8_t cw_enable[8]      = {0x0F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+uint8_t cw_start[8]       = {0x1F, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00}; // New Set-Point + Absolute
 
 // Okuma Komutları
-uint8_t read_6064[8] = {0x40, 0x64, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00};
+uint8_t read_6064[8] = {0x40, 0x64, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00}; // Actual Position
+uint8_t read_6041[8] = {0x40, 0x41, 0x60, 0x00, 0x00, 0x00, 0x00, 0x00}; // Statusword
 
 // ---- Fonksiyonlar ----
 void CAN_SendMessage(uint32_t msgId, uint8_t dlc, uint8_t *data)
@@ -89,7 +88,7 @@ int main(void)
     LEDLIVE_SetHigh();
     PLC_VaribleClear();
 
-    // Ethernet Yapılandırması (Kullanıcının StackInit beklentisine uygun)
+    // Ethernet Yapılandırması
     memset((void*) &AppConfig, 0x00, sizeof (AppConfig));
     AppConfig.Flags.bIsDHCPEnabled = TRUE;
     AppConfig.Flags.bInConfigMode = TRUE;
@@ -103,7 +102,7 @@ int main(void)
     CAN1_TransmitEnable();
     CAN1_ReceiveEnable();
 
-    // Sürücülerin boot süresi için bekleme (3 saniye)
+    // Sürücü boot bekleme
     DelayMs(3000);
 
     CAN1_OperationModeSet(CAN_CONFIGURATION_MODE);
@@ -111,34 +110,34 @@ int main(void)
     CAN1_OperationModeSet(CAN_NORMAL_2_0_MODE);
     DelayMs(100);
 
-    // ----- ADIM 1: SDO Yapılandırması -----
+    // ----- ADIM 1: Temel SDO Yapılandırması -----
     CAN_SendMessage(NODE_ID, 8, sdo6060); DelayMs(150);
     CAN_SendMessage(NODE_ID, 8, sdo6081); DelayMs(150);
     CAN_SendMessage(NODE_ID, 8, sdo6083); DelayMs(150);
     CAN_SendMessage(NODE_ID, 8, sdo6084); DelayMs(150);
-    CAN_SendMessage(NODE_ID, 8, sdo60E0); DelayMs(150);
-    CAN_SendMessage(NODE_ID, 8, sdo60E1); DelayMs(150);
 
     // ----- ADIM 2: NMT Start -----
     CAN_SendMessage(0x000, 2, nmtStart);
     DelayMs(500);
 
-    // ----- ADIM 3: DS402 Servo-On Sırası -----
-    // Varsa hatayı temizle (Bit 7 of Controlword)
+    // ----- ADIM 3: DS402 Servo-On -----
     CAN_SendMessage(RXPDO1_CW, 8, cw_fault_reset); DelayMs(300);
+    CAN_SendMessage(RXPDO1_CW, 8, cw_shutdown);    DelayMs(200);
+    CAN_SendMessage(RXPDO1_CW, 8, cw_ready);       DelayMs(200);
+    CAN_SendMessage(RXPDO1_CW, 8, cw_enable);      DelayMs(500);
 
-    // Servo On için DS402 Durum Geçişleri
-    CAN_SendMessage(RXPDO1_CW, 8, cw_shutdown); DelayMs(200);
-    CAN_SendMessage(RXPDO1_CW, 8, cw_ready);    DelayMs(200);
-    CAN_SendMessage(RXPDO1_CW, 8, cw_enable);   DelayMs(300); // Motorun kilitlenmesi (Holding Torque) burada gerçekleşir
+    // ----- ADIM 4: HAREKET TETİKLEME (El Sıkışması İle) -----
+    // 1. Hedef pozisyonu SDO üzerinden gönder (Kesin çözüm)
+    CAN_SendMessage(NODE_ID, 8, sdo607A); DelayMs(200);
 
-    // ----- ADIM 4: Hareket Komutu -----
-    // Mevcut pozisyonu oku
-    CAN_SendMessage(NODE_ID, 8, read_6064); DelayMs(200);
+    // 2. New Set-Point'i tetikle (Bit 4)
+    CAN_SendMessage(RXPDO1_CW, 8, cw_start); DelayMs(200);
 
-    // Hedefi gönder ve hareketi tetikle
-    CAN_SendMessage(RXPDO2_TPOS, 8, target_pos); DelayMs(100);
-    CAN_SendMessage(RXPDO1_CW, 8, cw_start);     DelayMs(100);
+    // 3. Statusword oku (Set-point acknowledge kontrolü için)
+    CAN_SendMessage(NODE_ID, 8, read_6041); DelayMs(100);
+
+    // 4. New Set-Point'i temizle (Toggle işlemi)
+    CAN_SendMessage(RXPDO1_CW, 8, cw_enable); DelayMs(100);
 
     while (1)
     {
@@ -146,7 +145,7 @@ int main(void)
         UdpServerTask();
         read_input();
 
-        // Sanal IO Atamaları
+        // IO Atamaları
         DoutPort.bitField.Bit0 = Aux0;
         DoutPort.bitField.Bit1 = Aux1;
         DoutPort.bitField.Bit2 = Aux2;
@@ -160,7 +159,6 @@ int main(void)
         DoutPort.bitField.Bit10 = Aux10;
         DoutPort.bitField.Bit11 = Aux11;
 
-        // Fiziksel Çıkış Bufferlarını Güncelle
         OUTPUTSL_VAL = (unsigned char)(DoutPort.allvalue & 0xFF);
         OUTPUTSH_VAL = (unsigned char)((DoutPort.allvalue >> 8) & 0xFF);
 
@@ -177,7 +175,7 @@ int main(void)
                 other_cnt = 0;
                 LEDLIVE_Toggle();
 
-                // Pozisyonu periyodik olarak sorgula
+                // Pozisyon sorgula
                 CAN_SendMessage(NODE_ID, 8, read_6064);
             }
         }
