@@ -8,10 +8,13 @@
 #include <libpic30.h>
 
 /*
- * dsPIC33EP Motion Control Projesi - V34 (Nokta Atışı & Tam Mimari)
+ * dsPIC33EP Motion Control Projesi - V38 (Nihai Nokta Atışı)
  * Delta ASDA-A2 Sürücü Kontrolü (CANopen DS402)
- * Hedef: 4ms çevrim, Kararlı Ethernet, 4-Eksen Manuel/Otomatik, Özel Home.
+ * Senaryo: 1 Tur (PP) -> 2sn Bekle -> Sürekli +18 Pulse Akış (PP Handshake)
  */
+
+// ---- Yapılandırma ----
+#define ACTIVE_AXIS_COUNT 1  // Test için 1, saha için 4 yapınız.
 
 // ---- Uygulama Değişkenleri ----
 unsigned int Aux_Value_In;
@@ -30,56 +33,66 @@ extern unsigned char uart_cnt;
 unsigned char other_cnt;
 
 // Eksen Durum Tanımları
-typedef enum { A_IDLE, A_WAIT_ACK, A_MOVING } axis_move_state_t;
+typedef enum { M_IDLE, M_START_MOVE, M_WAIT_ACK, M_MOVING, M_STREAMING } axis_move_state_t;
 typedef enum { H_IDLE, H_SEARCH, H_BACKOFF, H_TOUCH, H_DONE } axis_home_state_t;
+
+// Test Senaryo Durumları
+typedef enum { T_INIT, T_TURN, T_WAIT, T_STREAM } test_state_t;
+test_state_t global_test_state = T_INIT;
+uint32_t global_test_timer = 0;
 
 // Eksen Veri Yapısı (4 Eksen)
 typedef struct {
-    int32_t target_pos;      // Yazılımsal hedef
-    int32_t actual_pos_raw;  // Sürücüden gelen ham değer
-    int32_t home_offset;     // Yazılımsal 0 noktası kayması
-    uint16_t status;         // Statusword
-    uint32_t inputs;         // Digital Inputs (0x60FD)
+    int32_t target_pos;
+    int32_t actual_pos;
+    uint16_t status;
+    uint32_t inputs;
     axis_move_state_t m_state;
     axis_home_state_t h_state;
     bool req_move;
     bool req_home;
-    bool is_auto;            // true: PC, false: Manuel (Sürücü IO)
-    uint8_t home_node;       // Sensörün bağlı olduğu sürücü
-    uint8_t home_bit;        // Sensörün bit numarası
-    bool pp_toggle;          // Handshake için bit 4 durumu
+    bool is_auto;
+    uint8_t home_sensor_node;
+    uint8_t home_sensor_bit;
+    bool pp_toggle;
 } axis_t;
 
 axis_t axes[5]; // Index 1-4
 
-// ---- CANopen Altyapı Fonksiyonları ----
+// ---- CANopen Çekirdek Fonksiyonlar ----
 
-/**
- * SDO Yazma (Sadece SETUP aşamasında kullanılmalıdır - 15ms bloklar)
- */
-void CAN_WriteSDO_Blocking(uint8_t nodeId, uint16_t index, uint8_t subindex, uint32_t data, uint8_t len)
+void CAN_WriteSDO(uint8_t nodeId, uint16_t index, uint8_t subindex, uint32_t data, uint8_t len)
 {
     CAN_MSG_OBJ msg = {0};
     uint8_t s_data[8] = {0};
-    if (len == 1) s_data[0] = 0x2F;
-    else if (len == 2) s_data[0] = 0x2B;
-    else s_data[0] = 0x23;
 
-    s_data[1] = (uint8_t)(index & 0xFF); s_data[2] = (uint8_t)((index >> 8) & 0xFF);
+    if (len == 1) {
+        s_data[0] = 0x2F;
+    } else if (len == 2) {
+        s_data[0] = 0x2B;
+    } else {
+        s_data[0] = 0x23;
+    }
+
+    s_data[1] = (uint8_t)(index & 0xFF);
+    s_data[2] = (uint8_t)((index >> 8) & 0xFF);
     s_data[3] = subindex;
-    s_data[4] = (uint8_t)(data & 0xFF); s_data[5] = (uint8_t)((data >> 8) & 0xFF);
-    s_data[6] = (uint8_t)((data >> 16) & 0xFF); s_data[7] = (uint8_t)((data >> 24) & 0xFF);
+    s_data[4] = (uint8_t)(data & 0xFF);
+    s_data[5] = (uint8_t)((data >> 8) & 0xFF);
+    s_data[6] = (uint8_t)((data >> 16) & 0xFF);
+    s_data[7] = (uint8_t)((data >> 24) & 0xFF);
 
     msg.msgId = 0x600 + nodeId;
     msg.field.idType = CAN_FRAME_STD; msg.field.frameType = CAN_FRAME_DATA; msg.field.dlc = 8;
     msg.data = s_data;
+
+    // TX Buffer'ın boşalmasını bekle
+    uint16_t timeout = 5000;
+    while(C1TR01CONbits.TXREQ0 == 1 && --timeout);
     CAN1_Transmit(CAN_PRIORITY_HIGH, &msg);
     DelayMs(15);
 }
 
-/**
- * PDO1 Gönderimi (Hızlı - Non-blocking)
- */
 void Drive_SendPDO1(uint8_t nodeId, uint16_t cw, int32_t pos)
 {
     CAN_MSG_OBJ msg = {0};
@@ -91,123 +104,93 @@ void Drive_SendPDO1(uint8_t nodeId, uint16_t cw, int32_t pos)
     msg.msgId = 0x200 + nodeId;
     msg.field.idType = CAN_FRAME_STD; msg.field.frameType = CAN_FRAME_DATA; msg.field.dlc = 6;
     msg.data = d;
+
+    uint16_t timeout = 1000;
+    while(C1TR01CONbits.TXREQ0 == 1 && --timeout);
     CAN1_Transmit(CAN_PRIORITY_HIGH, &msg);
 }
 
-// ---- Hareket ve Home API ----
+// ---- Hareket & Home API ----
 
-void Drive_InitializeAxis(uint8_t nodeId)
+void Drive_Initialize(uint8_t nodeId)
 {
-    // PDO Mapping Konfigürasyonu
-    CAN_WriteSDO_Blocking(nodeId, 0x1600, 0x00, 0x00, 1);
-    CAN_WriteSDO_Blocking(nodeId, 0x1A00, 0x00, 0x00, 1);
-    CAN_WriteSDO_Blocking(nodeId, 0x1A01, 0x00, 0x00, 1);
+    // PDO Mapping
+    CAN_WriteSDO(nodeId, 0x1600, 0x00, 0x00, 1);
+    CAN_WriteSDO(nodeId, 0x1A00, 0x00, 0x00, 1);
+    CAN_WriteSDO(nodeId, 0x1A01, 0x00, 0x00, 1);
+    CAN_WriteSDO(nodeId, 0x1600, 0x01, 0x60400010, 4); // CW
+    CAN_WriteSDO(nodeId, 0x1600, 0x02, 0x607A0020, 4); // Target
+    CAN_WriteSDO(nodeId, 0x1600, 0x00, 0x02, 1);
+    CAN_WriteSDO(nodeId, 0x1A00, 0x01, 0x60410010, 4); // Status
+    CAN_WriteSDO(nodeId, 0x1A00, 0x02, 0x60640020, 4); // Actual
+    CAN_WriteSDO(nodeId, 0x1A00, 0x00, 0x02, 1);
+    CAN_WriteSDO(nodeId, 0x1A01, 0x01, 0x60FD0020, 4); // Inputs
+    CAN_WriteSDO(nodeId, 0x1A01, 0x00, 0x01, 1);
 
-    // RxPDO1: 6040h + 607Ah
-    CAN_WriteSDO_Blocking(nodeId, 0x1600, 0x01, 0x60400010, 4);
-    CAN_WriteSDO_Blocking(nodeId, 0x1600, 0x02, 0x607A0020, 4);
-    CAN_WriteSDO_Blocking(nodeId, 0x1600, 0x00, 0x02, 1);
+    CAN_WriteSDO(nodeId, 0x6060, 0x00, 0x01, 1); // PP Mode
+    CAN_WriteSDO(nodeId, 0x6081, 0x00, 1280000, 4); // 60 RPM
+    CAN_WriteSDO(nodeId, 0x6083, 0x00, 3200000, 4); // Accel
 
-    // TxPDO1: 6041h + 6064h
-    CAN_WriteSDO_Blocking(nodeId, 0x1A00, 0x01, 0x60410010, 4);
-    CAN_WriteSDO_Blocking(nodeId, 0x1A00, 0x02, 0x60640020, 4);
-    CAN_WriteSDO_Blocking(nodeId, 0x1A00, 0x00, 0x02, 1);
-
-    // TxPDO2: 60FDh (Girişler)
-    CAN_WriteSDO_Blocking(nodeId, 0x1A01, 0x01, 0x60FD0020, 4);
-    CAN_WriteSDO_Blocking(nodeId, 0x1A01, 0x00, 0x01, 1);
-
-    CAN_WriteSDO_Blocking(nodeId, 0x6060, 0x00, 0x01, 1); // PP Mode
-
-    // NMT Start
-    CAN_MSG_OBJ nmt = {0}; uint8_t nmt_d[2] = {0x01, nodeId};
-    nmt.msgId = 0x000; nmt.field.dlc = 2; nmt.data = nmt_d;
+    CAN_MSG_OBJ nmt = {0}; uint8_t n_d[2] = {0x01, nodeId};
+    nmt.msgId = 0x000; nmt.field.dlc = 2; nmt.data = n_d;
     nmt.field.idType = CAN_FRAME_STD; nmt.field.frameType = CAN_FRAME_DATA;
     CAN1_Transmit(CAN_PRIORITY_HIGH, &nmt); DelayMs(100);
 
-    // DS402 Ready
     Drive_SendPDO1(nodeId, 0x000F, 0); DelayMs(200);
 }
 
-void Drive_SetDynamics(uint8_t nodeId, uint32_t vel, uint32_t acc)
-{
-    CAN_WriteSDO_Blocking(nodeId, 0x6081, 0x00, vel, 4);
-    CAN_WriteSDO_Blocking(nodeId, 0x6083, 0x00, acc, 4);
-    CAN_WriteSDO_Blocking(nodeId, 0x6084, 0x00, acc, 4);
-}
-
-/**
- * Eksen Mantıksal İşlemesi (4ms çevriminde çağrılır)
- */
 void Drive_UpdateLogic(uint8_t n)
 {
     // 1. Home Prosedürü
-    if (axes[n].req_home) {
-        if (n == 1) { // Sensörsüz Drive 1
-            axes[n].home_offset = axes[n].actual_pos_raw;
-            axes[n].req_home = false;
+    if (axes[n].req_home == true) {
+        if (n == 1) {
+            CAN_WriteSDO(n, 0x607C, 0x00, 0, 4); axes[n].req_home = false;
         } else {
-            bool s_active = (axes[axes[n].home_node].inputs & (1UL << axes[n].home_bit));
+            bool s_active = (axes[axes[n].home_sensor_node].inputs & (1UL << axes[n].home_sensor_bit));
             switch(axes[n].h_state) {
-                case H_IDLE:
-                    axes[n].target_pos = axes[n].actual_pos_raw; // Sıçramayı önle
-                    axes[n].h_state = H_SEARCH;
-                    break;
+                case H_IDLE: axes[n].target_pos = axes[n].actual_pos; axes[n].h_state = H_SEARCH; break;
                 case H_SEARCH:
-                    if (s_active) {
+                    if (s_active == true) {
                         axes[n].h_state = H_BACKOFF;
-                        axes[n].target_pos = axes[n].actual_pos_raw - 128000;
-                        axes[n].pp_toggle = true; // Tetikle
+                        axes[n].target_pos = axes[n].actual_pos - 64000;
                     } else {
                         axes[n].target_pos += 1000;
-                        axes[n].pp_toggle = !axes[n].pp_toggle;
                     }
                     break;
                 case H_BACKOFF:
-                    if (axes[n].status & 0x0400) axes[n].h_state = H_TOUCH;
+                    if (axes[n].status & 0x0400) { axes[n].h_state = H_TOUCH; }
                     break;
                 case H_TOUCH:
-                    if (s_active) axes[n].h_state = H_DONE;
-                    else {
-                        axes[n].target_pos += 50;
-                        axes[n].pp_toggle = !axes[n].pp_toggle;
-                    }
+                    if (s_active == true) { axes[n].h_state = H_DONE; }
+                    else { axes[n].target_pos += 50; }
                     break;
                 case H_DONE:
-                    axes[n].home_offset = axes[n].actual_pos_raw;
+                    CAN_WriteSDO(n, 0x607C, 0x00, 0, 4);
                     axes[n].req_home = false; axes[n].h_state = H_IDLE;
                     break;
             }
-            // Homing PDO Gönderimi
-            uint16_t cw = axes[n].pp_toggle ? 0x001F : 0x000F;
-            Drive_SendPDO1(n, cw, axes[n].target_pos);
+            uint16_t cw_h;
+            if (axes[n].pp_toggle == true) { cw_h = 0x001F; } else { cw_h = 0x000F; }
+            Drive_SendPDO1(n, cw_h, axes[n].target_pos);
+            axes[n].pp_toggle = !axes[n].pp_toggle;
         }
         return;
     }
 
-    // 2. Manuel/Otomatik Seçimi
-    if (!axes[n].is_auto) {
-        // Manuel Mod: dsPIC sadece sürücüyü Operation Enabled tutar, hareket sürücü IO'sundadır.
-        Drive_SendPDO1(n, 0x000F, axes[n].actual_pos_raw);
-    } else if (axes[n].req_move) {
-        // Otomatik Mod: PP Handshake (Bit 4 Toggle)
-        switch(axes[n].m_state) {
-            case A_IDLE:
-                Drive_SendPDO1(n, 0x001F, axes[n].target_pos);
-                axes[n].m_state = A_WAIT_ACK;
-                break;
-            case A_WAIT_ACK:
-                if (axes[n].status & 0x1000) { // Bit 12: Acknowledge
-                    Drive_SendPDO1(n, 0x000F, axes[n].target_pos);
-                    axes[n].m_state = A_MOVING;
-                }
-                break;
-            case A_MOVING:
-                if (axes[n].status & 0x0400) { // Bit 10: Target Reached
-                    axes[n].req_move = false; axes[n].m_state = A_IDLE;
-                }
-                break;
+    // 2. Hareket Mantığı (Manual/Auto/Streaming)
+    if (axes[n].is_auto == false) {
+        // Manuel Mod: Sadece enabled tutulur
+        Drive_SendPDO1(n, 0x000F, axes[n].actual_pos);
+    } else {
+        // Otomatik veya Streaming: Handshake Toggle
+        uint16_t cw_a;
+        if (axes[n].pp_toggle == true) {
+            cw_a = 0x003F; // Start + Immediate
+        } else {
+            cw_a = 0x002F; // Clear bit 4
         }
+        Drive_SendPDO1(n, cw_a, axes[n].target_pos);
+        axes[n].pp_toggle = !axes[n].pp_toggle;
     }
 }
 
@@ -226,7 +209,7 @@ int main(void)
 
     INTERRUPT_GlobalEnable(); LEDLIVE_SetHigh(); PLC_VaribleClear();
 
-    // Ethernet (Orijinal Eksiksiz Yapı)
+    // Ethernet (Orijinal Blok)
     memset((void*) &AppConfig, 0x00, sizeof (AppConfig));
     AppConfig.Flags.bIsDHCPEnabled = TRUE;
     memcpypgm2ram((void*) &AppConfig.MyMACAddr, (ROM void*) SerializedMACAddress, sizeof (AppConfig.MyMACAddr));
@@ -241,11 +224,10 @@ int main(void)
     CAN1_OperationModeSet(CAN_CONFIGURATION_MODE); DelayMs(10);
     CAN1_OperationModeSet(CAN_NORMAL_OPERATION_MODE); DelayMs(100);
 
-    // Sürücüleri İlklendir
-    for(uint8_t i=1; i<=4; i++) {
-        Drive_InitializeAxis(i);
-        Drive_SetDynamics(i, 1280000, 3200000); // Varsayılan: 60 RPM
-        axes[i].home_node = i; axes[i].home_bit = 16;
+    // Eksenleri İlklendir
+    for (uint8_t i = 1; i <= ACTIVE_AXIS_COUNT; i++) {
+        Drive_Initialize(i);
+        axes[i].home_sensor_node = i; axes[i].home_sensor_bit = 16;
         axes[i].is_auto = true;
     }
 
@@ -253,43 +235,68 @@ int main(void)
     {
         StackTask(); UdpServerTask(); read_input();
 
-        // --- TAM IO EŞLEŞMESİ (12-Bit) ---
+        // IO Mapping
         DoutPort.bitField.Bit0 = Aux0;   DoutPort.bitField.Bit1 = Aux1;
         DoutPort.bitField.Bit2 = Aux2;   DoutPort.bitField.Bit3 = Aux3;
         DoutPort.bitField.Bit4 = Aux4;   DoutPort.bitField.Bit5 = Aux5;
         DoutPort.bitField.Bit6 = Aux6;   DoutPort.bitField.Bit7 = Aux7;
         DoutPort.bitField.Bit8 = Aux8;   DoutPort.bitField.Bit9 = Aux9;
         DoutPort.bitField.Bit10 = Aux10; DoutPort.bitField.Bit11 = Aux11;
-
         OUTPUTSL_VAL = (unsigned char)(DoutPort.allvalue & 0xFF);
         OUTPUTSH_VAL = (unsigned char)((DoutPort.allvalue >> 8) & 0xFF);
         set_outpus();
 
-        // 4ms Senkron Kontrol
+        // 4ms Senkron Çevrim (uart_cnt tabanlı)
         uart_cnt++;
         if (uart_cnt >= 40)
         {
-            UdpServerStep1 = UDP_SERVER_REQUEST_RECEIVED; uart_cnt = 0;
-            for(uint8_t n=1; n<=4; n++) Drive_UpdateLogic(n);
+            UdpServerStep1 = UDP_SERVER_REQUEST_RECEIVED;
+            uart_cnt = 0;
 
-            // Global SYNC
+            // --- TEST SENARYOSU ---
+            switch(global_test_state) {
+                case T_INIT:
+                    axes[1].target_pos = 1280000; // 1 Tur
+                    global_test_state = T_TURN;
+                    break;
+                case T_TURN:
+                    if (axes[1].status & 0x0400) { // Tur Bitti
+                        global_test_state = T_WAIT;
+                        global_test_timer = 0;
+                    }
+                    break;
+                case T_WAIT:
+                    if (++global_test_timer >= 500) { // 2 saniye
+                        global_test_state = T_STREAM;
+                    }
+                    break;
+                case T_STREAM:
+                    axes[1].target_pos += 18; // +18 Akış
+                    break;
+            }
+
+            for (uint8_t n = 1; n <= ACTIVE_AXIS_COUNT; n++) {
+                Drive_UpdateLogic(n);
+            }
+
+            // SYNC
             CAN_MSG_OBJ s = {0}; s.msgId = 0x080; s.field.dlc = 0;
             s.field.idType = CAN_FRAME_STD; s.field.frameType = CAN_FRAME_DATA;
-            CAN1_Transmit(CAN_PRIORITY_HIGH, &s);
+            while(C1TR01CONbits.TXREQ0 == 1); CAN1_Transmit(CAN_PRIORITY_HIGH, &s);
 
             other_cnt++; if (other_cnt >= 20) { other_cnt = 0; LEDLIVE_Toggle(); }
         }
 
-        // CAN Feedback Dispatcher (Non-blocking)
+        // CAN Feedback Dispatcher
         while (CAN1_ReceivedMessageCountGet() > 0) {
             CAN_MSG_OBJ rx; uint8_t rd[8]; rx.data = rd;
             if (CAN1_Receive(&rx)) {
                 uint8_t nid = (uint8_t)(rx.msgId & 0x0F);
                 if (nid >= 1 && nid <= 4) {
-                    if((rx.msgId & 0xFF0) == 0x180) { // TPDO1
+                    if ((rx.msgId & 0xFF0) == 0x180) {
                         axes[nid].status = (uint16_t)rx.data[0] | ((uint16_t)rx.data[1] << 8);
-                        axes[nid].actual_pos_raw = (int32_t)rx.data[2] | ((int32_t)rx.data[3] << 8) | ((int32_t)rx.data[4] << 16) | ((int32_t)rx.data[5] << 24);
-                    } else if((rx.msgId & 0xFF0) == 0x280) { // TPDO2
+                        axes[nid].actual_pos = (int32_t)rx.data[2] | ((int32_t)rx.data[3] << 8) | ((int32_t)rx.data[4] << 16) | ((int32_t)rx.data[5] << 24);
+                    } else if ((rx.msgId & 0xFF0) == 0x280) {
                         axes[nid].inputs = (uint32_t)rx.data[0] | ((uint32_t)rx.data[1] << 8) | ((uint32_t)rx.data[2] << 16) | ((uint32_t)rx.data[3] << 24);
                     }
                 }
