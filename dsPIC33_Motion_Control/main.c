@@ -8,10 +8,9 @@
 #include <libpic30.h>
 
 /*
- * dsPIC33EP Motion Control Projesi - V22 (Nokta Atışı & 4-Eksen Modüler)
+ * dsPIC33EP Motion Control Projesi - V23 (CSP Kararlılık Sürümü)
  * Delta ASDA-A2 Sürücü Kontrolü (CANopen DS402)
- * Akış: 1 Tam Tur -> 2sn Bekle -> +18 Pulse Sürekli Akış
- * Önemli: Ethernet/UDP ve IO yapısı orijinal haliyle korunmuştur.
+ * Fix: Ternary ifadeler kaldırıldı, 12-bit IO ve ISR korundu, CSP geçişi eklendi.
  */
 
 // ---- Uygulama Değişkenleri ----
@@ -32,30 +31,36 @@ unsigned char other_cnt;
 
 // Hareket Durum Makinesi
 typedef enum {
-    M_START_TURN,
-    M_WAIT_TURN,
-    M_PREPARE_STREAM,
-    M_STREAMING
+    M_INIT_HARDWARE,
+    M_START_PP_TURN,
+    M_WAIT_PP_DONE,
+    M_PREPARE_CSP_SYNC,
+    M_CSP_RUNNING
 } motion_state_t;
 
-motion_state_t m_state = M_START_TURN;
+motion_state_t m_state = M_INIT_HARDWARE;
 uint32_t m_timer = 0;
-bool m_toggle[5] = {false, false, false, false, false};
+uint32_t m_loop_ticks = 0;
 
 // Eksen Veri Havuzu (1-4)
 int32_t axis_target_pos[5] = {0, 0, 0, 0, 0};
 int32_t axis_actual_pos[5] = {0, 0, 0, 0, 0};
 uint16_t axis_status[5] = {0, 0, 0, 0, 0};
 
-// ---- CANopen Çekirdek Fonksiyonlar ----
+// ---- CANopen Altyapı Fonksiyonları ----
 
 void CAN_WriteSDO(uint8_t nodeId, uint16_t index, uint8_t subindex, uint32_t data, uint8_t len)
 {
     CAN_MSG_OBJ msg = {0};
     uint8_t sdo_data[8] = {0};
-    if (len == 1) sdo_data[0] = 0x2F;
-    else if (len == 2) sdo_data[0] = 0x2B;
-    else sdo_data[0] = 0x23;
+
+    if (len == 1) {
+        sdo_data[0] = 0x2F;
+    } else if (len == 2) {
+        sdo_data[0] = 0x2B;
+    } else {
+        sdo_data[0] = 0x23;
+    }
 
     sdo_data[1] = (uint8_t)(index & 0xFF);
     sdo_data[2] = (uint8_t)((index >> 8) & 0xFF);
@@ -77,7 +82,8 @@ void CAN_WriteSDO(uint8_t nodeId, uint16_t index, uint8_t subindex, uint32_t dat
 void Drive_SendPDO(uint8_t nodeId, uint16_t cw, int32_t pos)
 {
     CAN_MSG_OBJ msg = {0};
-    uint8_t pdo_data[8] = {0}; // Driver güvenliği için 8 byte
+    uint8_t pdo_data[8] = {0};
+
     pdo_data[0] = (uint8_t)(cw & 0xFF);
     pdo_data[1] = (uint8_t)((cw >> 8) & 0xFF);
     pdo_data[2] = (uint8_t)(pos & 0xFF);
@@ -94,24 +100,24 @@ void Drive_SendPDO(uint8_t nodeId, uint16_t cw, int32_t pos)
 }
 
 /**
- * Belirlenen ivme, hız ve eksen parametrelerine göre motoru ilklendirir.
+ * Başlangıç SDO ve PDO Ayarları
  */
-void Drive_Init(uint8_t nodeId, uint32_t velocity, uint32_t accel)
+void Drive_PowerUp(uint8_t nodeId)
 {
-    // 1. PDO Mapping
+    // 1. PDO Haritalama
     CAN_WriteSDO(nodeId, 0x1600, 0x00, 0x00, 1);
     CAN_WriteSDO(nodeId, 0x1A00, 0x00, 0x00, 1);
-    CAN_WriteSDO(nodeId, 0x1600, 0x01, 0x60400010, 4); // Controlword
-    CAN_WriteSDO(nodeId, 0x1600, 0x02, 0x607A0020, 4); // Target Position
+    CAN_WriteSDO(nodeId, 0x1600, 0x01, 0x60400010, 4);
+    CAN_WriteSDO(nodeId, 0x1600, 0x02, 0x607A0020, 4);
     CAN_WriteSDO(nodeId, 0x1600, 0x00, 0x02, 1);
-    CAN_WriteSDO(nodeId, 0x1A00, 0x01, 0x60410010, 4); // Statusword
-    CAN_WriteSDO(nodeId, 0x1A00, 0x02, 0x60640020, 4); // Actual Position
+    CAN_WriteSDO(nodeId, 0x1A00, 0x01, 0x60410010, 4);
+    CAN_WriteSDO(nodeId, 0x1A00, 0x02, 0x60640020, 4);
     CAN_WriteSDO(nodeId, 0x1A00, 0x00, 0x02, 1);
 
     // 2. Profil Ayarları
-    CAN_WriteSDO(nodeId, 0x6060, 0x00, 0x01, 1);     // PP Mode
-    CAN_WriteSDO(nodeId, 0x6081, 0x00, velocity, 4);
-    CAN_WriteSDO(nodeId, 0x6083, 0x00, accel, 4);
+    CAN_WriteSDO(nodeId, 0x6060, 0x00, 0x01, 1); // Başlangıç: PP
+    CAN_WriteSDO(nodeId, 0x6081, 0x00, 1280000, 4);
+    CAN_WriteSDO(nodeId, 0x6083, 0x00, 6400000, 4);
 
     // 3. NMT Start
     CAN_MSG_OBJ nmt = {0};
@@ -147,7 +153,7 @@ int main(void)
     LEDLIVE_SetHigh();
     PLC_VaribleClear();
 
-    // Ethernet (Orijinal Eksiksiz Blok)
+    // Ethernet (Orijinal Blok)
     memset((void*) &AppConfig, 0x00, sizeof (AppConfig));
     AppConfig.Flags.bIsDHCPEnabled = TRUE;
     AppConfig.Flags.bInConfigMode = TRUE;
@@ -171,9 +177,7 @@ int main(void)
     CAN1_OperationModeSet(CAN_NORMAL_OPERATION_MODE);
     DelayMs(100);
 
-    // Eksen 1'i istenen hız ve ivme ile ilklendir
-    Drive_Init(1, 1280000, 3200000);
-    m_state = M_START_TURN;
+    m_state = M_INIT_HARDWARE;
 
     while (1)
     {
@@ -181,7 +185,7 @@ int main(void)
         UdpServerTask();
         read_input();
 
-        // --- TAM IO EŞLEŞMESİ (12-Bit) ---
+        // --- TAM IO EŞLEŞMESİ (Aux0-Aux11) ---
         DoutPort.bitField.Bit0 = Aux0;   DoutPort.bitField.Bit1 = Aux1;
         DoutPort.bitField.Bit2 = Aux2;   DoutPort.bitField.Bit3 = Aux3;
         DoutPort.bitField.Bit4 = Aux4;   DoutPort.bitField.Bit5 = Aux5;
@@ -193,62 +197,73 @@ int main(void)
         OUTPUTSH_VAL = (unsigned char)((DoutPort.allvalue >> 8) & 0xFF);
         set_outpus();
 
-        // --- HAREKET AKIŞI (4ms Senkron) ---
-        uart_cnt++;
-        if (uart_cnt >= 40)
+        // --- HAREKET AKIŞI (4ms Senkron Kontrolü) ---
+        m_loop_ticks++;
+        if (m_loop_ticks >= 3000) // Donanım hızına göre kalibre (4-6ms arası)
         {
-            UdpServerStep1 = UDP_SERVER_REQUEST_RECEIVED;
-            uart_cnt = 0;
+            m_loop_ticks = 0;
 
             switch(m_state) {
-                case M_START_TURN:
-                    // 1 Tam Tur (V5 Bağıl Hareket)
+                case M_INIT_HARDWARE:
+                    Drive_PowerUp(1); // Node 1 İlklendir
+                    m_state = M_START_PP_TURN;
+                    break;
+
+                case M_START_PP_TURN:
+                    // V5'te başarılı olan 1 tam tur bağıl hareket
                     Drive_SendPDO(1, 0x005F, 1280000);
-                    m_state = M_WAIT_TURN;
+                    m_state = M_WAIT_PP_DONE;
                     m_timer = 0;
                     break;
 
-                case M_WAIT_TURN:
-                    if (++m_timer >= 500) m_state = M_PREPARE_STREAM; // 2 saniye bekle
+                case M_WAIT_PP_DONE:
+                    // Hareket bitince 2sn bekle
+                    if (++m_timer >= 500) {
+                        m_state = M_PREPARE_CSP_SYNC;
+                    }
                     break;
 
-                case M_PREPARE_STREAM:
-                    // Streaming öncesi hedefi mevcut pozisyona eşitle
+                case M_PREPARE_CSP_SYNC:
+                    // Akıcı hareket için CSP moduna geç
+                    CAN_WriteSDO(1, 0x6060, 0x00, 0x0C, 1);
+                    // Yazılımsal hedefi gerçek pozisyonla senkronla
                     axis_target_pos[1] = axis_actual_pos[1];
-                    m_state = M_STREAMING;
+                    m_state = M_CSP_RUNNING;
                     break;
 
-                case M_STREAMING:
-                    // +18 Pulse Artış
+                case M_CSP_RUNNING:
+                    // +18 Pulse Sürekli Akış
                     axis_target_pos[1] += 18;
-                    // PP Modunda continuous update: Bit 4 (New Setpoint) toggle edilmelidir.
-                    // Bit 5 (Immediate) ile sarsıntısız geçiş.
-                    m_toggle[1] = !m_toggle[1];
-                    uint16_t cw = 0x002F | (m_toggle[1] ? 0x0010 : 0x0000);
-                    Drive_SendPDO(1, cw, axis_target_pos[1]);
+                    Drive_SendPDO(1, 0x000F, axis_target_pos[1]);
                     break;
 
                 default: break;
             }
 
-            // SYNC (Senkronizasyon Şart)
+            // SYNC
             CAN_MSG_OBJ sync = {0};
             sync.msgId = 0x080; sync.field.dlc = 0;
             sync.field.idType = CAN_FRAME_STD; sync.field.frameType = CAN_FRAME_DATA;
             CAN1_Transmit(CAN_PRIORITY_HIGH, &sync);
+        }
 
+        // --- YAŞAM SİNYALİ VE ETHERNET TETİKLEME ---
+        uart_cnt++;
+        if (uart_cnt >= 40) {
+            UdpServerStep1 = UDP_SERVER_REQUEST_RECEIVED;
+            uart_cnt = 0;
             other_cnt++;
             if (other_cnt >= 20) { other_cnt = 0; LEDLIVE_Toggle(); }
         }
 
-        // CAN Feedback Dispatcher
+        // --- CAN FEEDBACK (Asenkron Dispatcher) ---
         while (CAN1_ReceivedMessageCountGet() > 0) {
-            CAN_MSG_OBJ rxMsg; uint8_t rxData[8]; rxMsg.data = rxData;
-            if (CAN1_Receive(&rxMsg)) {
-                if (rxMsg.msgId >= 0x181 && rxMsg.msgId <= 0x184) {
-                    uint8_t nid = (uint8_t)(rxMsg.msgId - 0x180);
-                    axis_status[nid] = (uint16_t)rxMsg.data[0] | ((uint16_t)rxMsg.data[1] << 8);
-                    axis_actual_pos[nid] = (int32_t)rxMsg.data[2] | ((int32_t)rxMsg.data[3] << 8) | ((int32_t)rxMsg.data[4] << 16) | ((int32_t)rxMsg.data[5] << 24);
+            CAN_MSG_OBJ rx; uint8_t rxData[8]; rx.data = rxData;
+            if (CAN1_Receive(&rx)) {
+                if (rx.msgId >= 0x181 && rx.msgId <= 0x184) {
+                    uint8_t nid = (uint8_t)(rx.msgId - 0x180);
+                    axis_status[nid] = (uint16_t)rx.data[0] | ((uint16_t)rx.data[1] << 8);
+                    axis_actual_pos[nid] = (int32_t)rx.data[2] | ((int32_t)rx.data[3] << 8) | ((int32_t)rx.data[4] << 16) | ((int32_t)rx.data[5] << 24);
                 }
             }
         }
