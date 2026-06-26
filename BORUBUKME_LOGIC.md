@@ -42,12 +42,14 @@ Bu belge, Boru Bükme makinesinin çalışma prensiplerini, I/O eşleşmelerini 
 
 ## 3. Eksen Tanımları (Axis Mapping)
 
-| Eksen | Görev | Birim | Notlar |
-| :--- | :--- | :--- | :--- |
-| **Axis A** | Eksen Değiştirme | mm | Bazı yerlerde `APozisyon` olarak geçer |
-| **Axis B** | Boru Bükme | Derece (°) | `BPozisyon` |
-| **Axis C** | Boru Döndürme | Derece (°) | `CPozisyon` |
-| **Axis D** | Boru Sürme | mm | `DPozisyon`. **Kümülatif** çalışır (`AccumulateDPozisyon`). |
+| Eksen (HW) | Görev | JSON Karşılığı | Çarpan (Hız) | Birim |
+| :--- | :--- | :--- | :--- | :--- |
+| **Axis A** | Eksen Değiştirme | `CValf` / `CPozisyon` | x3 | mm |
+| **Axis B** | Boru Bükme | `DValf`* / `DPozisyon` | x21 | Derece (°) |
+| **Axis C** | Boru Döndürme | `BValf`* / `BPozisyon` | x200 | Derece (°) |
+| **Axis D** | Boru Sürme | `AValf` / `APozisyon` | x50 | mm |
+
+> *Not: Valf (Boolean) ve Pozisyon (Integer) eşleşmeleri kod içinde çaprazlanmış olabilir (Örn: `AValf` Sürme valfini, `APozisyon` ise Sürme motorunu kontrol eder). Axis D (Sürme) **kümülatif** çalışır (`AccumulateDPozisyon`).
 
 ## 4. Çalışma Modları (Operating Modes)
 
