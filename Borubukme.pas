@@ -2222,13 +2222,41 @@ var
 begin
   Protocol_UniIdx := Protocol_UniIdx + 1;
   case ALL_CMD_REG of
-    HOME_POS_GO: begin Diagnose.JvMemo1.Clear; Trace('Home CMD'); ALL_STAT_REG := 0; end;
-    VIRT_POS_GO: begin Diagnose.JvMemo1.Clear; Trace('Virtual Pos CMD'); ALL_STAT_REG := 0; end;
-    RESET_GO: begin Diagnose.JvMemo1.Clear; Trace('Reset CMD'); ALL_STAT_REG := 0; end;
-    AUTO_GO: begin Diagnose.JvMemo1.Clear; Trace('AUTO CMD'); ALL_STAT_REG := 0; end;
-    MANUEL_GO: begin Diagnose.JvMemo1.Clear; Trace('MANUEL CMD'); ALL_STAT_REG := 0; end;
+    HOME_POS_GO:
+      begin
+        Diagnose.JvMemo1.Clear;
+        Trace('Home CMD');
+        ALL_STAT_REG := 0;
+      end;
+    VIRT_POS_GO:
+      begin
+        Diagnose.JvMemo1.Clear;
+        Trace('Virtual Pos CMD');
+        ALL_STAT_REG := 0;
+      end;
+    RESET_GO:
+      begin
+        Diagnose.JvMemo1.Clear;
+        Trace('Reset CMD');
+        ALL_STAT_REG := 0;
+      end;
+    AUTO_GO:
+      begin
+        Diagnose.JvMemo1.Clear;
+        Trace('AUTO CMD');
+        ALL_STAT_REG := 0;
+      end;
+    MANUEL_GO:
+      begin
+        Diagnose.JvMemo1.Clear;
+        Trace('MANUEL CMD');
+        ALL_STAT_REG := 0;
+      end;
   else
-    begin ALL_CMD_REG := 0; ALL_STAT_REG := 0; end;
+    begin
+      ALL_CMD_REG := 0;
+      ALL_STAT_REG := 0;
+    end;
   end;
 
   Motion_Data();
@@ -2257,38 +2285,81 @@ begin
     try
       try
         Diagnose.IdUDPClient1.Active := False;
+        // IdUDPClient1.Host := IP;
+        // IdUDPClient1.Port := Port;
         Diagnose.IdUDPClient1.Active := True;
         Diagnose.IdUDPClient1.SendBuffer(Buffer);
+        // IdUDPClient1.Send('deneme');
       except
-        on E: Exception do begin Trace(E.Message); Trace('Bağlantı Hatası!'); Exit; end;
+        on E: Exception do
+        begin
+          Trace(E.Message);
+          Trace('Bağlantı Hatası!');
+          Exit;
+        end;
       end;
     finally
-      for Idx := 0 to 63 do Buffer[Idx] := $0;
-      if Diagnose.IdUDPClient1.Binding.Readable(63) then Diagnose.IdUDPClient1.ReceiveBuffer(Buffer, 64);
+      for Idx := 0 to 63 do
+      begin
+        Buffer[Idx] := $0;
+      end;
+      if Diagnose.IdUDPClient1.Binding.Readable(63) then
+      begin
+        Diagnose.IdUDPClient1.ReceiveBuffer(Buffer, 64);
+      end;
       crc := CalculateCRC16(Buffer, 0, 62);
       crch := (crc shr 8) mod 256;
       crcl := crc mod 256;
       if (crch = Buffer[62]) AND (crcl = Buffer[63]) Then
       begin
-        TestIdx := (Buffer[4] shl 24) OR (Buffer[5] shl 16) OR (Buffer[6] shl 8) OR Buffer[7];
+        TestIdx := (Buffer[4] shl 24) OR (Buffer[5] shl 16) OR (Buffer[6] shl 8)
+          OR Buffer[7];
         InVal := ((Buffer[10] shl 8) OR Buffer[11]);
-        for Idx := 16 to 55 do RXMOTIONMEM[Idx - 16] := Buffer[Idx];
+        for Idx := 16 to 55 do
+        begin
+          RXMOTIONMEM[Idx - 16] := Buffer[Idx];
+        end;
         crc := CalculateCRC16(RXMOTIONMEM, 0, 38);
         crch := (crc shr 8) mod 256;
         crcl := crc mod 256;
         if (crch = RXMOTIONMEM[38]) AND (crcl = RXMOTIONMEM[39]) Then
         begin
           ALL_STAT_REG := RXMOTIONMEM[36];
-          Diagnose.Label45.Caption := '*' + '->' + inttostr((RXMOTIONMEM[1] shl 16) OR (RXMOTIONMEM[2] shl 8) OR RXMOTIONMEM[3]);
+          Diagnose.Label45.Caption := '*' + '->' +
+            inttostr((RXMOTIONMEM[1] shl 16) OR (RXMOTIONMEM[2] shl 8) OR
+            RXMOTIONMEM[3]);
           ALL_STAT_REG := RXMOTIONMEM[36];
           ExtractMotionStatData();
           case ALL_STAT_REG of
-            HOME_POS_PROCESS: begin Trace('Home CMD OK'); ALL_CMD_REG := 0; end;
-            VIRT_POS_PROCESS: begin Trace('VIRT POS CMD OK'); ALL_CMD_REG := 0; end;
-            RESET_GO_PROCESS: begin Trace('Reset CMD OK'); ALL_CMD_REG := 0; end;
-            MANUEL_PROCESS: begin Trace('MANUEL CMD OK'); ALL_CMD_REG := 0; end;
-            AUTO_PROCESS: begin Trace('AUTO CMD OK'); ALL_CMD_REG := 0; end;
-          else ALL_STAT_REG := 0;
+            HOME_POS_PROCESS:
+              begin
+                Trace('Home CMD OK');
+                ALL_CMD_REG := 0;
+              end;
+            VIRT_POS_PROCESS:
+              begin
+                Trace('VIRT POS CMD OK');
+                ALL_CMD_REG := 0;
+              end;
+            RESET_GO_PROCESS:
+              begin
+                Trace('Reset CMD OK');
+                ALL_CMD_REG := 0;
+              end;
+            MANUEL_PROCESS:
+              begin
+                Trace('MANUEL CMD OK');
+                ALL_CMD_REG := 0;
+              end;
+            AUTO_PROCESS:
+              begin
+                Trace('AUTO CMD OK');
+                ALL_CMD_REG := 0;
+              end;
+          else
+            begin
+              ALL_STAT_REG := 0;
+            end;
           end;
         end;
       end
