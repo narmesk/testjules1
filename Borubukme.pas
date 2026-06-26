@@ -207,21 +207,6 @@ type
   end;
 
 const
-  { Command constants for machine control }
-  CMD_NONE           = 0;
-  VIRT_POS_GO        = 1; // Sanal Pozisyona Git
-  HOME_POS_GO        = 2; // Home Pozisyonuna Git
-  RESET_GO           = 3; // Sistemi Resetle
-  AUTO_GO            = 4; // Otomatik Moda Geç
-  MANUEL_GO          = 5; // Manuel Moda Geç
-
-  { Status constants from machine }
-  VIRT_POS_PROCESS   = 1;
-  HOME_POS_PROCESS   = 2;
-  RESET_GO_PROCESS   = 3;
-  AUTO_PROCESS       = 4;
-  MANUEL_PROCESS     = 5;
-
   CRC16Table: array [0 .. 255] of Word = ($0000, $C0C1, $C181, $0140, $C301,
     $03C0, $0280, $C241, $C601, $06C0, $0780, $C741, $0500, $C5C1, $C481, $0440,
     $CC01, $0CC0, $0D80, $CD41, $0F00, $CFC1, $CE81, $0E40, $0A00, $CAC1, $CB81,

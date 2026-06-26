@@ -26,9 +26,9 @@ Bu belge, Boru Bükme makinesinin çalışma prensiplerini, I/O eşleşmelerini 
 - **Bit 2:** Sıkma Sabit (Valve Control)
 - **Bit 3:** Eksen Değiştirme (Motor Aşağı/Yukarı)
 - **Bit 4:** Boru Sürme (AValf Kontrolü)
-- **Bit 5:** Otomatik Start Pulse
+- **Bit 5:** Otomatik Start Pulse (`OutVal` bit 5 setlenir, 500ms bekler, temizlenir)
 - **Bit 6:** Otomatik Stop Pulse
-- **Bit 7:** İlk Başlangıç Stop Pulse
+- **Bit 7:** İlk Başlangıç Stop Pulse (Program başında veya reset durumunda kullanılır)
 
 ### Dijital Girişler (Inputs - InVal Bits)
 - **Bit 0:** Auto/Manuel Seçici Anahtar
@@ -60,7 +60,7 @@ Bu belge, Boru Bükme makinesinin çalışma prensiplerini, I/O eşleşmelerini 
 ## 5. Hata Kodları ve Uyarılar
 
 - **CRC Hatası:** "Paket Bütünlüğü (CRC) Hatası!" mesajı `JvMemo1`'e yazılır.
-- **Kontaktör Hatası:** Sistem kontaktörü çekili değilse veya sürücüler hazır değilse (`ReadyStat`), sistem otomatik olarak `RESET_GO` komutu gönderir ve işlemi durdurur.
+- **Kontaktör Hatası:** Sistem kontaktörü çekili değilse veya sürücüler hazır değilse (`ReadyStat`), sistem otomatik olarak `RESET_GO` (Glob unitinden gelen değer) komutu gönderir ve işlemi durdurur.
 - **Açılış Kontrolü:** Program açılırken anahtar "Manuel" konumda değilse uyarı verir.
 
 ## 6. Geliştirme Notları (Developer Notes)
