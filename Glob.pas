@@ -2,9 +2,8 @@ unit Glob;
 
 interface
 
-uses Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
-  System.Classes, Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs,
-  Vcl.ComCtrls;
+uses
+  Winapi.Windows, System.SysUtils, System.Classes;
 
 type
   TData = record
@@ -20,260 +19,147 @@ type
     DValf: Boolean;
     DPozisyon: Integer;
     DHiz: Integer;
-  end;
-
-  TMotion = record
-    APozisyon: Integer;
-    AHiz: Integer;
-    AIvme: Integer;
     ACmd: Integer;
-    BPozisyon: Integer;
-    BHiz: Integer;
-    BIvme: Integer;
     BCmd: Integer;
-    CPozisyon: Integer;
-    CHiz: Integer;
-    CIvme: Integer;
     CCmd: Integer;
-    DPozisyon: Integer;
-    DHiz: Integer;
-    DIvme: Integer;
     DCmd: Integer;
+    AIvme: Integer;
+    BIvme: Integer;
+    CIvme: Integer;
+    DIvme: Integer;
   end;
 
-  TMotionStat = record
-    APozisyon: Integer;
-    AStatus: Integer;
-    BPozisyon: Integer;
-    BStatus: Integer;
-    CPozisyon: Integer;
-    CStatus: Integer;
-    DPozisyon: Integer;
-    DStatus: Integer;
-  end;
-
-  TForceIO = record
-    Inputs: Integer;
-    OutPuts: Integer;
-    Auxs: Integer;
+  TMotionActual = record
+    AStatus, BStatus, CStatus, DStatus: Word;
+    APozisyon, BPozisyon, CPozisyon, DPozisyon: Integer;
+    AHiz, BHiz, CHiz, DHiz: Integer;
   end;
 
 const
-
-  G0_POS_GO = 11;
-  G1_POS_GO = 12;
-  G2_POS_GO = 13;
-  G3_POS_GO = 14;
   HOME_POS_GO = 15;
   VIRT_POS_GO = 16;
-  SET_PARM1 = 17; // D\xf6kumantede
-  SET_PARM2 = 18; // D\xf6kumantede
-  ONLY_READ_GO = 19; // D\xf6kumantede
-  RESET_GO = 20; // D\xf6kumantede
-
+  RESET_GO = 20;
   AUTO_GO = 21;
   MANUEL_GO = 22;
 
-  G0_POS_PROCESS = 41;
-  G1_POS_PROCESS = 42;
-  G2_POS_PROCESS = 43;
-  G3_POS_PROCESS = 44;
-  HOME_POS_PROCESS = 45;
-  VIRT_POS_PROCESS = 46;
-  SET_PARM1_PROCESS = 47; // D\xf6kumantede
-  SET_PARM2_PROCESS = 48; // D\xf6kumantede
-  ONLY_READ_PROCESS = 49; // D\xf6kumantede
-  RESET_GO_PROCESS = 50; // D\xf6kumantede
+  HOME_POS_PROCESS = 15;
+  VIRT_POS_PROCESS = 16;
+  RESET_GO_PROCESS = 20;
+  AUTO_PROCESS = 21;
+  MANUEL_PROCESS = 22;
 
-  AUTO_PROCESS = 51;
-  MANUEL_PROCESS = 52;
+var
+  MotionData: TData;
+  MotionActual: TMotionActual;
+  ALL_CMD_REG, ALL_STAT_REG: Integer;
+  Protocol_UniIdx: Integer;
+  TXMEMORY, RXMEMORY: array [0 .. 127] of Byte;
+  TXMOTIONMEM, RXMOTIONMEM: array [0 .. 71] of Byte;
+  IslenenAdim, ToplamAdim: Integer;
+  OutVal: Integer;
+  AccumulateDPozisyon: Integer;
+  Pause: Integer;
+  Otomatik, OtomatikDurum, LastOtomatikDurum: Integer;
+  OtomatikState: Boolean;
+  DayamaDurum: Integer; DayamaState: Boolean;
+  SabitDurum: Integer; SabitState: Boolean;
+  SurmeDurum: Integer; SurmeState: Boolean;
+  EksenDurum: Integer; EksenState: Boolean;
+  LastSabitDurum, LastEksenDurum, LastSurmeDurum: Integer;
+  ReadyStatX, ReadyStatY, ReadyStatZ, ReadyStatA: Boolean;
+  HomeStatX, HomeStatY, HomeStatZ, HomeStatA: Boolean;
 
 procedure Protocol_Create();
 procedure Motion_Data();
 procedure ExtractMotionStatData();
-
-function GetBit(Value: Integer; BitIndex: Integer): Boolean;
-procedure SetBit(var Value: Integer; BitIndex: Integer);
-procedure ClearBit(var Value: Integer; BitIndex: Integer);
-
-procedure NoneWaitSleep(val: Integer);
-
-var
-  EksData: TData;
-  MotionData: TMotion;
-  MotionActual: TMotionStat;
-  ForceIO: TForceIO;
-
-  PLCMEMORY: Array [0 .. 127] of Integer;
-  TXMEMORY: Array [0 .. 127] of Byte;
-  RXMEMORY: Array [0 .. 63] of Byte;
-  TXMOTIONMEM: Array [0 .. 71] of Byte;
-  RXMOTIONMEM: Array [0 .. 39] of Byte;
-  INFORCEPLCMEM: Array [0 .. 3] of Byte;
-  OUTFORCEPLCMEM: Array [0 .. 3] of Byte;
-
-  ALL_CMD_REG: Byte;
-  ALL_STAT_REG: Byte;
-
-  Protocol_UniIdx: Integer;
-
-  HomeStatX, HomeStatY, HomeStatZ, HomeStatA: Boolean;
-  ReadyStatX, ReadyStatY, ReadyStatZ, ReadyStatA: Boolean;
-
-  DayamaState, SabitState, SurmeState, EksenState, OtomatikState: Boolean;
-  DayamaDurum, EksenDurum, SurmeDurum, SabitDurum, OtomatikDurum,
-    Otomatik,Pause: Integer;
-  LastEksenDurum, LastSurmeDurum, LastSabitDurum, LastOtomatikDurum: Integer;
-
-
-  AccumulateDPozisyon: Integer;
-
-  IslenenAdim: Integer;
-  ToplamAdim: Integer;
+procedure NoneWaitSleep(ms: Integer);
+procedure SetBit(var Value: Integer; Bit: Byte);
+procedure ClearBit(var Value: Integer; Bit: Byte);
+function GetBit(Value: Integer; Bit: Byte): Boolean;
 
 implementation
-
-uses Borubukme;
 
 procedure Protocol_Create();
 begin
   Protocol_UniIdx := 0;
-  MotionData.APozisyon := 0;
-  MotionData.AHiz := 0;
-  MotionData.AIvme := 0;
-  MotionData.ACmd := 0;
-  MotionData.BPozisyon := 0;
-  MotionData.BHiz := 0;
-  MotionData.BIvme := 0;
-  MotionData.BCmd := 0;
-  MotionData.CPozisyon := 0;
-  MotionData.CHiz := 0;
-  MotionData.CIvme := 0;
-  MotionData.CCmd := 0;
-  MotionData.DPozisyon := 0;
-  MotionData.DHiz := 0;
-  MotionData.DIvme := 0;
-  MotionData.DCmd := 0;
   ALL_CMD_REG := 0;
+  ALL_STAT_REG := 0;
 end;
 
 procedure Motion_Data();
-var
-  TempData: Array of Byte;
-  I, J: Integer;
-  Temp: Byte;
 begin
+  TXMOTIONMEM[0] := ALL_CMD_REG;
+  TXMOTIONMEM[1] := (MotionData.APozisyon shr 16) mod 256;
+  TXMOTIONMEM[2] := (MotionData.APozisyon shr 8) mod 256;
+  TXMOTIONMEM[3] := MotionData.APozisyon mod 256;
+  TXMOTIONMEM[4] := (MotionData.AHiz shr 8) mod 256;
+  TXMOTIONMEM[5] := MotionData.AHiz mod 256;
+  TXMOTIONMEM[6] := (MotionData.AIvme shr 8) mod 256;
+  TXMOTIONMEM[7] := MotionData.AIvme mod 256;
+  TXMOTIONMEM[8] := MotionData.ACmd;
 
-  // Varsay\xfdlan de\xf0erler vererek doldurma (iste\xf0e ba\xf0l\xfd)
+  TXMOTIONMEM[11] := (MotionData.BPozisyon shr 16) mod 256;
+  TXMOTIONMEM[12] := (MotionData.BPozisyon shr 8) mod 256;
+  TXMOTIONMEM[13] := MotionData.BPozisyon mod 256;
+  TXMOTIONMEM[14] := (MotionData.BHiz shr 8) mod 256;
+  TXMOTIONMEM[15] := MotionData.BHiz mod 256;
+  TXMOTIONMEM[16] := (MotionData.BIvme shr 8) mod 256;
+  TXMOTIONMEM[17] := MotionData.BIvme mod 256;
+  TXMOTIONMEM[18] := MotionData.BCmd;
 
-  // Diziyi s\xfdf\xfdrla
-  FillChar(TXMOTIONMEM, SizeOf(TXMOTIONMEM), 0);
-  TXMOTIONMEM[0] := $C5;
-  TXMOTIONMEM[1] := (Protocol_UniIdx shr 16) mod 256;
-  TXMOTIONMEM[2] := (Protocol_UniIdx shr 8) mod 256;
-  TXMOTIONMEM[3] := Protocol_UniIdx mod 256;
-  // MotionData'y\xfd bayt dizisine kopyala
-  SetLength(TempData, SizeOf(MotionData));
-  Move(MotionData, TempData[0], SizeOf(MotionData));
+  TXMOTIONMEM[21] := (MotionData.CPozisyon shr 16) mod 256;
+  TXMOTIONMEM[22] := (MotionData.CPozisyon shr 8) mod 256;
+  TXMOTIONMEM[23] := MotionData.CPozisyon mod 256;
+  TXMOTIONMEM[24] := (MotionData.CHiz shr 8) mod 256;
+  TXMOTIONMEM[25] := MotionData.CHiz mod 256;
+  TXMOTIONMEM[26] := (MotionData.CIvme shr 8) mod 256;
+  TXMOTIONMEM[27] := MotionData.CIvme mod 256;
+  TXMOTIONMEM[28] := MotionData.CCmd;
 
-  // MSB'den LSB'ye s\xfdralama
-  for I := 0 to (SizeOf(MotionData) div 4) - 1 do
-  begin
-    J := I * 4;
-    Temp := TempData[J]; // MSB
-    TempData[J] := TempData[J + 3]; // LSB
-    TempData[J + 3] := Temp; // Swap
-    Temp := TempData[J + 1]; // 2. Bayt
-    TempData[J + 1] := TempData[J + 2]; // 3. Bayt
-    TempData[J + 2] := Temp; // Swap
-  end;
-  // Ters \xe7evrilen baytlar\xfd TXMOTIONMEM'e yerle\xfetir
-  Move(TempData[0], TXMOTIONMEM[4], SizeOf(MotionData));
-  TXMOTIONMEM[68] := ALL_CMD_REG;
+  TXMOTIONMEM[31] := (MotionData.DPozisyon shr 16) mod 256;
+  TXMOTIONMEM[32] := (MotionData.DPozisyon shr 8) mod 256;
+  TXMOTIONMEM[33] := MotionData.DPozisyon mod 256;
+  TXMOTIONMEM[34] := (MotionData.DHiz shr 8) mod 256;
+  TXMOTIONMEM[35] := MotionData.DHiz mod 256;
+  TXMOTIONMEM[36] := (MotionData.DIvme shr 8) mod 256;
+  TXMOTIONMEM[37] := MotionData.DIvme mod 256;
+  TXMOTIONMEM[38] := MotionData.DCmd;
 end;
 
 procedure ExtractMotionStatData();
+begin
+  MotionActual.APozisyon := (RXMOTIONMEM[1] shl 16) OR (RXMOTIONMEM[2] shl 8) OR RXMOTIONMEM[3];
+  MotionActual.AStatus := (RXMOTIONMEM[8] shl 8) OR RXMOTIONMEM[9];
+  MotionActual.BPozisyon := (RXMOTIONMEM[11] shl 16) OR (RXMOTIONMEM[12] shl 8) OR RXMOTIONMEM[13];
+  MotionActual.BStatus := (RXMOTIONMEM[18] shl 8) OR RXMOTIONMEM[19];
+  MotionActual.CPozisyon := (RXMOTIONMEM[21] shl 16) OR (RXMOTIONMEM[22] shl 8) OR RXMOTIONMEM[23];
+  MotionActual.CStatus := (RXMOTIONMEM[28] shl 8) OR RXMOTIONMEM[29];
+  MotionActual.DPozisyon := (RXMOTIONMEM[31] shl 16) OR (RXMOTIONMEM[32] shl 8) OR RXMOTIONMEM[33];
+  MotionActual.DStatus := (RXMOTIONMEM[38] shl 8) OR RXMOTIONMEM[39];
+end;
+
+procedure NoneWaitSleep(ms: Integer);
 var
-  ByteOffset: Integer;
+  Start: Cardinal;
 begin
-  ByteOffset := 4; // RXMOTIONMEM'in ba\xfelang\xfd\xe7 noktas\xfd
-
-  // RXMOTIONMEM i\xe7indeki byte'lardan MotionActual yap\xfds\xfdn\xfd \xe7\xfdkar
-  MotionActual.APozisyon := (RXMOTIONMEM[ByteOffset] shl 24) or
-    (RXMOTIONMEM[ByteOffset + 1] shl 16) or (RXMOTIONMEM[ByteOffset + 2] shl 8)
-    or RXMOTIONMEM[ByteOffset + 3]; // Integer de\xf0er (Bayt 4-7)
-  MotionActual.AStatus := (RXMOTIONMEM[ByteOffset + 4] shl 24) or
-    (RXMOTIONMEM[ByteOffset + 5] shl 16) or (RXMOTIONMEM[ByteOffset + 6] shl 8)
-    or RXMOTIONMEM[ByteOffset + 7]; // Integer de\xf0er (Bayt 8-11)
-
-  ByteOffset := ByteOffset + 8; // Bir sonraki grup i\xe7in offset'i g\xfcncelle
-
-  MotionActual.BPozisyon := (RXMOTIONMEM[ByteOffset] shl 24) or
-    (RXMOTIONMEM[ByteOffset + 1] shl 16) or (RXMOTIONMEM[ByteOffset + 2] shl 8)
-    or RXMOTIONMEM[ByteOffset + 3]; // Integer de\xf0er (Bayt 12-15)
-  MotionActual.BStatus := (RXMOTIONMEM[ByteOffset + 4] shl 24) or
-    (RXMOTIONMEM[ByteOffset + 5] shl 16) or (RXMOTIONMEM[ByteOffset + 6] shl 8)
-    or RXMOTIONMEM[ByteOffset + 7]; // Integer de\xf0er (Bayt 16-19)
-
-  ByteOffset := ByteOffset + 8;
-
-  MotionActual.CPozisyon := (RXMOTIONMEM[ByteOffset] shl 24) or
-    (RXMOTIONMEM[ByteOffset + 1] shl 16) or (RXMOTIONMEM[ByteOffset + 2] shl 8)
-    or RXMOTIONMEM[ByteOffset + 3]; // Integer de\xf0er (Bayt 20-23)
-  MotionActual.CStatus := (RXMOTIONMEM[ByteOffset + 4] shl 24) or
-    (RXMOTIONMEM[ByteOffset + 5] shl 16) or (RXMOTIONMEM[ByteOffset + 6] shl 8)
-    or RXMOTIONMEM[ByteOffset + 7]; // Integer de\xf0er (Bayt 24-27)
-
-  ByteOffset := ByteOffset + 8;
-
-  MotionActual.DPozisyon := (RXMOTIONMEM[ByteOffset] shl 24) or
-    (RXMOTIONMEM[ByteOffset + 1] shl 16) or (RXMOTIONMEM[ByteOffset + 2] shl 8)
-    or RXMOTIONMEM[ByteOffset + 3]; // Integer de\xf0er (Bayt 28-31)
-  MotionActual.DStatus := (RXMOTIONMEM[ByteOffset + 4] shl 24) or
-    (RXMOTIONMEM[ByteOffset + 5] shl 16) or (RXMOTIONMEM[ByteOffset + 6] shl 8)
-    or RXMOTIONMEM[ByteOffset + 7]; // Integer de\xf0er (Bayt 32-35)
-  // Burada MotionActual ile gerekli i\xfelemleri yapabilirsiniz
+  Start := GetTickCount;
+  while GetTickCount - Start < Cardinal(ms) do
+    Winapi.Windows.ProcessMessages;
 end;
 
-function GetBit(Value: Integer; BitIndex: Integer): Boolean;
+procedure SetBit(var Value: Integer; Bit: Byte);
 begin
-  Result := (Value and (1 shl BitIndex)) <> 0;
+  Value := Value or (1 shl Bit);
 end;
 
-procedure SetBit(var Value: Integer; BitIndex: Integer);
+procedure ClearBit(var Value: Integer; Bit: Byte);
 begin
-  Value := Value or (1 shl BitIndex);
+  Value := Value and not (1 shl Bit);
 end;
 
-procedure ClearBit(var Value: Integer; BitIndex: Integer);
+function GetBit(Value: Integer; Bit: Byte): Boolean;
 begin
-  Value := Value and not(1 shl BitIndex);
-end;
-
-procedure NoneWaitSleep(val: Integer);
-var
-  Start, Elapsed: Int64;
-begin
-{$IF Defined(MSWINDOWS)}
-  Start := GetTickCount; // Windows i\xe7in
-{$ELSE}
-  Start := TThread.GetTickCount; // Android i\xe7in
-{$ENDIF}
-  Elapsed := 0;
-  repeat
-    TThread.Sleep(10); // K\xfdsa s\xfcreli bekleme
-{$IF Defined(MSWINDOWS)}
-    Application.ProcessMessages; // Windows i\xe7in mesaj kuyru\xf0u i\xfeleme
-{$ELSE}
-    // Android'de i\xfelem yap\xfdlmas\xfd i\xe7in bo\xfe bir olay d\xf6ng\xfcs\xfc sim\xfcle ediliyor
-    TThread.Yield; // Ana i\xfe par\xe7ac\xfd\xf0\xfdna i\xfelem yapma f\xfdrsat\xfd verir
-{$ENDIF}
-{$IF Defined(MSWINDOWS)}
-    Elapsed := GetTickCount - Start; // Windows
-{$ELSE}
-    Elapsed := TThread.GetTickCount - Start; // Android
-{$ENDIF}
-  until Elapsed >= val;
+  Result := (Value and (1 shl Bit)) <> 0;
 end;
 
 end.
