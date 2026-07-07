@@ -3,7 +3,7 @@ unit Glob;
 interface
 
 uses
-  Winapi.Windows, System.SysUtils, System.Classes;
+  Winapi.Windows, System.SysUtils, System.Classes, Vcl.Forms;
 
 type
   TData = record
@@ -144,7 +144,7 @@ var
 begin
   Start := GetTickCount;
   while GetTickCount - Start < Cardinal(ms) do
-    Winapi.Windows.ProcessMessages;
+    Application.ProcessMessages;
 end;
 
 procedure SetBit(var Value: Integer; Bit: Byte);
