@@ -68,6 +68,14 @@ var
   LastSabitDurum, LastEksenDurum, LastSurmeDurum: Integer;
   ReadyStatX, ReadyStatY, ReadyStatZ, ReadyStatA: Boolean;
   HomeStatX, HomeStatY, HomeStatZ, HomeStatA: Boolean;
+  WarnFlag: Boolean;
+  SystemReady: Boolean;
+  First_State: Integer;
+  AcilDurum: Integer;
+  AutoMan: Boolean;
+  Kontaktor: Boolean;
+  LastProcess1: Boolean;
+  LastPRocess: Integer;
 
 procedure Protocol_Create();
 procedure Motion_Data();

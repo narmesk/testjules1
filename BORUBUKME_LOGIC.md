@@ -7,10 +7,10 @@ Bu belge, Boru Bükme makinesinin çalışma prensiplerini, I/O eşleşmelerini 
 - **Protokol:** UDP üzerinden özel paket yapısı.
 - **CRC Kontrolü:** CRC16 kullanılır.
 - **Hız Katsayıları (Multiplier):**
-  - Axis A: `Hız * 3`
-  - Axis B: `Hız * 21`
-  - Axis C: `Hız * 200`
-  - Axis D: `Hız * 50`
+  - Axis A (HW): `Recipe.CHiz * 3`
+  - Axis B (HW): `Recipe.DHiz * 21`
+  - Axis C (HW): `Recipe.BHiz * 200`
+  - Axis D (HW): `Recipe.AHiz * 50`
 
 ## 2. I/O Eşleşmeleri (I/O Mapping)
 
@@ -21,7 +21,7 @@ Bu belge, Boru Bükme makinesinin çalışma prensiplerini, I/O eşleşmelerini 
 - **Bit 4:** Sürme Pistonu
 - **Bit 5:** Otomatik Start Pulse
 - **Bit 6:** Otomatik Stop Pulse
-- **Bit 7:** Referans/Start Durdurma Pulse
+- **Bit 7:** İlk Başlangıç Stop Pulse
 
 ### Dijital Girişler (Inputs - InVal Bits)
 - **Bit 0:** Auto/Manuel Seçici Anahtar
@@ -35,16 +35,39 @@ Bu belge, Boru Bükme makinesinin çalışma prensiplerini, I/O eşleşmelerini 
 
 ## 3. Eksen Tanımları (Axis Mapping)
 
-| Eksen (HW) | Görev | JSON Karşılığı | Çarpan (Hız) | Birim |
+| Eksen (HW) | Görev | Reçete Karşılığı | Çarpan (Hız) | Birim |
 | :--- | :--- | :--- | :--- | :--- |
-| **Axis A** | Eksen Değiştirme | `CPozisyon` | x3 | mm |
-| **Axis B** | Boru Bükme | `DPozisyon` | x21 | Derece (°) |
-| **Axis C** | Boru Döndürme | `BPozisyon` | x200 | Derece (°) |
-| **Axis D** | Boru Sürme | `APozisyon` | x50 | mm |
+| **Axis A** | Eksen Değiştirme | Recipe C (CPozisyon) | x3 | mm |
+| **Axis B** | Boru Bükme | Recipe D (DPozisyon) | x21 | Derece (°) |
+| **Axis C** | Boru Döndürme | Recipe B (BPozisyon) | x200 | Derece (°) |
+| **Axis D** | Boru Sürme | Recipe A (APozisyon) | x50 | mm |
 
 > *Not: Axis D (Sürme) **kümülatif** çalışır (`AccumulateDPozisyon`).*
 
-## 4. Geliştirici Notları (Developer Notes)
+## 4. Matematiksel Hesaplamalar ve Hassasiyet
 
-- **Bekleme Döngüleri:** `NoneWaitSleep` fonksiyonu `Application.ProcessMessages` kullanarak UI'ın donmasını engeller.
-- **Karakter Kodlaması:** Kaynak kodlar **Windows-1254** kodlamasındadır. Yeni ekleme yaparken Türkçe karakterleri doğrudan kullanabilirsiniz.
+### 4.1. Hız Hesaplamaları
+Donanım kontrolcüye gönderilen hız verileri, reçetedeki değerlerin aşağıdaki sabitlerle çarpılmasıyla elde edilir:
+- **Sürme (HW D):** `AHiz * 50`
+- **Döndürme (HW C):** `BHiz * 200`
+- **Eksen Değ. (HW A):** `CHiz * 3`
+- **Bükme (HW B):** `DHiz * 21`
+
+### 4.2. Pozisyon Hassasiyeti
+- Reçete üzerindeki değerler kullanıcıya 0.1 hassasiyetle (örn: 10.5 mm) gösterilir.
+- Arka planda (`DataArray`) bu değerler **100 ile çarpılarak** tam sayı (Integer) olarak saklanır (örn: 1050).
+- Karta gönderilirken bu 100 ile çarpılmış tam sayı değerleri kullanılır.
+- **Formül:** `Saklanan_Pozisyon = Round(Ekran_Değeri * 100)`
+
+## 5. Home (Referans) Mantığı
+
+### 5.1. Tetikleme
+- `HOME_POS_GO` komutu (Değer: 15) gönderilir.
+- `AccumulateDPozisyon := 0;` (Sürme birikimi sıfırlanır).
+
+### 5.2. Durum İzleme
+Sürücülerin Home durumları Status register'larının **8. biti** üzerinden takip edilir.
+
+## 6. Geliştirici Notları
+- **NoneWaitSleep:** `Application.ProcessMessages` kullanarak UI'ın donmasını engeller.
+- **Encoding:** Dosyalar **Windows-1254** (Turkish ANSI) formatındadır.
