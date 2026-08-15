@@ -205,6 +205,11 @@ bool LoadStockForHardware() {
 }
 
 String sendhttp(String httpRequestData, String httpType, String serverPath) {
+    if (serverPath.indexOf("example.com") != -1 || serverPath == "") {
+        serverlog("sendhttp skipped (example.com / empty URL)", "ln");
+        return "";
+    }
+
     if (WiFi.status() == WL_CONNECTED && mode_apsta == "apsta") {
         HTTPClient http;
         http.begin(serverPath.c_str());
