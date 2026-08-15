@@ -148,8 +148,10 @@ String WriteLedConfig(const String proct) {
 
     if (proct != "x") {
         FileWriteF(ledconfigstr, "/ledconfig.json");
-        String serverName_process2 = serverName_process + "?savecfj=t&sid=" + sid;
-        sendhttp(ledconfigstr, "httpjson", serverName_process2);
+        if (pmaster == "sv" && serverName_process.indexOf("example.com") == -1 && serverName_process != "") {
+            String serverName_process2 = serverName_process + "?savecfj=t&sid=" + sid;
+            sendhttp(ledconfigstr, "httpjson", serverName_process2);
+        }
     }
 
     return "";
