@@ -1,0 +1,51 @@
+{
+  "stock1": "Kurşunsuz98", "stock2": "Diesel", "stock3": "Lpg", "stock4": "Plus1", "stock5": "Plus2",
+  "stock6": "Plus3", "stock7": "Plus4", "stock8": "Plus5", "stock9": "Plus6", "stock10": "Plus7",
+  "stock11": "", "stock12": "", "stock13": "", "stock14": "",
+
+  "stockcolor1": "#ffffff", "stockcolor2": "#ffffff", "stockcolor3": "#ffffff", "stockcolor4": "#ffffff", "stockcolor5": "#ffffff",
+  "stockcolor6": "#ffffff", "stockcolor7": "#ffffff", "stockcolor8": "#ffffff", "stockcolor9": "#ffffff", "stockcolor10": "#ffffff",
+  "stockcolor11": "#ffffff", "stockcolor12": "#ffffff", "stockcolor13": "#ffffff", "stockcolor14": "#ffffff",
+
+  "stockcashprice1": "1.00", "stockcashprice2": "3.00", "stockcashprice3": "43.75", "stockcashprice4": "0.00", "stockcashprice5": "0.00",
+  "stockcashprice6": "0.00", "stockcashprice7": "0.00", "stockcashprice8": "0.00", "stockcashprice9": "0.00", "stockcashprice10": "0.00",
+  "stockcashprice11": "0.00", "stockcashprice12": "0.00", "stockcashprice13": "0.00", "stockcashprice14": "0.00",
+
+  "stockcreditprice1": "2.00", "stockcreditprice2": "5.00", "stockcreditprice3": "46.15", "stockcreditprice4": "0.00", "stockcreditprice5": "0.00",
+  "stockcreditprice6": "0.00", "stockcreditprice7": "0.00", "stockcreditprice8": "0.00", "stockcreditprice9": "0.00", "stockcreditprice10": "0.00",
+  "stockcreditprice11": "0.00", "stockcreditprice12": "0.00", "stockcreditprice13": "0.00", "stockcreditprice14": "0.00",
+
+  "stockdebitprice1": "3.00", "stockdebitprice2": "8.00", "stockdebitprice3": "42.50", "stockdebitprice4": "0.00", "stockdebitprice5": "0.00",
+  "stockdebitprice6": "0.00", "stockdebitprice7": "0.00", "stockdebitprice8": "0.00", "stockdebitprice9": "0.00", "stockdebitprice10": "0.00",
+  "stockdebitprice11": "0.00", "stockdebitprice12": "0.00", "stockdebitprice13": "0.00", "stockdebitprice14": "0.00",
+
+  "selfstock1": "", "selfstock2": "", "selfstock3": "", "selfstock4": "", "selfstock5": "",
+  "selfstock6": "", "selfstock7": "", "selfstock8": "", "selfstock9": "", "selfstock10": "",
+  "selfstock11": "", "selfstock12": "", "selfstock13": "", "selfstock14": "",
+
+  "selfstockcolor1": "#ffffff", "selfstockcolor2": "#ffffff", "selfstockcolor3": "#ffffff", "selfstockcolor4": "#ffffff", "selfstockcolor5": "#ffffff",
+  "selfstockcolor6": "#ffffff", "selfstockcolor7": "#ffffff", "selfstockcolor8": "#ffffff", "selfstockcolor9": "#ffffff", "selfstockcolor10": "#ffffff",
+  "selfstockcolor11": "#ffffff", "selfstockcolor12": "#ffffff", "selfstockcolor13": "#ffffff", "selfstockcolor14": "#ffffff",
+
+  "selfstockcashprice1": "0.00", "selfstockcashprice2": "0.00", "selfstockcashprice3": "0.00", "selfstockcashprice4": "0.00", "selfstockcashprice5": "0.00",
+  "selfstockcashprice6": "0.00", "selfstockcashprice7": "0.00", "selfstockcashprice8": "0.00", "selfstockcashprice9": "0.00", "selfstockcashprice10": "0.00",
+  "selfstockcashprice11": "0.00", "selfstockcashprice12": "0.00", "selfstockcashprice13": "0.00", "selfstockcashprice14": "0.00",
+
+  "selfstockcreditprice1": "0.00", "selfstockcreditprice2": "0.00", "selfstockcreditprice3": "0.00", "selfstockcreditprice4": "0.00", "selfstockcreditprice5": "0.00",
+  "selfstockcreditprice6": "0.00", "selfstockcreditprice7": "0.00", "selfstockcreditprice8": "0.00", "selfstockcreditprice9": "0.00", "selfstockcreditprice10": "0.00",
+  "selfstockcreditprice11": "0.00", "selfstockcreditprice12": "0.00", "selfstockcreditprice13": "0.00", "selfstockcreditprice14": "0.00",
+
+  "selfstockdebitprice1": "0.00", "selfstockdebitprice2": "0.00", "selfstockdebitprice3": "0.00", "selfstockdebitprice4": "0.00", "selfstockdebitprice5": "0.00",
+  "selfstockdebitprice6": "0.00", "selfstockdebitprice7": "0.00", "selfstockdebitprice8": "0.00", "selfstockdebitprice9": "0.00", "selfstockdebitprice10": "0.00",
+  "selfstockdebitprice11": "0.00", "selfstockdebitprice12": "0.00", "selfstockdebitprice13": "0.00", "selfstockdebitprice14": "0.00",
+
+  "pttype1": "tip1", "pttype2": "tip2", "pttype3": "tip3", "pttype4": "tip4", "pttype5": "tip5", "pttype6": "tip6",
+  "pttype7": "", "pttype8": "", "pttype9": "", "pttype10": "", "pttype11": "", "pttype12": "",
+  "pttype13": "", "pttype14": "", "pttype15": "", "pttype16": "", "pttype17": "", "pttype18": "",
+  "pttype19": "", "pttype20": "", "pttype21": "", "pttype22": "", "pttype23": "", "pttype24": "",
+
+  "ptid1": "1", "ptid2": "2", "ptid3": "3", "ptid4": "4", "ptid5": "5", "ptid6": "6",
+  "ptid7": "", "ptid8": "", "ptid9": "", "ptid10": "", "ptid11": "", "ptid12": "",
+  "ptid13": "", "ptid14": "", "ptid15": "", "ptid16": "", "ptid17": "", "ptid18": "",
+  "ptid19": "", "ptid20": "", "ptid21": "", "ptid22": "", "ptid23": "", "ptid24": ""
+}
