@@ -23,7 +23,7 @@ unsigned char tx = 0, ty = 0;
 #define BLACK 1
 #define WHITE 0
 
-// Dışarıdan tanımlı font dizileri ve yardımcı diziler
+// Dışarıdan tanımlı font dizileri
 extern const unsigned char font5x7[];
 extern const unsigned char Arial_bold_14[];
 extern const unsigned short Arial_bold_14_index[];
@@ -32,12 +32,6 @@ extern const unsigned short Calibri36_index[];
 extern const unsigned char cp437font8x8[];
 extern const unsigned char lcdnumsmin[];
 extern const unsigned char lcdnumsmax[];
-extern const unsigned short looky_addr[];
-extern const unsigned char bPixelLookupTable[];
-extern const unsigned char bPixelLookupTableNot[];
-
-extern unsigned char *dumyglcd;
-extern unsigned char glcd_rdcache[3][192];
 
 struct {
     unsigned char x;
@@ -48,35 +42,31 @@ struct {
 void GLCD_Chip_Select_Direct(unsigned char Chip_idx);
 void GLCD_Command_Direct(unsigned char command);
 void GLCD_Data_Direct(unsigned char data);
+unsigned char GLCD_ReadData_Direct(unsigned char x, unsigned char page);
 void GLCD_Init(void);
 void GLCD_ClearAll(void);
-void GLCD_GoTo_Direct(unsigned char x, unsigned char y);
-void GLCD_String5x7(unsigned char x, unsigned char y, char *str);
+void GLCD_GoTo_Direct(unsigned char x, unsigned char page);
 
-void GLCD_Data_Fast_Data(char Data);
-void GLCD_Data_Fast_Start(void);
-void GLCD_Data_Fast_End(void);
 void GLCD_Command(char Command);
 void GLCD_Data(char Data);
 void GLCD_Chip_Select(char Chip_idx);
 void GLCD_GoTo(unsigned char x, unsigned char y);
 void GLCD_WriteData(unsigned char dataToWrite);
+
 void GLCD_SetPixel(unsigned char x, unsigned char y, unsigned char color);
 void GLCD_Rectangle(unsigned char x, unsigned char y, unsigned char b, unsigned char a, unsigned char color);
 void GLCD_Rectangle_Fill(unsigned char x, unsigned char y, unsigned char b, unsigned char a, unsigned char color);
-void GLCD_Rectangle_Fill_Fast_Black(unsigned char x, unsigned char y, unsigned char b, unsigned char a);
-void GLCD_AllScreen_DRAW(unsigned char zone, unsigned char color);
-void GLCD_Rectangle_Fill_Fast_White(unsigned char x, unsigned char y, unsigned char b, unsigned char a);
+void SetPixels(unsigned char x, unsigned char y, unsigned char x2, unsigned char y2, unsigned char color);
 void GLCD_Line(unsigned char X1, unsigned char Y1, unsigned char X2, unsigned char Y2, unsigned char color);
 void GLCD_Circle(unsigned char cx, unsigned char cy, unsigned char radius, unsigned char color);
 void GLCD_Circle_Fill(unsigned char cx, unsigned char cy, unsigned char radius, unsigned char color);
+
+void GLCD_String5x7(unsigned char x, unsigned char y, char *str);
 void GLCD_StringArialBold14(unsigned char x, unsigned char y, char *str);
 void GLCDPutChar_ArialBold14(unsigned char c);
 void GLCD_Picture(char *str);
-void GLCD_Picture_Discrete(char *str, unsigned char i, unsigned char s, unsigned char k);
 void GLCDWriteData(unsigned char data);
 void GotoXY(unsigned char x, unsigned char y);
-void SetPixels(unsigned char x, unsigned char y, unsigned char x2, unsigned char y2, unsigned char color);
 void GLCD_StringCalibri36(unsigned char x, unsigned char y, char *str);
 void GLCDPutCharCalibri36(unsigned char c);
 void GLCD_StringHead8x8(unsigned char x, unsigned char y, char *str);
@@ -193,29 +183,46 @@ void GLCD_Data_Direct(unsigned char data)
     __delay_us(2);
 }
 
+//-------------------------------------------------------------------------------------------------
+// MCC Pin Makroları İle Doğrudan Donanımdan Veri Okuma (Read-Modify-Write İçin)
+//-------------------------------------------------------------------------------------------------
+unsigned char GLCD_ReadData_Direct(unsigned char x, unsigned char page)
+{
+    unsigned char dummy, data;
+    GLCD_GoTo_Direct(x, page);
+
+    TRISD = 0xFF;       // PORTD Giriş Modu
+    RW_SetHigh();       // RW = 1 (Okuma Modu)
+    BUFDIR_SetLow();    // BUFDIR = 0 (LCD -> MCU Yönü)
+    BUFEN_SetLow();     // BUFEN Etkin
+    BUFE2_SetLow();     // BUFE2 Etkin
+    RS_SetHigh();       // RS = 1 (Veri Modu)
+    __delay_us(2);
+
+    // KS0108 / AIP31108 Kukla Okuma (Dummy Read - RAM Adres Mandallama)
+    EN_SetHigh();
+    __delay_us(5);
+    dummy = PORTD;
+    EN_SetLow();
+    __delay_us(5);
+
+    // Gerçek Veri Okuma
+    EN_SetHigh();
+    __delay_us(5);
+    data = PORTD;
+    EN_SetLow();
+    __delay_us(5);
+
+    BUFEN_SetHigh();    // BUFEN Deaktif
+    BUFE2_SetHigh();    // BUFE2 Deaktif
+    TRISD = 0x00;       // PORTD Çıkış Moduna Geri Döndür
+
+    return data;
+}
+
 void GLCD_Data(char Data)
 {
     GLCD_Data_Direct((unsigned char)Data);
-}
-
-void GLCD_Data_Fast_Data(char Data)
-{
-    GLCD_Data_Direct((unsigned char)Data);
-}
-
-void GLCD_Data_Fast_Start(void)
-{
-    RW_SetLow();        // RW = 0
-    BUFDIR_SetHigh();   // BUFDIR = 1
-    BUFEN_SetLow();     // BUFEN = 0
-    BUFE2_SetLow();     // BUFE2 = 0
-    RS_SetHigh();       // RS = 1
-}
-
-void GLCD_Data_Fast_End(void)
-{
-    BUFEN_SetHigh();    // BUFEN Deaktif
-    BUFE2_SetHigh();    // BUFE2 Deaktif
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -237,7 +244,6 @@ void GLCD_Init(void)
 
     GLCD_Chip_Select_Direct(0); // Seçimleri Kaldır
     __delay_ms(5);
-    dumyglcd = (unsigned char *)glcd_rdcache;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -263,19 +269,17 @@ void GLCD_ClearAll(void)
 }
 
 //-------------------------------------------------------------------------------------------------
-// GLCD Doğrudan Konumlandırma
+// GLCD Doğrudan Konumlandırma (x: 0..191 piksel, page: 0..7 sayfa adresi)
 //-------------------------------------------------------------------------------------------------
-void GLCD_GoTo_Direct(unsigned char x, unsigned char y)
+void GLCD_GoTo_Direct(unsigned char x, unsigned char page)
 {
     unsigned char chip;
     unsigned char column;
-    unsigned char page;
 
-    if (x >= 192) return;
+    if (x >= 192 || page >= 8) return;
 
     chip = (x / 64) + 1; // 1: Sol (0..63), 2: Orta (64..127), 3: Sağ (128..191) Çip
     column = x % 64;     // Çip içi sütun adresi (0..63)
-    page = (y >= 8) ? (y / 8) : y; // Y hem sayfa (0-7) hem piksel (0-63) uyumlu kabul edilir
 
     GLCD_Chip_Select_Direct(chip);
     GLCD_Command_Direct(DISPLAY_SET_X_CMD | page);   // Page (0xB8 + page)
@@ -286,51 +290,21 @@ void GLCD_GoTo(unsigned char x, unsigned char y)
 {
     screen_x = x;
     screen_y = y;
-    GLCD_Chip_Select_Direct(1);
-    GLCD_Command_Direct(DISPLAY_SET_Y_CMD | 0);
-    GLCD_Command_Direct(DISPLAY_SET_X_CMD | y);
-    GLCD_Command_Direct(DISPLAY_START_LINE_CMD | 0);
-    GLCD_Chip_Select_Direct(2);
-    GLCD_Command_Direct(DISPLAY_SET_Y_CMD | 0);
-    GLCD_Command_Direct(DISPLAY_SET_X_CMD | y);
-    GLCD_Command_Direct(DISPLAY_START_LINE_CMD | 0);
-    GLCD_Chip_Select_Direct(3);
-    GLCD_Command_Direct(DISPLAY_SET_Y_CMD | 0);
-    GLCD_Command_Direct(DISPLAY_SET_X_CMD | y);
-    GLCD_Command_Direct(DISPLAY_START_LINE_CMD | 0);
-    GLCD_Chip_Select_Direct(((x / 64) + 1));
-    GLCD_Command_Direct(DISPLAY_SET_Y_CMD | (x % 64));
-    GLCD_Command_Direct(DISPLAY_SET_X_CMD | y);
+    GLCD_GoTo_Direct(x, (y >= 8) ? (y / 8) : y);
 }
 
 void GLCD_WriteData(unsigned char dataToWrite)
 {
-    GLCD_GoTo_Direct(screen_x, screen_y);
+    GLCD_GoTo_Direct(screen_x, screen_y / 8);
     GLCD_Data_Direct(dataToWrite);
     screen_x++;
 }
 
 void GLCDWriteData(unsigned char data)
 {
-    unsigned char yOffset;
-    unsigned short t;
-    unsigned char ysave1;
-    yOffset = Coord.y % 8;
-    if (yOffset != 0)
-    {
-        t = looky_addr[Coord.y] + Coord.x;
-        dumyglcd[t] |= data << yOffset;
-        ysave1 = ((Coord.y + 8) & ~7);
-        t = looky_addr[ysave1] + Coord.x;
-        dumyglcd[t] |= data >> (8 - yOffset);
-        Coord.x++;
-    }
-    else
-    {
-        t = looky_addr[Coord.y] + Coord.x;
-        dumyglcd[t] = data;
-        Coord.x++;
-    }
+    GLCD_GoTo_Direct(Coord.x, Coord.y / 8);
+    GLCD_Data_Direct(data);
+    Coord.x++;
 }
 
 void GotoXY(unsigned char x, unsigned char y)
@@ -340,161 +314,70 @@ void GotoXY(unsigned char x, unsigned char y)
 }
 
 //-------------------------------------------------------------------------------------------------
-// Grafik Çizim Fonksiyonları
+// Doğrudan Donanım Üzerinde Çalışan Grafik Çizim Fonksiyonları (Sanal RAM Kullanmaz)
 //-------------------------------------------------------------------------------------------------
+
+// Tek Piksel Çizimi / Silimi (Doğrudan Donanıma Read-Modify-Write)
 void GLCD_SetPixel(unsigned char x, unsigned char y, unsigned char color)
 {
+    unsigned char current_data;
+    unsigned char page = y / 8;
+    unsigned char bit_pos = y % 8;
+
+    if (x >= 192 || y >= 64) return;
+
+    current_data = GLCD_ReadData_Direct(x, page);
+
     if (color == BLACK)
     {
-        dumyglcd[(y / 8) * 192 + x] |= (1 << (y % 8));
+        current_data |= (1 << bit_pos);
     }
     else
     {
-        dumyglcd[(y / 8) * 192 + x] &= ~(1 << (y % 8));
+        current_data &= ~(1 << bit_pos);
     }
+
+    GLCD_GoTo_Direct(x, page);
+    GLCD_Data_Direct(current_data);
+    GLCD_Chip_Select_Direct(0);
 }
 
-void SetPixels(unsigned char x, unsigned char y, unsigned char x2, unsigned char y2, unsigned char color)
-{
-    unsigned char mask, pageOffset, h, i, data;
-    unsigned char height = y2 - y + 1;
-    unsigned char width = x2 - x + 1;
-    unsigned short t;
-    pageOffset = y % 8;
-    y -= pageOffset;
-    mask = 0xFF;
-    if (height < 8 - pageOffset)
-    {
-        mask >>= (8 - height);
-        h = height;
-    }
-    else
-    {
-        h = 8 - pageOffset;
-    }
-    mask <<= pageOffset;
-    GotoXY(x, y);
-    for (i = 0; i < width; i++)
-    {
-        t = looky_addr[Coord.y] + Coord.x;
-        data = dumyglcd[t];
-
-        if (color == BLACK)
-        {
-            data |= mask;
-        }
-        else
-        {
-            data &= ~mask;
-        }
-        GLCDWriteData(data);
-    }
-    while (h + 8 <= height)
-    {
-        h += 8;
-        y += 8;
-        GotoXY(x, y);
-        for (i = 0; i < width; i++)
-        {
-            GLCDWriteData(color);
-        }
-    }
-    if (h < height)
-    {
-        mask = ~(0xFF << (height - h));
-        GotoXY(x, y + 8);
-
-        for (i = 0; i < width; i++)
-        {
-            t = looky_addr[Coord.y] + Coord.x;
-            data = dumyglcd[t];
-
-            if (color == BLACK)
-            {
-                data |= mask;
-            }
-            else
-            {
-                data &= ~mask;
-            }
-            GLCDWriteData(data);
-        }
-    }
-}
-
+// Doğrudan Donanım Çerçeve Dikdörtgen Çizimi
 void GLCD_Rectangle(unsigned char x, unsigned char y, unsigned char b, unsigned char a, unsigned char color)
 {
-    unsigned char j = 0;
-    for (j = x; j < b + 1; j++)
+    unsigned char j;
+    for (j = x; j <= b; j++)
     {
         GLCD_SetPixel(j, y, color);
         GLCD_SetPixel(j, a, color);
     }
-    for (j = y; j < a + 1; j++)
+    for (j = y; j <= a; j++)
     {
         GLCD_SetPixel(x, j, color);
         GLCD_SetPixel(b, j, color);
     }
 }
 
+// Doğrudan Donanım Dolu Dikdörtgen Çizimi
 void GLCD_Rectangle_Fill(unsigned char x, unsigned char y, unsigned char b, unsigned char a, unsigned char color)
 {
-    unsigned char j = 0, k = 0;
-    for (j = x; j < b + 1; j++)
+    unsigned char curr_x, curr_y;
+    for (curr_x = x; curr_x <= b; curr_x++)
     {
-        for (k = y; k < a + 1; k++)
+        for (curr_y = y; curr_y <= a; curr_y++)
         {
-            GLCD_SetPixel(j, k, color);
+            GLCD_SetPixel(curr_x, curr_y, color);
         }
     }
 }
 
-void GLCD_Rectangle_Fill_Fast_Black(unsigned char x, unsigned char y, unsigned char b, unsigned char a)
+// Alan Doldurma (Doğrudan Donanım)
+void SetPixels(unsigned char x, unsigned char y, unsigned char x2, unsigned char y2, unsigned char color)
 {
-    unsigned char j, k;
-    unsigned short t;
-    a = a + 1;
-    b = b + 1;
-    for (; y < a; y++)
-    {
-        t = looky_addr[y] + x;
-        k = bPixelLookupTable[y];
-        for (j = x; j < b; j++)
-        {
-            dumyglcd[t++] |= k;
-        }
-    }
+    GLCD_Rectangle_Fill(x, y, x2, y2, color);
 }
 
-void GLCD_AllScreen_DRAW(unsigned char zone, unsigned char color)
-{
-    if (color == BLACK)
-    {
-        memset(glcd_rdcache[zone], 0xFF, 192);
-    }
-    if (color == WHITE)
-    {
-        memset(glcd_rdcache[zone], 0x00, 192);
-    }
-}
-
-void GLCD_Rectangle_Fill_Fast_White(unsigned char x, unsigned char y, unsigned char b, unsigned char a)
-{
-    unsigned char j, k;
-    unsigned short t;
-    a = a + 1;
-    b = b + 1;
-    for (; y < a; y++)
-    {
-        t = looky_addr[y] + x;
-        k = bPixelLookupTableNot[y];
-        for (j = x; j < b; j++)
-        {
-            dumyglcd[t++] &= k;
-        }
-    }
-}
-
+// Doğrudan Donanım Çizgi Çizimi
 void GLCD_Line(unsigned char X1, unsigned char Y1, unsigned char X2, unsigned char Y2, unsigned char color)
 {
     int CurrentX, CurrentY, Xinc, Yinc,
@@ -566,6 +449,7 @@ void GLCD_Line(unsigned char X1, unsigned char Y1, unsigned char X2, unsigned ch
     }
 }
 
+// Doğrudan Donanım Çember Çizimi
 void GLCD_Circle(unsigned char cx, unsigned char cy, unsigned char radius, unsigned char color)
 {
     int x, y, xchange, ychange, radiusError;
@@ -596,10 +480,10 @@ void GLCD_Circle(unsigned char cx, unsigned char cy, unsigned char radius, unsig
     }
 }
 
+// Doğrudan Donanım Dolu Çember Çizimi
 void GLCD_Circle_Fill(unsigned char cx, unsigned char cy, unsigned char radius, unsigned char color)
 {
-    unsigned char temp;
-    temp = radius;
+    unsigned char temp = radius;
     while (temp > 0)
     {
         GLCD_Circle(cx, cy, temp, color);
@@ -608,12 +492,13 @@ void GLCD_Circle_Fill(unsigned char cx, unsigned char cy, unsigned char radius, 
 }
 
 //-------------------------------------------------------------------------------------------------
-// Metin ve Font Fonksiyonları
+// Metin ve Font Fonksiyonları (Doğrudan Donanıma Yazma)
 //-------------------------------------------------------------------------------------------------
 void GLCD_String5x7(unsigned char x, unsigned char y, char *str)
 {
     unsigned char i = 0;
     unsigned char curr_x = x;
+    unsigned char page = (y >= 8) ? (y / 8) : y;
 
     while (str[i] != '\0')
     {
@@ -625,12 +510,12 @@ void GLCD_String5x7(unsigned char x, unsigned char y, char *str)
 
         for (unsigned char k = 0; k < 5; k++)
         {
-            GLCD_GoTo_Direct(curr_x, y);
+            GLCD_GoTo_Direct(curr_x, page);
             GLCD_Data_Direct(font5x7[font_idx + k]);
             curr_x++;
         }
 
-        GLCD_GoTo_Direct(curr_x, y);
+        GLCD_GoTo_Direct(curr_x, page);
         GLCD_Data_Direct(0x00);
         curr_x++;
 
@@ -1207,110 +1092,4 @@ void GLCD_Picture(char *str)
         }
     }
     GLCD_Chip_Select_Direct(0);
-}
-
-void GLCD_Picture_Discrete(char *str, unsigned char i, unsigned char s, unsigned char k)
-{
-    unsigned short temp;
-    unsigned char j;
-    temp = i * 192;
-    if (k == 0)
-    {
-        if (s == 0)
-        {
-            GLCD_Chip_Select_Direct(1);
-            GLCD_Command_Direct(DISPLAY_SET_Y_CMD);
-            GLCD_Command_Direct(DISPLAY_SET_X_CMD | i);
-            GLCD_Data_Fast_Start();
-            for (j = 0; j < 16; ++j)
-            {
-                GLCD_Data_Fast_Data(str[temp + j]);
-            }
-            GLCD_Data_Fast_End();
-        }
-        else if (s == 1)
-        {
-            GLCD_Data_Fast_Start();
-            for (j = 16; j < 40; ++j)
-            {
-                GLCD_Data_Fast_Data(str[temp + j]);
-            }
-            GLCD_Data_Fast_End();
-        }
-        else if (s == 2)
-        {
-            GLCD_Data_Fast_Start();
-            for (j = 40; j < 64; ++j)
-            {
-                GLCD_Data_Fast_Data(str[temp + j]);
-            }
-            GLCD_Data_Fast_End();
-        }
-    }
-    else if (k == 1)
-    {
-        if (s == 0)
-        {
-            GLCD_Chip_Select_Direct(2);
-            GLCD_Command_Direct(DISPLAY_SET_Y_CMD);
-            GLCD_Command_Direct(DISPLAY_SET_X_CMD | i);
-            GLCD_Data_Fast_Start();
-            for (j = 0; j < 16; ++j)
-            {
-                GLCD_Data_Fast_Data(str[temp + 64 + j]);
-            }
-            GLCD_Data_Fast_End();
-        }
-        else if (s == 1)
-        {
-            GLCD_Data_Fast_Start();
-            for (j = 16; j < 40; ++j)
-            {
-                GLCD_Data_Fast_Data(str[temp + 64 + j]);
-            }
-            GLCD_Data_Fast_End();
-        }
-        else if (s == 2)
-        {
-            GLCD_Data_Fast_Start();
-            for (j = 40; j < 64; ++j)
-            {
-                GLCD_Data_Fast_Data(str[temp + 64 + j]);
-            }
-            GLCD_Data_Fast_End();
-        }
-    }
-    else if (k == 2)
-    {
-        if (s == 0)
-        {
-            GLCD_Chip_Select_Direct(3);
-            GLCD_Command_Direct(DISPLAY_SET_Y_CMD);
-            GLCD_Command_Direct(DISPLAY_SET_X_CMD | i);
-            GLCD_Data_Fast_Start();
-            for (j = 0; j < 16; ++j)
-            {
-                GLCD_Data_Fast_Data(str[temp + 128 + j]);
-            }
-            GLCD_Data_Fast_End();
-        }
-        else if (s == 1)
-        {
-            GLCD_Data_Fast_Start();
-            for (j = 16; j < 40; ++j)
-            {
-                GLCD_Data_Fast_Data(str[temp + 128 + j]);
-            }
-            GLCD_Data_Fast_End();
-        }
-        else if (s == 2)
-        {
-            GLCD_Data_Fast_Start();
-            for (j = 40; j < 64; ++j)
-            {
-                GLCD_Data_Fast_Data(str[temp + 128 + j]);
-            }
-            GLCD_Data_Fast_End();
-        }
-    }
 }
