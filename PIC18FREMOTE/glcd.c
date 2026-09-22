@@ -12,7 +12,7 @@
 #define DISPLAY_SET_X_CMD      0xB8  // Sayfa/Page Adresi (0-7)
 #define DISPLAY_START_LINE_CMD 0xC0 // Başlangıç Satırı (0-63)
 
-// Standart 5x7 Font Tablosu
+// Standart 5x7 ASCII Font Tablosu (0x20 ' ' ile 0x7E '~' arası)
 const unsigned char font5x7[] = {
     0x00, 0x00, 0x00, 0x00, 0x00, // (space)
     0x00, 0x00, 0x5F, 0x00, 0x00, // !
@@ -52,7 +52,7 @@ const unsigned char font5x7[] = {
     0x3E, 0x41, 0x41, 0x41, 0x22, // C
     0x7F, 0x41, 0x41, 0x22, 0x1C, // D
     0x7F, 0x49, 0x49, 0x49, 0x41, // E
-    0x7F, 0x09, 0x09, 0x09, 0x06, // F
+    0x7F, 0x09, 0x09, 0x09, 0x01, // F
     0x3E, 0x41, 0x49, 0x49, 0x7A, // G
     0x7F, 0x08, 0x08, 0x08, 0x7F, // H
     0x00, 0x41, 0x7F, 0x41, 0x00, // I
@@ -109,7 +109,7 @@ const unsigned char font5x7[] = {
 
 //-------------------------------------------------------------------------------------------------
 // Donanım Çip Seçim Fonksiyonu (LMC19264A-01: 3 x 64x64 = 192x64)
-// Active LOW Chip Select Yapısı
+// Active LOW Chip Select Yapısı (CS1=RE2, CS2=RE1, CS3=RE0)
 //-------------------------------------------------------------------------------------------------
 void GLCD_Chip_Select_Direct(unsigned char Chip_idx)
 {
@@ -143,31 +143,33 @@ void GLCD_Chip_Select_Direct(unsigned char Chip_idx)
         LATEbits.LATE1 = 0;
         LATEbits.LATE0 = 0;
     }
-    __delay_us(2);
+    __delay_us(5);
 }
 
 //-------------------------------------------------------------------------------------------------
 // Doğrudan Donanıma Komut Gönderme
+// Not: BUFE2 (RA5) tuş takımı tamponudur. GLCD erişimlerinde BUFE2=1 (deaktif) tutulmalıdır.
 //-------------------------------------------------------------------------------------------------
 void GLCD_Command_Direct(unsigned char command)
 {
+    TRISD = 0x00;       // PORTD Çıkış
+    LATAbits.LATA5 = 1; // BUFE2 Deaktif (Klavye tamponu kapalı)
     LATCbits.LATC1 = 0; // RW = 0 (Yazma Modu)
-    LATBbits.LATB4 = 1; // BUFDIR = 1 (MCU -> LCD)
-    LATBbits.LATB5 = 0; // BUFEN = 0 (Tampon Etkin)
-    LATAbits.LATA5 = 0; // BUFE2 = 0 (Ek Tampon Etkin)
-    __delay_us(1);
-
-    LATD = command;     // Komut Byte'ını Data Bus'a Koy
     LATCbits.LATC2 = 0; // RS = 0 (Komut Modu)
-    __delay_us(1);
+    LATD = command;     // Komut Byte'ını Data Bus'a Koy
+    LATBbits.LATB4 = 1; // BUFDIR = 1 (MCU -> LCD)
+    __delay_us(2);
+
+    LATBbits.LATB5 = 0; // BUFEN = 0 (LCD Tamponu Etkinleşir)
+    __delay_us(2);
 
     LATCbits.LATC0 = 1; // EN = 1 (Enable Strobe YÜKSEK)
-    __delay_us(3);
+    __delay_us(5);
     LATCbits.LATC0 = 0; // EN = 0 (Enable Strobe DÜŞÜK - Düşen Kenarda İşlenir)
-    __delay_us(3);
+    __delay_us(5);
 
     LATBbits.LATB5 = 1; // BUFEN Deaktif
-    LATAbits.LATA5 = 1; // BUFE2 Deaktif
+    __delay_us(2);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -175,23 +177,24 @@ void GLCD_Command_Direct(unsigned char command)
 //-------------------------------------------------------------------------------------------------
 void GLCD_Data_Direct(unsigned char data)
 {
+    TRISD = 0x00;       // PORTD Çıkış
+    LATAbits.LATA5 = 1; // BUFE2 Deaktif (Klavye tamponu kapalı)
     LATCbits.LATC1 = 0; // RW = 0 (Yazma Modu)
-    LATBbits.LATB4 = 1; // BUFDIR = 1 (MCU -> LCD)
-    LATBbits.LATB5 = 0; // BUFEN = 0 (Tampon Etkin)
-    LATAbits.LATA5 = 0; // BUFE2 = 0 (Ek Tampon Etkin)
-    __delay_us(1);
-
-    LATD = data;        // Veri Byte'ını Data Bus'a Koy
     LATCbits.LATC2 = 1; // RS = 1 (Veri Modu)
-    __delay_us(1);
+    LATD = data;        // Veri Byte'ını Data Bus'a Koy
+    LATBbits.LATB4 = 1; // BUFDIR = 1 (MCU -> LCD)
+    __delay_us(2);
+
+    LATBbits.LATB5 = 0; // BUFEN = 0 (LCD Tamponu Etkinleşir)
+    __delay_us(2);
 
     LATCbits.LATC0 = 1; // EN = 1 (Enable Strobe YÜKSEK)
-    __delay_us(3);
+    __delay_us(5);
     LATCbits.LATC0 = 0; // EN = 0 (Enable Strobe DÜŞÜK - Düşen Kenarda Yazılır)
-    __delay_us(3);
+    __delay_us(5);
 
     LATBbits.LATB5 = 1; // BUFEN Deaktif
-    LATAbits.LATA5 = 1; // BUFE2 Deaktif
+    __delay_us(2);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -199,11 +202,11 @@ void GLCD_Data_Direct(unsigned char data)
 //-------------------------------------------------------------------------------------------------
 void GLCD_Init(void)
 {
-    // Donanım Veri Bus Yönü Çıkış
-    TRISD = 0x00;
+    TRISD = 0x00;               // Data Bus Çıkış
+    LATAbits.LATA5 = 1;         // BUFE2 Deaktif
 
     GLCD_Chip_Select_Direct(4); // Tüm Çipleri Seç
-    __delay_ms(10);
+    __delay_ms(20);
 
     GLCD_Command_Direct(DISPLAY_OFF_CMD);           // Ekran Kapalı (0x3E)
     GLCD_Command_Direct(DISPLAY_SET_Y_CMD | 0);     // Column = 0
@@ -211,7 +214,8 @@ void GLCD_Init(void)
     GLCD_Command_Direct(DISPLAY_START_LINE_CMD | 0);// Start Line = 0
     GLCD_Command_Direct(DISPLAY_ON_CMD);            // Ekran Açık (0x3F)
 
-    GLCD_Chip_Select_Direct(0); // Çip Seçimlerini Kaldır
+    GLCD_Chip_Select_Direct(0); // Seçimleri Kaldır
+    __delay_ms(5);
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -221,21 +225,21 @@ void GLCD_ClearAll(void)
 {
     unsigned char page, col;
 
-    GLCD_Chip_Select_Direct(4); // Tüm Çiplere Birlikte Komut/Veri Gönder
+    GLCD_Chip_Select_Direct(4); // Tüm Çiplere Birlikte Gönder
     for (page = 0; page < 8; page++)
     {
         GLCD_Command_Direct(DISPLAY_SET_X_CMD | page); // Page 0..7
         GLCD_Command_Direct(DISPLAY_SET_Y_CMD | 0);    // Column 0
         for (col = 0; col < 64; col++)
         {
-            GLCD_Data_Direct(0x00); // Tüm pikselleri sıfırla (Temizle)
+            GLCD_Data_Direct(0x00); // Ekranı Temizle
         }
     }
     GLCD_Chip_Select_Direct(0);
 }
 
 //-------------------------------------------------------------------------------------------------
-// GLCD Doğrudan Konumlandırma (X: 0..191, Y: 0..63 Piksel Koordinatı)
+// GLCD Doğrudan Konumlandırma (X: 0..191 Piksel, Y: Sayfa Satırı 0-7 veya Piksel 0-63)
 //-------------------------------------------------------------------------------------------------
 void GLCD_GoTo_Direct(unsigned char x, unsigned char y)
 {
@@ -243,52 +247,50 @@ void GLCD_GoTo_Direct(unsigned char x, unsigned char y)
     unsigned char column;
     unsigned char page;
 
-    if (x >= 192 || y >= 64) return;
+    if (x >= 192) return;
 
-    chip = (x / 64) + 1; // 1: Sol, 2: Orta, 3: Sağ Çip
-    column = x % 64;
-    page = y / 8;        // 8 Piksel Yüksekliğinde 1 Sayfa (Page)
+    chip = (x / 64) + 1; // 1: Sol (0..63), 2: Orta (64..127), 3: Sağ (128..191) Çip
+    column = x % 64;     // Çip içi sütun adresi (0..63)
+    page = (y >= 8) ? (y / 8) : y; // Y hem sayfa (0-7) hem piksel (0-63) uyumlu kabul edilir
 
     GLCD_Chip_Select_Direct(chip);
-    GLCD_Command_Direct(DISPLAY_SET_X_CMD | page);   // Page Seçimi (0xB8 + page)
-    GLCD_Command_Direct(DISPLAY_SET_Y_CMD | column); // Sütun Seçimi (0x40 + column)
-}
-
-//-------------------------------------------------------------------------------------------------
-// Doğrudan Donanıma 5x7 Karakter Yazma
-//-------------------------------------------------------------------------------------------------
-void GLCD_PutChar5x7_Direct(unsigned char c)
-{
-    unsigned char i;
-    unsigned short font_idx;
-
-    if (c < 0x20 || c > 0x7A) c = ' '; // Desteklenmeyen karakterleri ' ' yap
-    font_idx = (c - 0x20) * 5;
-
-    for (i = 0; i < 5; i++)
-    {
-        GLCD_Data_Direct(font5x7[font_idx + i]);
-    }
-    GLCD_Data_Direct(0x00); // Karakterler arası 1 piksel boşluk
+    GLCD_Command_Direct(DISPLAY_SET_X_CMD | page);   // Page (0xB8 + page)
+    GLCD_Command_Direct(DISPLAY_SET_Y_CMD | column); // Sütun (0x40 + column)
 }
 
 //-------------------------------------------------------------------------------------------------
 // GLCD Doğrudan Metin / String Yazdırma
+// Her sütunda donanımsal çip kontrolü yaparak çip sınırlarında bölünmeyi tamamen önler.
+// XC8 ROM metin dizileri için `const char *str` desteği tamdır.
 // Örnek Kullanım: GLCD_String5x7(63, 27, "Test");
 //-------------------------------------------------------------------------------------------------
-void GLCD_String5x7(unsigned char x, unsigned char y, char *str)
+void GLCD_String5x7(unsigned char x, unsigned char y, const char *str)
 {
     unsigned char i = 0;
     unsigned char curr_x = x;
 
     while (str[i] != '\0')
     {
-        if (curr_x + 6 > 192) break; // Ekran sınırını aşma
+        if (curr_x + 6 > 192) break; // Ekran genişlik sınırını aşma
 
+        unsigned char c = str[i];
+        if (c < 0x20 || c > 0x7E) c = ' '; // Geçersiz karakterleri boşluk yap
+        unsigned short font_idx = (c - 0x20) * 5;
+
+        // Karakterin 5 sütununu donanım adres kontrolüyle yaz
+        for (unsigned char k = 0; k < 5; k++)
+        {
+            GLCD_GoTo_Direct(curr_x, y);
+            GLCD_Data_Direct(font5x7[font_idx + k]);
+            curr_x++;
+        }
+
+        // Karakterler arası 1 piksel boşluk
         GLCD_GoTo_Direct(curr_x, y);
-        GLCD_PutChar5x7_Direct(str[i]);
+        GLCD_Data_Direct(0x00);
+        curr_x++;
 
-        curr_x += 6; // 5 piksel karakter + 1 piksel boşluk
         i++;
     }
+    GLCD_Chip_Select_Direct(0); // Çip seçimini deaktif et
 }
