@@ -191,12 +191,13 @@ unsigned char GLCD_ReadData_Direct(unsigned char x, unsigned char page)
     unsigned char dummy, data;
     GLCD_GoTo_Direct(x, page);
 
+    ANSELD = 0x00;      // PORTD Dijital Giriş Modu
     TRISD = 0xFF;       // PORTD Giriş Modu
     RW_SetHigh();       // RW = 1 (Okuma Modu)
+    RS_SetHigh();       // RS = 1 (Veri Modu)
     BUFDIR_SetLow();    // BUFDIR = 0 (LCD -> MCU Yönü)
     BUFEN_SetLow();     // BUFEN Etkin
     BUFE2_SetLow();     // BUFE2 Etkin
-    RS_SetHigh();       // RS = 1 (Veri Modu)
     __delay_us(2);
 
     // KS0108 / AIP31108 Kukla Okuma (Dummy Read - RAM Adres Mandallama)
@@ -215,6 +216,8 @@ unsigned char GLCD_ReadData_Direct(unsigned char x, unsigned char page)
 
     BUFEN_SetHigh();    // BUFEN Deaktif
     BUFE2_SetHigh();    // BUFE2 Deaktif
+    RW_SetLow();        // RW Yazma Moduna İndir
+    RS_SetLow();        // RS Komut Moduna İndir
     TRISD = 0x00;       // PORTD Çıkış Moduna Geri Döndür
 
     return data;
@@ -230,6 +233,7 @@ void GLCD_Data(char Data)
 //-------------------------------------------------------------------------------------------------
 void GLCD_Init(void)
 {
+    ANSELD = 0x00;              // PORTD Dijital Mod
     TRISD = 0x00;               // Data Bus Çıkış
     BUFE2_SetHigh();            // BUFE2 Deaktif
 
