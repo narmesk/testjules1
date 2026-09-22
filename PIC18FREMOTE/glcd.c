@@ -9,6 +9,10 @@ unsigned char tx = 0, ty = 0;
 #define _XTAL_FREQ 44236800UL
 #endif
 
+#ifndef FONT_WIDTH_TABLE
+#define FONT_WIDTH_TABLE 0
+#endif
+
 // AIP31108 / KS0108 GLCD Komut Sabitleri
 #define DISPLAY_ON_CMD         0x3F
 #define DISPLAY_OFF_CMD        0x3E
@@ -31,7 +35,6 @@ extern const unsigned char lcdnumsmax[];
 extern const unsigned short looky_addr[];
 extern const unsigned char bPixelLookupTable[];
 extern const unsigned char bPixelLookupTableNot[];
-extern const unsigned short FONT_WIDTH_TABLE;
 
 extern unsigned char *dumyglcd;
 extern unsigned char glcd_rdcache[3][192];
