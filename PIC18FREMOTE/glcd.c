@@ -10,8 +10,8 @@
   2. Donanımdan geri okuma (RMW) problemleri sıfırlanmıştır.
   3. PİKSEL VE YAZI ÇİZİMLERİ:
      - GLCD_SetPixel(65, 33, BLACK): Tek piksel anında ekranda belirir (Render gerekmez).
-     - GLCD_String5x7(63, 27, "Test"): Sayfa hizalaması olmayan (27 % 8 != 0) yazılar pürüzsüz
-       ve deliksiz şekilde maskelenerek anında ekrana yazılır.
+     - GLCD_String5x7, GLCD_StringArialBold14, GLCD_StringCalibri36: Sayfa hizalaması olan ve
+       olmayan yazılar pürüzsüz, deliksiz ve yırtılmasız şekilde ekrana yazılır.
   4. ALAN VE EKRAN DOLDURMA (SetPixels / GLCD_ClearAll):
      - RAM'de anında hesaplanır ve donanıma blok veri olarak gönderilir (< 5 ms sürer).
 ================================================================================-------------------
@@ -22,10 +22,6 @@ unsigned char tx = 0, ty = 0;
 
 #ifndef _XTAL_FREQ
 #define _XTAL_FREQ 44236800UL
-#endif
-
-#ifndef FONT_WIDTH_TABLE
-#define FONT_WIDTH_TABLE 0
 #endif
 
 // AIP31108 / KS0108 GLCD Komut Sabitleri
@@ -40,16 +36,6 @@ unsigned char tx = 0, ty = 0;
 
 // 192x64 Piksel Grafik Ekran İçin MCU RAM Gölge Tamponu (192 Sütun x 8 Sayfa = 1536 Bayt)
 unsigned char glcd_buffer[1536];
-
-// Dışarıdan tanımlı font dizileri
-extern const unsigned char font5x7[];
-extern const unsigned char Arial_bold_14[];
-extern const unsigned short Arial_bold_14_index[];
-extern const unsigned char Calibri36[];
-extern const unsigned short Calibri36_index[];
-extern const unsigned char cp437font8x8[];
-extern const unsigned char lcdnumsmin[];
-extern const unsigned char lcdnumsmax[];
 
 struct {
     unsigned char x;
@@ -226,6 +212,8 @@ void GLCD_GoTo(unsigned char x, unsigned char y)
 {
     screen_x = x;
     screen_y = y;
+    Coord.x = x;
+    Coord.y = y;
     GLCD_GoTo_Direct(x, y / 8);
 }
 
@@ -305,40 +293,6 @@ void GLCD_ClearAll(void)
 //-------------------------------------------------------------------------------------------------
 // Veri Yazma Fonksiyonları (Y Kaydırma / Maskeleme İle Pürüzsüz Font Desteği)
 //-------------------------------------------------------------------------------------------------
-void GLCD_WriteData(unsigned char dataToWrite)
-{
-    unsigned char yOffset = screen_y % 8;
-    unsigned char page = screen_y / 8;
-    unsigned short idx = (unsigned short)page * 192 + screen_x;
-
-    if (screen_x < 192 && page < 8)
-    {
-        if (yOffset == 0)
-        {
-            glcd_buffer[idx] = dataToWrite;
-            GLCD_GoTo_Direct(screen_x, page);
-            GLCD_Data_Direct(glcd_buffer[idx]);
-        }
-        else
-        {
-            unsigned char mask1 = ~(0xFF << yOffset);
-            glcd_buffer[idx] = (glcd_buffer[idx] & mask1) | (dataToWrite << yOffset);
-            GLCD_GoTo_Direct(screen_x, page);
-            GLCD_Data_Direct(glcd_buffer[idx]);
-
-            if (page + 1 < 8)
-            {
-                unsigned short idx2 = (unsigned short)(page + 1) * 192 + screen_x;
-                unsigned char mask2 = ~(0xFF >> (8 - yOffset));
-                glcd_buffer[idx2] = (glcd_buffer[idx2] & mask2) | (dataToWrite >> (8 - yOffset));
-                GLCD_GoTo_Direct(screen_x, page + 1);
-                GLCD_Data_Direct(glcd_buffer[idx2]);
-            }
-        }
-    }
-    screen_x++;
-}
-
 void GLCDWriteData(unsigned char data)
 {
     unsigned char yOffset = Coord.y % 8;
@@ -371,12 +325,24 @@ void GLCDWriteData(unsigned char data)
         }
     }
     Coord.x++;
+    screen_x = Coord.x;
+}
+
+void GLCD_WriteData(unsigned char dataToWrite)
+{
+    Coord.x = screen_x;
+    Coord.y = screen_y;
+    GLCDWriteData(dataToWrite);
+    screen_x = Coord.x;
+    screen_y = Coord.y;
 }
 
 void GotoXY(unsigned char x, unsigned char y)
 {
     Coord.x = x;
     Coord.y = y;
+    screen_x = x;
+    screen_y = y;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -668,13 +634,13 @@ void GLCDPutChar_ArialBold14(unsigned char c)
     c -= 0x20;
     if (c != 0)
     {
-        index = ((Arial_bold_14_index[c - 1]) * 2) + 0x60 + FONT_WIDTH_TABLE;
+        index = ((Arial_bold_14_index[c - 1]) * 2) + 0x60;
     }
     else
     {
-        index = 0x60 + FONT_WIDTH_TABLE;
+        index = 0x60;
     }
-    width = Arial_bold_14[FONT_WIDTH_TABLE + c];
+    width = Arial_bold_14[c];
     Coord.x = tx;
     Coord.y = ty;
     jj = index + width;
@@ -691,6 +657,7 @@ void GLCDPutChar_ArialBold14(unsigned char c)
     for (j = page; j < jj; j++)
     {
         data = Arial_bold_14[j];
+        data >>= 2;
         GLCDWriteData(data);
     }
     GLCDWriteData(0x00);
@@ -721,13 +688,13 @@ void GLCDPutCharCalibri36(unsigned char c)
     c -= 0x20;
     if (c != 0)
     {
-        index = Calibri36_index[c - 1] + 0x7 + FONT_WIDTH_TABLE;
+        index = Calibri36_index[c - 1] + 0x7;
     }
     else
     {
-        index = 0x7 + FONT_WIDTH_TABLE;
+        index = 0x7;
     }
-    width = Calibri36[FONT_WIDTH_TABLE + c];
+    width = Calibri36[c];
     Coord.x = tx;
     Coord.y = ty;
     page = index;
@@ -774,6 +741,7 @@ void GLCDPutCharCalibri36(unsigned char c)
     for (j = page; j < jj; j++)
     {
         data = Calibri36[j];
+        data >>= 4;
         GLCDWriteData(data);
     }
     GLCDWriteData(0x00);
@@ -796,7 +764,7 @@ void GLCD_StringHead8x8(unsigned char x, unsigned char y, char *str)
 void GLCDPutCharHead8x8(unsigned char c)
 {
     unsigned short index;
-    index = (c * 8) + FONT_WIDTH_TABLE;
+    index = c * 8;
     Coord.x = tx;
     Coord.y = ty;
     GLCDWriteData(cp437font8x8[index++]);
@@ -818,7 +786,7 @@ void GLCDPutCharDigMin(unsigned char c)
     unsigned short index;
     unsigned char data;
     c -= '+';
-    index = (22 * c) + 16 + FONT_WIDTH_TABLE;
+    index = (22 * c) + 16;
     Coord.x = tx;
     Coord.y = ty;
     GLCDWriteData(lcdnumsmin[index++]);
@@ -835,28 +803,12 @@ void GLCDPutCharDigMin(unsigned char c)
     GLCDWriteData(0x00);
     Coord.x = tx;
     Coord.y = Coord.y + 8;
-    data = lcdnumsmin[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmin[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmin[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmin[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmin[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmin[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmin[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmin[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmin[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmin[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmin[index++];
-    GLCDWriteData(data);
+    for (unsigned char k = 0; k < 11; k++)
+    {
+        data = lcdnumsmin[index++];
+        data >>= 1;
+        GLCDWriteData(data);
+    }
     GLCDWriteData(0x00);
     Coord.x = tx;
     Coord.y = Coord.y + 8;
@@ -868,7 +820,7 @@ void GLCDPutSpecialCharDigMin(unsigned char c)
     unsigned short index;
     unsigned char data;
     c -= '+';
-    index = (22 * c) + 16 + FONT_WIDTH_TABLE;
+    index = (22 * c) + 16;
     Coord.x = tx - 1;
     Coord.y = ty;
     index++;
@@ -887,16 +839,12 @@ void GLCDPutSpecialCharDigMin(unsigned char c)
     Coord.y = Coord.y + 8;
     index++;
     index++;
-    data = lcdnumsmin[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmin[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmin[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmin[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmin[index++];
-    GLCDWriteData(data);
+    for (unsigned char k = 0; k < 5; k++)
+    {
+        data = lcdnumsmin[index++];
+        data >>= 1;
+        GLCDWriteData(data);
+    }
     index++;
     index++;
     index++;
@@ -912,7 +860,7 @@ void GLCDPutSpecialCharDigMax(unsigned char c)
     unsigned short index;
     unsigned char data;
     c -= '+';
-    index = (39 * c) + 16 + FONT_WIDTH_TABLE;
+    index = (39 * c) + 16;
     Coord.x = tx;
     Coord.y = ty;
     index++;
@@ -951,16 +899,12 @@ void GLCDPutSpecialCharDigMax(unsigned char c)
     index++;
     index++;
     index++;
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
+    for (unsigned char k = 0; k < 5; k++)
+    {
+        data = lcdnumsmax[index++];
+        data >>= 1;
+        GLCDWriteData(data);
+    }
     index++;
     index++;
     index++;
@@ -976,7 +920,7 @@ void GLCDPutCharDigMax(unsigned char c)
     unsigned short index;
     unsigned char data;
     c -= '+';
-    index = (39 * c) + 16 + FONT_WIDTH_TABLE;
+    index = (39 * c) + 16;
     Coord.x = tx;
     Coord.y = ty;
     GLCDWriteData(lcdnumsmax[index++]);
@@ -1011,32 +955,12 @@ void GLCDPutCharDigMax(unsigned char c)
     GLCDWriteData(0x00);
     Coord.x = tx;
     Coord.y = Coord.y + 8;
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
+    for (unsigned char k = 0; k < 13; k++)
+    {
+        data = lcdnumsmax[index++];
+        data >>= 1;
+        GLCDWriteData(data);
+    }
     GLCDWriteData(0x00);
     Coord.x = tx;
     Coord.y = Coord.y + 8;
@@ -1047,7 +971,7 @@ void GLCDPutCharDigMaxFirst(unsigned char c)
 {
     unsigned short index;
     c -= '+';
-    index = (39 * c) + 16 + FONT_WIDTH_TABLE;
+    index = (39 * c) + 16;
     Coord.x = tx;
     Coord.y = ty;
     GLCDWriteData(lcdnumsmax[index++]);
@@ -1089,33 +1013,13 @@ void GLCDPutCharDigMaxSecond(unsigned char c)
     unsigned short index;
     unsigned char data;
     c -= '+';
-    index = (39 * c) + 42 + FONT_WIDTH_TABLE;
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
-    data = lcdnumsmax[index++];
-    GLCDWriteData(data);
+    index = (39 * c) + 42;
+    for (unsigned char k = 0; k < 13; k++)
+    {
+        data = lcdnumsmax[index++];
+        data >>= 1;
+        GLCDWriteData(data);
+    }
     GLCDWriteData(0x00);
     Coord.x = tx;
     Coord.y = Coord.y + 8;
