@@ -18,7 +18,7 @@
 */
 
 #ifndef FONT_WIDTH_TABLE
-#define FONT_WIDTH_TABLE 0
+#define FONT_WIDTH_TABLE 6
 #endif
 
 unsigned char screen_x = 0, screen_y = 0;
@@ -635,35 +635,37 @@ void GLCDPutChar_ArialBold14(unsigned char c)
     unsigned short j;
     unsigned short jj;
     unsigned short page;
-    c -= 0x20;
+    c -= 0x20; // first char
     if (c != 0)
     {
-        index = ((Arial_bold_14_index[c - 1]) * 2) + FONT_WIDTH_TABLE + 0x60;
+        index = ((Arial_bold_14_index[c - 1]) * 2) + 0x60 + FONT_WIDTH_TABLE; // char count
     }
     else
     {
-        index = FONT_WIDTH_TABLE + 0x60;
+        index = 0x60 + FONT_WIDTH_TABLE; // char count
     }
     width = Arial_bold_14[FONT_WIDTH_TABLE + c];
     Coord.x = tx;
     Coord.y = ty;
     jj = index + width;
-    for (j = index; j < jj; j++)
+    for (j = index; j < jj; j++) /* each column */
     {
         data = Arial_bold_14[j];
         GLCDWriteData(data);
     }
+    // 1px gap between chars
     GLCDWriteData(0x00);
     Coord.x = tx;
     Coord.y += 8;
-    page = width + index;
+    page = width + index; // page must be 16 bit to prevent overflow
     jj += width;
-    for (j = page; j < jj; j++)
+    for (j = page; j < jj; j++) /* each column */
     {
         data = Arial_bold_14[j];
         data >>= 2;
         GLCDWriteData(data);
     }
+    // 1px gap between chars
     GLCDWriteData(0x00);
     Coord.x = tx;
     Coord.y += 8;
@@ -689,14 +691,14 @@ void GLCDPutCharCalibri36(unsigned char c)
     unsigned char data;
     unsigned short j;
     unsigned short jj;
-    c -= 0x20;
+    c -= 0x20; // first char
     if (c != 0)
     {
-        index = Calibri36_index[c - 1] + FONT_WIDTH_TABLE + 0x7;
+        index = Calibri36_index[c - 1] + 0x7 + FONT_WIDTH_TABLE;
     }
     else
     {
-        index = FONT_WIDTH_TABLE + 0x7;
+        index = 0x7 + FONT_WIDTH_TABLE; // char count
     }
     width = Calibri36[FONT_WIDTH_TABLE + c];
     Coord.x = tx;
@@ -707,6 +709,7 @@ void GLCDPutCharCalibri36(unsigned char c)
     {
         GLCDWriteData(Calibri36[j]);
     }
+    // 1px gap between chars
     GLCDWriteData(0x00);
     Coord.x = tx;
     Coord.y = Coord.y + 8;
@@ -716,6 +719,7 @@ void GLCDPutCharCalibri36(unsigned char c)
     {
         GLCDWriteData(Calibri36[j]);
     }
+    // 1px gap between chars
     GLCDWriteData(0x00);
     Coord.x = tx;
     Coord.y = Coord.y + 8;
@@ -726,6 +730,7 @@ void GLCDPutCharCalibri36(unsigned char c)
     {
         GLCDWriteData(Calibri36[j]);
     }
+    // 1px gap between chars
     GLCDWriteData(0x00);
     Coord.x = tx;
     Coord.y = Coord.y + 8;
@@ -736,6 +741,7 @@ void GLCDPutCharCalibri36(unsigned char c)
     {
         GLCDWriteData(Calibri36[j]);
     }
+    // 1px gap between chars
     GLCDWriteData(0x00);
     Coord.x = tx;
     Coord.y = Coord.y + 8;
@@ -744,9 +750,11 @@ void GLCDPutCharCalibri36(unsigned char c)
     jj = page + width;
     for (j = page; j < jj; j++)
     {
-        data = Calibri36[j] & 0x0F;
+        data = Calibri36[j];
+        data >>= 4;
         GLCDWriteData(data);
     }
+    // 1px gap between chars
     GLCDWriteData(0x00);
     Coord.x = tx;
     Coord.y = Coord.y + 8;
