@@ -744,8 +744,7 @@ void GLCDPutCharCalibri36(unsigned char c)
     jj = page + width;
     for (j = page; j < jj; j++)
     {
-        data = Calibri36[j] & 0xF0;
-        data >>= 4;
+        data = Calibri36[j] & 0x0F;
         GLCDWriteData(data);
     }
     GLCDWriteData(0x00);
