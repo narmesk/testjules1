@@ -5,22 +5,17 @@
 
 /*
 ================================================================================-------------------
-  LMC19264A-01 / AIP31108 (KS0108) 192x64 GLCD SÜRÜCÜSÜ (SHADOW RAM / OTOMATİK DONANIM YAZMA)
+  LMC19264A-01 / AIP31108 (KS0108) 192x64 GLCD SÜRÜCÜSÜ (SHADOW RAM / ANINDA YAZMA)
 ================================================================================-------------------
-  ÇALIŞMA PRENSİBİ VE KULLANIM REHBERİ:
-
-  1. SHADOW RAM TAMPONU (glcd_buffer[1536]):
-     MCU RAM'inde 192x64 piksel ekran alanı için 1536 Baytlık gölge bellek tutulur.
-     Piksel okuma sorunları (RMW problemleri) yaşanmaması için dikey 8-bit sütun durumları
-     bu bellekte saklanır.
-
-  2. OTOMATİK DONANIM YAZMA (MANUEL RENDER GEREKMEZ!):
-     Tüm çizim ve yazı fonksiyonları (GLCD_SetPixel, GLCD_String5x7, GLCD_Line, GLCD_Rectangle vb.)
-     çağrıldıkları ANINDA hem gölge belleği günceller hem de doğrudan LCD donanımına yazar.
-     Kullanıcının manuel olarak GLCD_Render() çağırmasına KESİNLİKLE GEREK YOKTUR.
-
-  3. İSTEĞE BAĞLI BÖLGE/TÜM EKRAN REFRESH (GLCD_Render):
-     İhtiyaç duyulması halinde tüm ekranı hafızadan yeniden basmak için GLCD_Render() kullanılabilir.
+  ÇALIŞMA PRENSİBİ:
+  1. MCU RAM'inde 192x64 piksel ekran alanı için 1536 Baytlık 'glcd_buffer' gölge bellek tutulur.
+  2. Donanımdan geri okuma (RMW) problemleri sıfırlanmıştır.
+  3. PİKSEL VE YAZI ÇİZİMLERİ:
+     - GLCD_SetPixel(65, 33, BLACK): Tek piksel anında ekranda belirir (Render gerekmez).
+     - GLCD_String5x7(63, 27, "Test"): Sayfa hizalaması olmayan (27 % 8 != 0) yazılar pürüzsüz
+       ve deliksiz şekilde maskelenerek anında ekrana yazılır.
+  4. ALAN VE EKRAN DOLDURMA (SetPixels / GLCD_ClearAll):
+     - RAM'de anında hesaplanır ve donanıma blok veri olarak gönderilir (< 5 ms sürer).
 ================================================================================-------------------
 */
 
@@ -359,7 +354,7 @@ void GLCD_Render(void)
 
     for (page = 0; page < 8; page++)
     {
-        ptr = page * 192;
+        ptr = (unsigned short)page * 192;
 
         // Çip 1 (Sol 64 Sütun)
         GLCD_Chip_Select_Direct(1);
@@ -400,6 +395,9 @@ void GLCD_ClearAll(void)
     GLCD_Render();
 }
 
+//-------------------------------------------------------------------------------------------------
+// Veri Yazma Fonksiyonları (Y Kaydırma / Maskeleme İle Pürüzsüz Font Desteği)
+//-------------------------------------------------------------------------------------------------
 void GLCD_WriteData(unsigned char dataToWrite)
 {
     unsigned char yOffset = screen_y % 8;
@@ -416,14 +414,16 @@ void GLCD_WriteData(unsigned char dataToWrite)
         }
         else
         {
-            glcd_buffer[idx] = (glcd_buffer[idx] & ~(0xFF << yOffset)) | (dataToWrite << yOffset);
+            unsigned char mask1 = ~(0xFF << yOffset);
+            glcd_buffer[idx] = (glcd_buffer[idx] & mask1) | (dataToWrite << yOffset);
             GLCD_GoTo_Direct(screen_x, page);
             GLCD_Data_Direct(glcd_buffer[idx]);
 
             if (page + 1 < 8)
             {
                 unsigned short idx2 = (unsigned short)(page + 1) * 192 + screen_x;
-                glcd_buffer[idx2] = (glcd_buffer[idx2] & ~(0xFF >> (8 - yOffset))) | (dataToWrite >> (8 - yOffset));
+                unsigned char mask2 = ~(0xFF >> (8 - yOffset));
+                glcd_buffer[idx2] = (glcd_buffer[idx2] & mask2) | (dataToWrite >> (8 - yOffset));
                 GLCD_GoTo_Direct(screen_x, page + 1);
                 GLCD_Data_Direct(glcd_buffer[idx2]);
             }
@@ -448,14 +448,16 @@ void GLCDWriteData(unsigned char data)
         }
         else
         {
-            glcd_buffer[idx] = (glcd_buffer[idx] & ~(0xFF << yOffset)) | (data << yOffset);
+            unsigned char mask1 = ~(0xFF << yOffset);
+            glcd_buffer[idx] = (glcd_buffer[idx] & mask1) | (data << yOffset);
             GLCD_GoTo_Direct(Coord.x, page);
             GLCD_Data_Direct(glcd_buffer[idx]);
 
             if (page + 1 < 8)
             {
                 unsigned short idx2 = (unsigned short)(page + 1) * 192 + Coord.x;
-                glcd_buffer[idx2] = (glcd_buffer[idx2] & ~(0xFF >> (8 - yOffset))) | (data >> (8 - yOffset));
+                unsigned char mask2 = ~(0xFF >> (8 - yOffset));
+                glcd_buffer[idx2] = (glcd_buffer[idx2] & mask2) | (data >> (8 - yOffset));
                 GLCD_GoTo_Direct(Coord.x, page + 1);
                 GLCD_Data_Direct(glcd_buffer[idx2]);
             }
@@ -515,17 +517,54 @@ void GLCD_Rectangle(unsigned char x, unsigned char y, unsigned char b, unsigned 
     }
 }
 
-// Dolu Dikdörtgen Çizimi
+// Dolu Dikdörtgen Çizimi (RAM'de İşleyip Donanıma Hızlıca Blok Halinde Aktarır)
 void GLCD_Rectangle_Fill(unsigned char x, unsigned char y, unsigned char b, unsigned char a, unsigned char color)
 {
     unsigned char curr_x, curr_y;
+    unsigned char start_page = y / 8;
+    unsigned char end_page = a / 8;
+    unsigned char page, bit_pos;
+    unsigned short idx;
+
+    if (x >= 192) x = 191;
+    if (b >= 192) b = 191;
+    if (y >= 64) y = 63;
+    if (a >= 64) a = 63;
+
+    // RAM tamponunu güncelle
     for (curr_x = x; curr_x <= b; curr_x++)
     {
         for (curr_y = y; curr_y <= a; curr_y++)
         {
-            GLCD_SetPixel(curr_x, curr_y, color);
+            page = curr_y / 8;
+            bit_pos = curr_y % 8;
+            idx = (unsigned short)page * 192 + curr_x;
+
+            if (color == BLACK)
+            {
+                glcd_buffer[idx] |= (1 << bit_pos);
+            }
+            else
+            {
+                glcd_buffer[idx] &= ~(1 << bit_pos);
+            }
         }
     }
+
+    // Donanımı hızla güncelle (< 5 ms)
+    for (page = start_page; page <= end_page; page++)
+    {
+        for (curr_x = x; curr_x <= b; curr_x++)
+        {
+            if (curr_x == x || curr_x == 64 || curr_x == 128)
+            {
+                GLCD_GoTo_Direct(curr_x, page);
+            }
+            idx = (unsigned short)page * 192 + curr_x;
+            GLCD_Data_Direct(glcd_buffer[idx]);
+        }
+    }
+    GLCD_Chip_Select_Direct(0);
 }
 
 // Alan Doldurma
@@ -606,7 +645,7 @@ void GLCD_Line(unsigned char X1, unsigned char Y1, unsigned char X2, unsigned ch
     }
 }
 
-// Çamber Çizimi
+// Çember Çizimi
 void GLCD_Circle(unsigned char cx, unsigned char cy, unsigned char radius, unsigned char color)
 {
     int x, y, xchange, ychange, radiusError;
