@@ -3,13 +3,13 @@
 
 /*
 ================================================================================-------------------
-  LMC19264A-01 / AIP31108 (KS0108) 192x64 GLCD SÜRÜCÜSÜ (GÖLGE TAMPON RAM SÜRÜCÜSÜ)
+  LMC19264A-01 / AIP31108 (KS0108) 192x64 GLCD SÜRÜCÜSÜ (HIZLI RAM VIRTUAL MEMORY)
 ================================================================================-------------------
   1. MCU RAM'inde 192x64 piksel ekran alanı için 1536 Baytlık 'glcd_buffer' gölge bellek tutulur.
-  2. Tüm çizim ve font fonksiyonları (GLCD_SetPixel, GLCDPutChar...) doğrudan bu RAM tamponunu
-     günceller (işık hızında).
-  3. Çizim metni veya grafikler tamamlandığında 'GLCD_Render()' çağrılarak 1536 baytlık RAM
-     tamponu ekran çiplerine tek blok geçişle gürültüsüz şekilde aktarılır.
+  2. Tüm çizim ve karakter yazma fonksiyonları (GLCD_SetPixel, GLCDPutChar...) YALNIZCA RAM
+     tamponunu günceller ve donanım veriyolunu meşgul etmez.
+  3. Çizim tamamlandığında 'GLCD_Render()' çağrılarak 1536 baytlık RAM tamponu donanıma
+     gürültüsüz ve aşırı hızlı (tek blok geçişle) aktarılır.
 ================================================================================-------------------
 */
 
@@ -134,7 +134,7 @@ void GLCD_Data(unsigned char data)
 }
 
 //-------------------------------------------------------------------------------------------------
-// GLCD Konumlandırma (x: 0..191 piksel, y: 0..63 piksel adresi)
+// GLCD Doğrudan Konumlandırma (x: 0..191 piksel, y: 0..63 piksel adresi)
 //-------------------------------------------------------------------------------------------------
 void GLCD_GoTo(unsigned char x, unsigned char y)
 {
@@ -181,6 +181,7 @@ void GLCD_Init(void)
 
 //-------------------------------------------------------------------------------------------------
 // Tüm RAM Tamponunu Ekrana Yansıtma (Aşırı Hızlı Tek Geçişli Donanım Render)
+// Veriyolu gürültüsünü önlemek için RS ve CS geçişleri kusursuz zamanlama ile yapılır.
 //-------------------------------------------------------------------------------------------------
 void GLCD_Render(void)
 {
@@ -199,36 +200,45 @@ void GLCD_Render(void)
 
         // Çip 1 (Sol 64 Sütun)
         CS1_SetLow(); CS2_SetHigh(); CS3_SetHigh();
-        RS_SetLow(); LATD = DISPLAY_SET_X_CMD | page; EN_SetHigh(); __delay_us(1); EN_SetLow();
-        RS_SetLow(); LATD = DISPLAY_SET_Y_CMD | 0;    EN_SetHigh(); __delay_us(1); EN_SetLow();
-        RS_SetHigh();
+        __delay_us(1);
+        RS_SetLow(); LATD = DISPLAY_SET_X_CMD | page; EN_SetHigh(); __delay_us(2); EN_SetLow(); __delay_us(1);
+        RS_SetLow(); LATD = DISPLAY_SET_Y_CMD | 0;    EN_SetHigh(); __delay_us(2); EN_SetLow(); __delay_us(1);
+        RS_SetHigh(); __delay_us(1);
         for (col = 0; col < 64; col++)
         {
             LATD = glcd_buffer[ptr + col];
-            EN_SetHigh(); __delay_us(1); EN_SetLow();
+            EN_SetHigh(); __delay_us(2); EN_SetLow(); __delay_us(1);
         }
+        RS_SetLow(); __delay_us(1);
+        CS1_SetHigh(); __delay_us(1);
 
         // Çip 2 (Orta 64 Sütun)
-        CS1_SetHigh(); CS2_SetLow(); CS3_SetHigh();
-        RS_SetLow(); LATD = DISPLAY_SET_X_CMD | page; EN_SetHigh(); __delay_us(1); EN_SetLow();
-        RS_SetLow(); LATD = DISPLAY_SET_Y_CMD | 0;    EN_SetHigh(); __delay_us(1); EN_SetLow();
-        RS_SetHigh();
+        CS2_SetLow();
+        __delay_us(1);
+        RS_SetLow(); LATD = DISPLAY_SET_X_CMD | page; EN_SetHigh(); __delay_us(2); EN_SetLow(); __delay_us(1);
+        RS_SetLow(); LATD = DISPLAY_SET_Y_CMD | 0;    EN_SetHigh(); __delay_us(2); EN_SetLow(); __delay_us(1);
+        RS_SetHigh(); __delay_us(1);
         for (col = 0; col < 64; col++)
         {
             LATD = glcd_buffer[ptr + 64 + col];
-            EN_SetHigh(); __delay_us(1); EN_SetLow();
+            EN_SetHigh(); __delay_us(2); EN_SetLow(); __delay_us(1);
         }
+        RS_SetLow(); __delay_us(1);
+        CS2_SetHigh(); __delay_us(1);
 
         // Çip 3 (Sağ 64 Sütun)
-        CS1_SetHigh(); CS2_SetHigh(); CS3_SetLow();
-        RS_SetLow(); LATD = DISPLAY_SET_X_CMD | page; EN_SetHigh(); __delay_us(1); EN_SetLow();
-        RS_SetLow(); LATD = DISPLAY_SET_Y_CMD | 0;    EN_SetHigh(); __delay_us(1); EN_SetLow();
-        RS_SetHigh();
+        CS3_SetLow();
+        __delay_us(1);
+        RS_SetLow(); LATD = DISPLAY_SET_X_CMD | page; EN_SetHigh(); __delay_us(2); EN_SetLow(); __delay_us(1);
+        RS_SetLow(); LATD = DISPLAY_SET_Y_CMD | 0;    EN_SetHigh(); __delay_us(2); EN_SetLow(); __delay_us(1);
+        RS_SetHigh(); __delay_us(1);
         for (col = 0; col < 64; col++)
         {
             LATD = glcd_buffer[ptr + 128 + col];
-            EN_SetHigh(); __delay_us(1); EN_SetLow();
+            EN_SetHigh(); __delay_us(2); EN_SetLow(); __delay_us(1);
         }
+        RS_SetLow(); __delay_us(1);
+        CS3_SetHigh(); __delay_us(1);
     }
 
     CS1_SetHigh(); CS2_SetHigh(); CS3_SetHigh();
@@ -295,7 +305,7 @@ void GotoXY(unsigned char x, unsigned char y)
 }
 
 //-------------------------------------------------------------------------------------------------
-// MCU RAM Tamponu Kullanan Grafik Çizim Fonksiyonları
+// MCU RAM Tamponu Kullanan Grafik Çizim Fonksiyonları (Saf RAM İşlemleri)
 //-------------------------------------------------------------------------------------------------
 
 void GLCD_SetPixel(unsigned char x, unsigned char y, unsigned char color)
@@ -537,6 +547,7 @@ void GLCDPutChar5x7(unsigned char c)
     tx = tx + 6;
     Coord.x = tx;
     Coord.y = ty;
+    GLCD_Render();
 }
 
 void GLCD_StringArialBold14(unsigned char x, unsigned char y, char *str)
@@ -597,6 +608,7 @@ void GLCDPutChar_ArialBold14(unsigned char c)
     tx = tx + width + 1;
     Coord.x = tx;
     Coord.y = ty;
+    GLCD_Render();
 }
 
 void GLCD_StringCalibri36(unsigned char x, unsigned char y, char *str)
@@ -690,6 +702,7 @@ void GLCDPutCharCalibri36(unsigned char c)
     tx = tx + width + 1;
     Coord.x = tx;
     Coord.y = ty;
+    GLCD_Render();
 }
 
 void GLCD_StringHead8x8(unsigned char x, unsigned char y, char *str)
@@ -722,6 +735,7 @@ void GLCDPutCharHead8x8(unsigned char c)
     tx = tx + 9;
     Coord.x = tx;
     Coord.y = ty;
+    GLCD_Render();
 }
 
 void GLCDPutCharDigMin(unsigned char c)
@@ -758,6 +772,7 @@ void GLCDPutCharDigMin(unsigned char c)
     tx = tx + 12;
     Coord.x = tx;
     Coord.y = ty;
+    GLCD_Render();
 }
 
 void GLCDPutSpecialCharDigMin(unsigned char c)
@@ -793,6 +808,7 @@ void GLCDPutSpecialCharDigMin(unsigned char c)
     tx = tx + 5;
     Coord.x = tx;
     Coord.y = ty;
+    GLCD_Render();
 }
 
 void GLCDPutSpecialCharDigMax(unsigned char c)
@@ -838,6 +854,7 @@ void GLCDPutSpecialCharDigMax(unsigned char c)
     tx = tx + 5;
     Coord.x = tx;
     Coord.y = ty;
+    GLCD_Render();
 }
 
 void GLCDPutCharDigMax(unsigned char c)
@@ -893,6 +910,7 @@ void GLCDPutCharDigMax(unsigned char c)
     tx = tx + 14;
     Coord.x = tx;
     Coord.y = ty;
+    GLCD_Render();
 }
 
 void GLCDPutCharDigMaxFirst(unsigned char c)
@@ -936,6 +954,7 @@ void GLCDPutCharDigMaxFirst(unsigned char c)
 
     Coord.x = tx;
     Coord.y = ty;
+    GLCD_Render();
 }
 
 void GLCDPutCharDigMaxSecond(unsigned char c)
@@ -957,6 +976,7 @@ void GLCDPutCharDigMaxSecond(unsigned char c)
     tx = tx + 14;
     Coord.x = tx;
     Coord.y = ty;
+    GLCD_Render();
 }
 
 // Resim basma fonksiyonları (RAM Tamponuna ve Donanıma Yazma)
