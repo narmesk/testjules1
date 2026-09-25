@@ -10,7 +10,13 @@
 void GLCD_Init(void);
 void GLCD_Render(void);
 void GLCD_ClearAll(void);
+void GLCD_Chip_Select(unsigned char Chip_idx);
+void GLCD_Command(unsigned char command);
+void GLCD_Data(unsigned char data);
 void GLCD_GoTo(unsigned char x, unsigned char y);
+void GLCDWriteData(unsigned char data);
+void GLCD_WriteData(unsigned char dataToWrite);
+void GotoXY(unsigned char x, unsigned char y);
 void GLCD_SetPixel(unsigned char x, unsigned char y, unsigned char color);
 
 // Grafik Çizim Fonksiyonları
@@ -35,6 +41,8 @@ void GLCDPutCharDigMin(unsigned char c);
 void GLCDPutSpecialCharDigMin(unsigned char c);
 void GLCDPutSpecialCharDigMax(unsigned char c);
 void GLCDPutCharDigMax(unsigned char c);
+void GLCDPutCharDigMaxFirst(unsigned char c);
+void GLCDPutCharDigMaxSecond(unsigned char c);
 
 // Resim Fonksiyonu
 void GLCD_Picture(char *str);
