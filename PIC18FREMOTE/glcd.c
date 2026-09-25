@@ -92,7 +92,7 @@ extern unsigned char GLCD_ReadStatus(unsigned char chip);
 // MCC Pin Makroları İle Donanım Çip Seçim Fonksiyonu (LMC19264A-01: 3 x 64x64 = 192x64)
 // Active LOW Chip Select Yapısı
 //-------------------------------------------------------------------------------------------------
-void GLCD_Chip_Select_Direct(unsigned char Chip_idx)
+__attribute__((weak)) void GLCD_Chip_Select_Direct(unsigned char Chip_idx)
 {
     if (Chip_idx == 0) // Hiçbirini seçme (All Deselected)
     {
@@ -127,7 +127,7 @@ void GLCD_Chip_Select_Direct(unsigned char Chip_idx)
     __delay_us(1);
 }
 
-void GLCD_Chip_Select(char Chip_idx)
+__attribute__((weak)) void GLCD_Chip_Select(char Chip_idx)
 {
     GLCD_Chip_Select_Direct((unsigned char)Chip_idx);
 }
@@ -135,7 +135,7 @@ void GLCD_Chip_Select(char Chip_idx)
 //-------------------------------------------------------------------------------------------------
 // MCC Pin Makroları İle Doğrudan Donanıma Komut Gönderme
 //-------------------------------------------------------------------------------------------------
-void GLCD_Command_Direct(unsigned char command)
+__attribute__((weak)) void GLCD_Command_Direct(unsigned char command)
 {
     TRISD = 0x00;       // PORTD Çıkış
     RW_SetLow();        // RW = 0 (Yazma Modu)
@@ -154,7 +154,7 @@ void GLCD_Command_Direct(unsigned char command)
     __delay_us(2);
 }
 
-void GLCD_Command(char Command)
+__attribute__((weak)) void GLCD_Command(char Command)
 {
     GLCD_Command_Direct((unsigned char)Command);
 }
@@ -162,7 +162,7 @@ void GLCD_Command(char Command)
 //-------------------------------------------------------------------------------------------------
 // MCC Pin Makroları İle Doğrudan Donanıma Veri Gönderme
 //-------------------------------------------------------------------------------------------------
-void GLCD_Data_Direct(unsigned char data)
+__attribute__((weak)) void GLCD_Data_Direct(unsigned char data)
 {
     TRISD = 0x00;       // PORTD Çıkış
     RW_SetLow();        // RW = 0 (Yazma Modu)
@@ -181,7 +181,7 @@ void GLCD_Data_Direct(unsigned char data)
     __delay_us(2);
 }
 
-void GLCD_Data(char Data)
+__attribute__((weak)) void GLCD_Data(char Data)
 {
     GLCD_Data_Direct((unsigned char)Data);
 }
@@ -189,7 +189,7 @@ void GLCD_Data(char Data)
 //-------------------------------------------------------------------------------------------------
 // GLCD Doğrudan Konumlandırma (x: 0..191 piksel, page: 0..7 sayfa adresi)
 //-------------------------------------------------------------------------------------------------
-void GLCD_GoTo_Direct(unsigned char x, unsigned char page)
+__attribute__((weak)) void GLCD_GoTo_Direct(unsigned char x, unsigned char page)
 {
     unsigned char chip;
     unsigned char column;
@@ -204,7 +204,7 @@ void GLCD_GoTo_Direct(unsigned char x, unsigned char page)
     GLCD_Command_Direct(DISPLAY_SET_Y_CMD | column); // Sütun (0x40 + column)
 }
 
-void GLCD_GoTo(unsigned char x, unsigned char y)
+__attribute__((weak)) void GLCD_GoTo(unsigned char x, unsigned char y)
 {
     screen_x = x;
     screen_y = y;
@@ -216,7 +216,7 @@ void GLCD_GoTo(unsigned char x, unsigned char y)
 //-------------------------------------------------------------------------------------------------
 // GLCD Başlatma Fonksiyonu
 //-------------------------------------------------------------------------------------------------
-void GLCD_Init(void)
+__attribute__((weak)) void GLCD_Init(void)
 {
     ANSELD = 0x00;              // PORTD Dijital Mod
     TRISD = 0x00;               // Data Bus Çıkış
@@ -239,7 +239,7 @@ void GLCD_Init(void)
 // Tüm RAM Tamponunu Ekrana Yansıtma (Aşırı Hızlı Tek Geçişli Donanım Render)
 // Bütün veriyolu tamponlarını (BUFEN/BUFE2/BUFDIR) sabit tutup gürültüyü tamamen önler.
 //-------------------------------------------------------------------------------------------------
-void GLCD_Render(void)
+__attribute__((weak)) void GLCD_Render(void)
 {
     unsigned char page, col;
     unsigned short ptr;
@@ -296,7 +296,7 @@ void GLCD_Render(void)
 //-------------------------------------------------------------------------------------------------
 // GLCD Tüm Ekranı Temizleme (RAM Buffera Yazıp Donanıma Anında Yansıtma)
 //-------------------------------------------------------------------------------------------------
-void GLCD_ClearAll(void)
+__attribute__((weak)) void GLCD_ClearAll(void)
 {
     memset(glcd_buffer, 0x00, 1536);
     GLCD_Render();
@@ -305,7 +305,7 @@ void GLCD_ClearAll(void)
 //-------------------------------------------------------------------------------------------------
 // Veri Yazma Fonksiyonları (Saf RAM Gölge Tamponu Güncellemesi - Veriyolu Parazitini Önler)
 //-------------------------------------------------------------------------------------------------
-void GLCDWriteData(unsigned char data)
+__attribute__((weak)) void GLCDWriteData(unsigned char data)
 {
     unsigned char yOffset = Coord.y % 8;
     unsigned char page = Coord.y / 8;
@@ -319,14 +319,14 @@ void GLCDWriteData(unsigned char data)
         }
         else
         {
-            unsigned char mask1 = ~(0xFF << yOffset);
-            glcd_buffer[idx] = (glcd_buffer[idx] & mask1) | (data << yOffset);
+            unsigned char mask1 = (unsigned char)(~(0xFF << yOffset));
+            glcd_buffer[idx] = (unsigned char)((glcd_buffer[idx] & mask1) | (data << yOffset));
 
             if (page + 1 < 8)
             {
                 unsigned short idx2 = (unsigned short)(page + 1) * 192 + Coord.x;
-                unsigned char mask2 = ~(0xFF >> (8 - yOffset));
-                glcd_buffer[idx2] = (glcd_buffer[idx2] & mask2) | (data >> (8 - yOffset));
+                unsigned char mask2 = (unsigned char)(~(0xFF >> (8 - yOffset)));
+                glcd_buffer[idx2] = (unsigned char)((glcd_buffer[idx2] & mask2) | (data >> (8 - yOffset)));
             }
         }
     }
@@ -334,7 +334,7 @@ void GLCDWriteData(unsigned char data)
     screen_x = Coord.x;
 }
 
-void GLCD_WriteData(unsigned char dataToWrite)
+__attribute__((weak)) void GLCD_WriteData(unsigned char dataToWrite)
 {
     Coord.x = screen_x;
     Coord.y = screen_y;
@@ -343,7 +343,7 @@ void GLCD_WriteData(unsigned char dataToWrite)
     screen_y = Coord.y;
 }
 
-void GotoXY(unsigned char x, unsigned char y)
+__attribute__((weak)) void GotoXY(unsigned char x, unsigned char y)
 {
     Coord.x = x;
     Coord.y = y;
@@ -356,7 +356,7 @@ void GotoXY(unsigned char x, unsigned char y)
 //-------------------------------------------------------------------------------------------------
 
 // Tek Piksel Çizimi / Silimi (RAM Buffera Yazar ve Donanıma Yansıtır)
-void GLCD_SetPixel(unsigned char x, unsigned char y, unsigned char color)
+__attribute__((weak)) void GLCD_SetPixel(unsigned char x, unsigned char y, unsigned char color)
 {
     unsigned char page = y / 8;
     unsigned char bit_pos = y % 8;
@@ -379,7 +379,7 @@ void GLCD_SetPixel(unsigned char x, unsigned char y, unsigned char color)
 }
 
 // Çerçeve Dikdörtgen Çizimi
-void GLCD_Rectangle(unsigned char x, unsigned char y, unsigned char b, unsigned char a, unsigned char color)
+__attribute__((weak)) void GLCD_Rectangle(unsigned char x, unsigned char y, unsigned char b, unsigned char a, unsigned char color)
 {
     unsigned char j;
     for (j = x; j <= b; j++)
@@ -395,7 +395,7 @@ void GLCD_Rectangle(unsigned char x, unsigned char y, unsigned char b, unsigned 
 }
 
 // Dolu Dikdörtgen Çizimi (RAM'de İşleyip Donanıma Hızlıca Blok Halinde Aktarır)
-void GLCD_Rectangle_Fill(unsigned char x, unsigned char y, unsigned char b, unsigned char a, unsigned char color)
+__attribute__((weak)) void GLCD_Rectangle_Fill(unsigned char x, unsigned char y, unsigned char b, unsigned char a, unsigned char color)
 {
     unsigned char curr_x, curr_y;
     unsigned char page, bit_pos;
@@ -430,13 +430,13 @@ void GLCD_Rectangle_Fill(unsigned char x, unsigned char y, unsigned char b, unsi
 }
 
 // Alan Doldurma
-void SetPixels(unsigned char x, unsigned char y, unsigned char x2, unsigned char y2, unsigned char color)
+__attribute__((weak)) void SetPixels(unsigned char x, unsigned char y, unsigned char x2, unsigned char y2, unsigned char color)
 {
     GLCD_Rectangle_Fill(x, y, x2, y2, color);
 }
 
 // Çizgi Çizimi
-void GLCD_Line(unsigned char X1, unsigned char Y1, unsigned char X2, unsigned char Y2, unsigned char color)
+__attribute__((weak)) void GLCD_Line(unsigned char X1, unsigned char Y1, unsigned char X2, unsigned char Y2, unsigned char color)
 {
     int CurrentX, CurrentY, Xinc, Yinc,
             Dx, Dy, TwoDx, TwoDy,
@@ -484,7 +484,7 @@ void GLCD_Line(unsigned char X1, unsigned char Y1, unsigned char X2, unsigned ch
                     CurrentY += Yinc;
                     TwoDxAccumulatedError -= TwoDx;
                 }
-                GLCD_SetPixel(CurrentX, CurrentY, color);
+                GLCD_SetPixel((unsigned char)CurrentX, (unsigned char)CurrentY, color);
             }
             while (CurrentX != X2);
         }
@@ -500,7 +500,7 @@ void GLCD_Line(unsigned char X1, unsigned char Y1, unsigned char X2, unsigned ch
                     CurrentX += Xinc;
                     TwoDyAccumulatedError -= TwoDy;
                 }
-                GLCD_SetPixel(CurrentX, CurrentY, color);
+                GLCD_SetPixel((unsigned char)CurrentX, (unsigned char)CurrentY, color);
             }
             while (CurrentY != Y2);
         }
@@ -508,7 +508,7 @@ void GLCD_Line(unsigned char X1, unsigned char Y1, unsigned char X2, unsigned ch
 }
 
 // Çember Çizimi
-void GLCD_Circle(unsigned char cx, unsigned char cy, unsigned char radius, unsigned char color)
+__attribute__((weak)) void GLCD_Circle(unsigned char cx, unsigned char cy, unsigned char radius, unsigned char color)
 {
     int x, y, xchange, ychange, radiusError;
     x = radius;
@@ -518,14 +518,14 @@ void GLCD_Circle(unsigned char cx, unsigned char cy, unsigned char radius, unsig
     radiusError = 0;
     while (x >= y)
     {
-        GLCD_SetPixel(cx + x, cy + y, color);
-        GLCD_SetPixel(cx - x, cy + y, color);
-        GLCD_SetPixel(cx - x, cy - y, color);
-        GLCD_SetPixel(cx + x, cy - y, color);
-        GLCD_SetPixel(cx + y, cy + x, color);
-        GLCD_SetPixel(cx - y, cy + x, color);
-        GLCD_SetPixel(cx - y, cy - x, color);
-        GLCD_SetPixel(cx + y, cy - x, color);
+        GLCD_SetPixel((unsigned char)(cx + x), (unsigned char)(cy + y), color);
+        GLCD_SetPixel((unsigned char)(cx - x), (unsigned char)(cy + y), color);
+        GLCD_SetPixel((unsigned char)(cx - x), (unsigned char)(cy - y), color);
+        GLCD_SetPixel((unsigned char)(cx + x), (unsigned char)(cy - y), color);
+        GLCD_SetPixel((unsigned char)(cx + y), (unsigned char)(cy + x), color);
+        GLCD_SetPixel((unsigned char)(cx - y), (unsigned char)(cy + x), color);
+        GLCD_SetPixel((unsigned char)(cx - y), (unsigned char)(cy - x), color);
+        GLCD_SetPixel((unsigned char)(cx + y), (unsigned char)(cy - x), color);
         y++;
         radiusError += ychange;
         ychange += 2;
@@ -539,7 +539,7 @@ void GLCD_Circle(unsigned char cx, unsigned char cy, unsigned char radius, unsig
 }
 
 // Dolu Çember Çizimi
-void GLCD_Circle_Fill(unsigned char cx, unsigned char cy, unsigned char radius, unsigned char color)
+__attribute__((weak)) void GLCD_Circle_Fill(unsigned char cx, unsigned char cy, unsigned char radius, unsigned char color)
 {
     unsigned char temp = radius;
     while (temp > 0)
@@ -552,7 +552,7 @@ void GLCD_Circle_Fill(unsigned char cx, unsigned char cy, unsigned char radius, 
 //-------------------------------------------------------------------------------------------------
 // Metin ve Font Fonksiyonları (MCU RAM Buffera Yazıp Donanıma Anında Basar)
 //-------------------------------------------------------------------------------------------------
-void GLCD_String5x7(unsigned char x, unsigned char y, char *str)
+__attribute__((weak)) void GLCD_String5x7(unsigned char x, unsigned char y, char *str)
 {
     unsigned char i = 0;
     unsigned char curr_x = x;
@@ -566,7 +566,7 @@ void GLCD_String5x7(unsigned char x, unsigned char y, char *str)
 
         unsigned char c = str[i];
         if (c < 0x20 || c > 0x7E) c = ' ';
-        unsigned short font_idx = (c - 0x20) * 5;
+        unsigned short font_idx = (unsigned short)(c - 0x20) * 5;
 
         for (unsigned char k = 0; k < 5; k++)
         {
@@ -584,11 +584,11 @@ void GLCD_String5x7(unsigned char x, unsigned char y, char *str)
     GLCD_Render();
 }
 
-void GLCDPutChar5x7(unsigned char c)
+__attribute__((weak)) void GLCDPutChar5x7(unsigned char c)
 {
     if (c < 0x20 || c > 0x7E) c = ' ';
     c -= 0x20;
-    unsigned short index = c * 5;
+    unsigned short index = (unsigned short)c * 5;
     Coord.x = tx;
     Coord.y = ty;
     GLCDWriteData(font5x7[index++]);
@@ -603,7 +603,7 @@ void GLCDPutChar5x7(unsigned char c)
     GLCD_Render();
 }
 
-void GLCD_StringArialBold14(unsigned char x, unsigned char y, char *str)
+__attribute__((weak)) void GLCD_StringArialBold14(unsigned char x, unsigned char y, char *str)
 {
     tx = x;
     ty = y;
@@ -615,7 +615,7 @@ void GLCD_StringArialBold14(unsigned char x, unsigned char y, char *str)
     GLCD_Render();
 }
 
-void GLCDPutChar_ArialBold14(unsigned char c)
+__attribute__((weak)) void GLCDPutChar_ArialBold14(unsigned char c)
 {
     unsigned char width;
     unsigned short index;
@@ -626,11 +626,11 @@ void GLCDPutChar_ArialBold14(unsigned char c)
     c -= 0x20; // first char
     if (c != 0)
     {
-        index = ((Arial_bold_14_index[c - 1]) * 2) + 0x60 + FONT_WIDTH_TABLE; // char count
+        index = (unsigned short)(((Arial_bold_14_index[c - 1]) * 2) + 0x60 + FONT_WIDTH_TABLE); // char count
     }
     else
     {
-        index = 0x60 + FONT_WIDTH_TABLE; // char count
+        index = (unsigned short)(0x60 + FONT_WIDTH_TABLE); // char count
     }
     width = Arial_bold_14[FONT_WIDTH_TABLE + c];
     Coord.x = tx;
@@ -660,7 +660,7 @@ void GLCDPutChar_ArialBold14(unsigned char c)
     tx = tx + width + 1;
 }
 
-void GLCD_StringCalibri36(unsigned char x, unsigned char y, char *str)
+__attribute__((weak)) void GLCD_StringCalibri36(unsigned char x, unsigned char y, char *str)
 {
     tx = x;
     ty = y;
@@ -672,7 +672,7 @@ void GLCD_StringCalibri36(unsigned char x, unsigned char y, char *str)
     GLCD_Render();
 }
 
-void GLCDPutCharCalibri36(unsigned char c)
+__attribute__((weak)) void GLCDPutCharCalibri36(unsigned char c)
 {
     unsigned char width = 0;
     unsigned short index;
@@ -683,11 +683,11 @@ void GLCDPutCharCalibri36(unsigned char c)
     c -= 0x20; // first char
     if (c != 0)
     {
-        index = Calibri36_index[c - 1] + 0x7 + FONT_WIDTH_TABLE;
+        index = (unsigned short)(Calibri36_index[c - 1] + 0x7 + FONT_WIDTH_TABLE);
     }
     else
     {
-        index = 0x7 + FONT_WIDTH_TABLE; // char count
+        index = (unsigned short)(0x7 + FONT_WIDTH_TABLE); // char count
     }
     width = Calibri36[FONT_WIDTH_TABLE + c];
     Coord.x = tx;
@@ -750,7 +750,7 @@ void GLCDPutCharCalibri36(unsigned char c)
     tx = tx + width + 1;
 }
 
-void GLCD_StringHead8x8(unsigned char x, unsigned char y, char *str)
+__attribute__((weak)) void GLCD_StringHead8x8(unsigned char x, unsigned char y, char *str)
 {
     tx = x;
     ty = y;
@@ -762,10 +762,10 @@ void GLCD_StringHead8x8(unsigned char x, unsigned char y, char *str)
     GLCD_Render();
 }
 
-void GLCDPutCharHead8x8(unsigned char c)
+__attribute__((weak)) void GLCDPutCharHead8x8(unsigned char c)
 {
     unsigned short index;
-    index = (c * 8);
+    index = (unsigned short)(c * 8);
     Coord.x = tx;
     Coord.y = ty;
     GLCDWriteData(cp437font8x8[index++]);
@@ -782,12 +782,12 @@ void GLCDPutCharHead8x8(unsigned char c)
     tx = tx + 9;
 }
 
-void GLCDPutCharDigMin(unsigned char c)
+__attribute__((weak)) void GLCDPutCharDigMin(unsigned char c)
 {
     unsigned short index;
     unsigned char data;
     c -= '+';
-    index = (22 * c) + 16;
+    index = (unsigned short)((22 * c) + 16);
     Coord.x = tx;
     Coord.y = ty;
     GLCDWriteData(lcdnumsmin[index++]);
@@ -817,12 +817,12 @@ void GLCDPutCharDigMin(unsigned char c)
     GLCD_Render();
 }
 
-void GLCDPutSpecialCharDigMin(unsigned char c)
+__attribute__((weak)) void GLCDPutSpecialCharDigMin(unsigned char c)
 {
     unsigned short index;
     unsigned char data;
     c -= '+';
-    index = (22 * c) + 16;
+    index = (unsigned short)((22 * c) + 16);
     Coord.x = tx - 1;
     Coord.y = ty;
     index++;
@@ -858,12 +858,12 @@ void GLCDPutSpecialCharDigMin(unsigned char c)
     GLCD_Render();
 }
 
-void GLCDPutSpecialCharDigMax(unsigned char c)
+__attribute__((weak)) void GLCDPutSpecialCharDigMax(unsigned char c)
 {
     unsigned short index;
     unsigned char data;
     c -= '+';
-    index = (39 * c) + 16;
+    index = (unsigned short)((39 * c) + 16);
     Coord.x = tx;
     Coord.y = ty;
     index++;
@@ -919,12 +919,12 @@ void GLCDPutSpecialCharDigMax(unsigned char c)
     GLCD_Render();
 }
 
-void GLCDPutCharDigMax(unsigned char c)
+__attribute__((weak)) void GLCDPutCharDigMax(unsigned char c)
 {
     unsigned short index;
     unsigned char data;
     c -= '+';
-    index = (39 * c) + 16;
+    index = (unsigned short)((39 * c) + 16);
     Coord.x = tx;
     Coord.y = ty;
     GLCDWriteData(lcdnumsmax[index++]);
@@ -972,11 +972,11 @@ void GLCDPutCharDigMax(unsigned char c)
     GLCD_Render();
 }
 
-void GLCDPutCharDigMaxFirst(unsigned char c)
+__attribute__((weak)) void GLCDPutCharDigMaxFirst(unsigned char c)
 {
     unsigned short index;
     c -= '+';
-    index = (39 * c) + 16;
+    index = (unsigned short)((39 * c) + 16);
     Coord.x = tx;
     Coord.y = ty;
     GLCDWriteData(lcdnumsmax[index++]);
@@ -1014,12 +1014,12 @@ void GLCDPutCharDigMaxFirst(unsigned char c)
     GLCD_Render();
 }
 
-void GLCDPutCharDigMaxSecond(unsigned char c)
+__attribute__((weak)) void GLCDPutCharDigMaxSecond(unsigned char c)
 {
     unsigned short index;
     unsigned char data;
     c -= '+';
-    index = (39 * c) + 42;
+    index = (unsigned short)((39 * c) + 42);
     for (unsigned char k = 0; k < 13; k++)
     {
         data = lcdnumsmax[index++];
@@ -1034,7 +1034,7 @@ void GLCDPutCharDigMaxSecond(unsigned char c)
 }
 
 // Resim basma fonksiyonları (RAM Tamponuna ve Donanıma Yazma)
-void GLCD_Picture(char *str)
+__attribute__((weak)) void GLCD_Picture(char *str)
 {
     memcpy(glcd_buffer, str, 1536);
     GLCD_Render();
