@@ -92,7 +92,7 @@ extern unsigned char GLCD_ReadStatus(unsigned char chip);
 // MCC Pin Makroları İle Donanım Çip Seçim Fonksiyonu (LMC19264A-01: 3 x 64x64 = 192x64)
 // Active LOW Chip Select Yapısı
 //-------------------------------------------------------------------------------------------------
-__attribute__((weak)) void GLCD_Chip_Select_Direct(unsigned char Chip_idx)
+void GLCD_Chip_Select_Direct(unsigned char Chip_idx)
 {
     if (Chip_idx == 0) // Hiçbirini seçme (All Deselected)
     {
@@ -127,7 +127,7 @@ __attribute__((weak)) void GLCD_Chip_Select_Direct(unsigned char Chip_idx)
     __delay_us(1);
 }
 
-__attribute__((weak)) void GLCD_Chip_Select(char Chip_idx)
+void GLCD_Chip_Select(char Chip_idx)
 {
     GLCD_Chip_Select_Direct((unsigned char)Chip_idx);
 }
@@ -135,7 +135,7 @@ __attribute__((weak)) void GLCD_Chip_Select(char Chip_idx)
 //-------------------------------------------------------------------------------------------------
 // MCC Pin Makroları İle Doğrudan Donanıma Komut Gönderme
 //-------------------------------------------------------------------------------------------------
-__attribute__((weak)) void GLCD_Command_Direct(unsigned char command)
+void GLCD_Command_Direct(unsigned char command)
 {
     TRISD = 0x00;       // PORTD Çıkış
     RW_SetLow();        // RW = 0 (Yazma Modu)
@@ -154,7 +154,7 @@ __attribute__((weak)) void GLCD_Command_Direct(unsigned char command)
     __delay_us(2);
 }
 
-__attribute__((weak)) void GLCD_Command(char Command)
+void GLCD_Command(char Command)
 {
     GLCD_Command_Direct((unsigned char)Command);
 }
@@ -162,7 +162,7 @@ __attribute__((weak)) void GLCD_Command(char Command)
 //-------------------------------------------------------------------------------------------------
 // MCC Pin Makroları İle Doğrudan Donanıma Veri Gönderme
 //-------------------------------------------------------------------------------------------------
-__attribute__((weak)) void GLCD_Data_Direct(unsigned char data)
+void GLCD_Data_Direct(unsigned char data)
 {
     TRISD = 0x00;       // PORTD Çıkış
     RW_SetLow();        // RW = 0 (Yazma Modu)
@@ -181,7 +181,7 @@ __attribute__((weak)) void GLCD_Data_Direct(unsigned char data)
     __delay_us(2);
 }
 
-__attribute__((weak)) void GLCD_Data(char Data)
+void GLCD_Data(char Data)
 {
     GLCD_Data_Direct((unsigned char)Data);
 }
@@ -189,7 +189,7 @@ __attribute__((weak)) void GLCD_Data(char Data)
 //-------------------------------------------------------------------------------------------------
 // GLCD Doğrudan Konumlandırma (x: 0..191 piksel, page: 0..7 sayfa adresi)
 //-------------------------------------------------------------------------------------------------
-__attribute__((weak)) void GLCD_GoTo_Direct(unsigned char x, unsigned char page)
+void GLCD_GoTo_Direct(unsigned char x, unsigned char page)
 {
     unsigned char chip;
     unsigned char column;
@@ -204,7 +204,7 @@ __attribute__((weak)) void GLCD_GoTo_Direct(unsigned char x, unsigned char page)
     GLCD_Command_Direct(DISPLAY_SET_Y_CMD | column); // Sütun (0x40 + column)
 }
 
-__attribute__((weak)) void GLCD_GoTo(unsigned char x, unsigned char y)
+void GLCD_GoTo(unsigned char x, unsigned char y)
 {
     screen_x = x;
     screen_y = y;
@@ -216,7 +216,7 @@ __attribute__((weak)) void GLCD_GoTo(unsigned char x, unsigned char y)
 //-------------------------------------------------------------------------------------------------
 // GLCD Başlatma Fonksiyonu
 //-------------------------------------------------------------------------------------------------
-__attribute__((weak)) void GLCD_Init(void)
+void GLCD_Init(void)
 {
     ANSELD = 0x00;              // PORTD Dijital Mod
     TRISD = 0x00;               // Data Bus Çıkış
@@ -239,7 +239,7 @@ __attribute__((weak)) void GLCD_Init(void)
 // Tüm RAM Tamponunu Ekrana Yansıtma (Aşırı Hızlı Tek Geçişli Donanım Render)
 // Bütün veriyolu tamponlarını (BUFEN/BUFE2/BUFDIR) sabit tutup gürültüyü tamamen önler.
 //-------------------------------------------------------------------------------------------------
-__attribute__((weak)) void GLCD_Render(void)
+void GLCD_Render(void)
 {
     unsigned char page, col;
     unsigned short ptr;
@@ -296,7 +296,7 @@ __attribute__((weak)) void GLCD_Render(void)
 //-------------------------------------------------------------------------------------------------
 // GLCD Tüm Ekranı Temizleme (RAM Buffera Yazıp Donanıma Anında Yansıtma)
 //-------------------------------------------------------------------------------------------------
-__attribute__((weak)) void GLCD_ClearAll(void)
+void GLCD_ClearAll(void)
 {
     memset(glcd_buffer, 0x00, 1536);
     GLCD_Render();
@@ -305,7 +305,7 @@ __attribute__((weak)) void GLCD_ClearAll(void)
 //-------------------------------------------------------------------------------------------------
 // Veri Yazma Fonksiyonları (Saf RAM Gölge Tamponu Güncellemesi - Veriyolu Parazitini Önler)
 //-------------------------------------------------------------------------------------------------
-__attribute__((weak)) void GLCDWriteData(unsigned char data)
+void GLCDWriteData(unsigned char data)
 {
     unsigned char yOffset = Coord.y % 8;
     unsigned char page = Coord.y / 8;
@@ -334,7 +334,7 @@ __attribute__((weak)) void GLCDWriteData(unsigned char data)
     screen_x = Coord.x;
 }
 
-__attribute__((weak)) void GLCD_WriteData(unsigned char dataToWrite)
+void GLCD_WriteData(unsigned char dataToWrite)
 {
     Coord.x = screen_x;
     Coord.y = screen_y;
@@ -343,7 +343,7 @@ __attribute__((weak)) void GLCD_WriteData(unsigned char dataToWrite)
     screen_y = Coord.y;
 }
 
-__attribute__((weak)) void GotoXY(unsigned char x, unsigned char y)
+void GotoXY(unsigned char x, unsigned char y)
 {
     Coord.x = x;
     Coord.y = y;
@@ -356,7 +356,7 @@ __attribute__((weak)) void GotoXY(unsigned char x, unsigned char y)
 //-------------------------------------------------------------------------------------------------
 
 // Tek Piksel Çizimi / Silimi (RAM Buffera Yazar ve Donanıma Yansıtır)
-__attribute__((weak)) void GLCD_SetPixel(unsigned char x, unsigned char y, unsigned char color)
+void GLCD_SetPixel(unsigned char x, unsigned char y, unsigned char color)
 {
     unsigned char page = y / 8;
     unsigned char bit_pos = y % 8;
@@ -379,7 +379,7 @@ __attribute__((weak)) void GLCD_SetPixel(unsigned char x, unsigned char y, unsig
 }
 
 // Çerçeve Dikdörtgen Çizimi
-__attribute__((weak)) void GLCD_Rectangle(unsigned char x, unsigned char y, unsigned char b, unsigned char a, unsigned char color)
+void GLCD_Rectangle(unsigned char x, unsigned char y, unsigned char b, unsigned char a, unsigned char color)
 {
     unsigned char j;
     for (j = x; j <= b; j++)
@@ -395,7 +395,7 @@ __attribute__((weak)) void GLCD_Rectangle(unsigned char x, unsigned char y, unsi
 }
 
 // Dolu Dikdörtgen Çizimi (RAM'de İşleyip Donanıma Hızlıca Blok Halinde Aktarır)
-__attribute__((weak)) void GLCD_Rectangle_Fill(unsigned char x, unsigned char y, unsigned char b, unsigned char a, unsigned char color)
+void GLCD_Rectangle_Fill(unsigned char x, unsigned char y, unsigned char b, unsigned char a, unsigned char color)
 {
     unsigned char curr_x, curr_y;
     unsigned char page, bit_pos;
@@ -430,13 +430,13 @@ __attribute__((weak)) void GLCD_Rectangle_Fill(unsigned char x, unsigned char y,
 }
 
 // Alan Doldurma
-__attribute__((weak)) void SetPixels(unsigned char x, unsigned char y, unsigned char x2, unsigned char y2, unsigned char color)
+void SetPixels(unsigned char x, unsigned char y, unsigned char x2, unsigned char y2, unsigned char color)
 {
     GLCD_Rectangle_Fill(x, y, x2, y2, color);
 }
 
 // Çizgi Çizimi
-__attribute__((weak)) void GLCD_Line(unsigned char X1, unsigned char Y1, unsigned char X2, unsigned char Y2, unsigned char color)
+void GLCD_Line(unsigned char X1, unsigned char Y1, unsigned char X2, unsigned char Y2, unsigned char color)
 {
     int CurrentX, CurrentY, Xinc, Yinc,
             Dx, Dy, TwoDx, TwoDy,
@@ -508,7 +508,7 @@ __attribute__((weak)) void GLCD_Line(unsigned char X1, unsigned char Y1, unsigne
 }
 
 // Çember Çizimi
-__attribute__((weak)) void GLCD_Circle(unsigned char cx, unsigned char cy, unsigned char radius, unsigned char color)
+void GLCD_Circle(unsigned char cx, unsigned char cy, unsigned char radius, unsigned char color)
 {
     int x, y, xchange, ychange, radiusError;
     x = radius;
@@ -539,7 +539,7 @@ __attribute__((weak)) void GLCD_Circle(unsigned char cx, unsigned char cy, unsig
 }
 
 // Dolu Çember Çizimi
-__attribute__((weak)) void GLCD_Circle_Fill(unsigned char cx, unsigned char cy, unsigned char radius, unsigned char color)
+void GLCD_Circle_Fill(unsigned char cx, unsigned char cy, unsigned char radius, unsigned char color)
 {
     unsigned char temp = radius;
     while (temp > 0)
@@ -552,7 +552,7 @@ __attribute__((weak)) void GLCD_Circle_Fill(unsigned char cx, unsigned char cy, 
 //-------------------------------------------------------------------------------------------------
 // Metin ve Font Fonksiyonları (MCU RAM Buffera Yazıp Donanıma Anında Basar)
 //-------------------------------------------------------------------------------------------------
-__attribute__((weak)) void GLCD_String5x7(unsigned char x, unsigned char y, char *str)
+void GLCD_String5x7(unsigned char x, unsigned char y, char *str)
 {
     unsigned char i = 0;
     unsigned char curr_x = x;
@@ -584,7 +584,7 @@ __attribute__((weak)) void GLCD_String5x7(unsigned char x, unsigned char y, char
     GLCD_Render();
 }
 
-__attribute__((weak)) void GLCDPutChar5x7(unsigned char c)
+void GLCDPutChar5x7(unsigned char c)
 {
     if (c < 0x20 || c > 0x7E) c = ' ';
     c -= 0x20;
@@ -603,7 +603,7 @@ __attribute__((weak)) void GLCDPutChar5x7(unsigned char c)
     GLCD_Render();
 }
 
-__attribute__((weak)) void GLCD_StringArialBold14(unsigned char x, unsigned char y, char *str)
+void GLCD_StringArialBold14(unsigned char x, unsigned char y, char *str)
 {
     tx = x;
     ty = y;
@@ -615,7 +615,7 @@ __attribute__((weak)) void GLCD_StringArialBold14(unsigned char x, unsigned char
     GLCD_Render();
 }
 
-__attribute__((weak)) void GLCDPutChar_ArialBold14(unsigned char c)
+void GLCDPutChar_ArialBold14(unsigned char c)
 {
     unsigned char width;
     unsigned short index;
@@ -660,7 +660,7 @@ __attribute__((weak)) void GLCDPutChar_ArialBold14(unsigned char c)
     tx = tx + width + 1;
 }
 
-__attribute__((weak)) void GLCD_StringCalibri36(unsigned char x, unsigned char y, char *str)
+void GLCD_StringCalibri36(unsigned char x, unsigned char y, char *str)
 {
     tx = x;
     ty = y;
@@ -672,7 +672,7 @@ __attribute__((weak)) void GLCD_StringCalibri36(unsigned char x, unsigned char y
     GLCD_Render();
 }
 
-__attribute__((weak)) void GLCDPutCharCalibri36(unsigned char c)
+void GLCDPutCharCalibri36(unsigned char c)
 {
     unsigned char width = 0;
     unsigned short index;
@@ -750,7 +750,7 @@ __attribute__((weak)) void GLCDPutCharCalibri36(unsigned char c)
     tx = tx + width + 1;
 }
 
-__attribute__((weak)) void GLCD_StringHead8x8(unsigned char x, unsigned char y, char *str)
+void GLCD_StringHead8x8(unsigned char x, unsigned char y, char *str)
 {
     tx = x;
     ty = y;
@@ -762,7 +762,7 @@ __attribute__((weak)) void GLCD_StringHead8x8(unsigned char x, unsigned char y, 
     GLCD_Render();
 }
 
-__attribute__((weak)) void GLCDPutCharHead8x8(unsigned char c)
+void GLCDPutCharHead8x8(unsigned char c)
 {
     unsigned short index;
     index = (unsigned short)(c * 8);
@@ -782,7 +782,7 @@ __attribute__((weak)) void GLCDPutCharHead8x8(unsigned char c)
     tx = tx + 9;
 }
 
-__attribute__((weak)) void GLCDPutCharDigMin(unsigned char c)
+void GLCDPutCharDigMin(unsigned char c)
 {
     unsigned short index;
     unsigned char data;
@@ -817,7 +817,7 @@ __attribute__((weak)) void GLCDPutCharDigMin(unsigned char c)
     GLCD_Render();
 }
 
-__attribute__((weak)) void GLCDPutSpecialCharDigMin(unsigned char c)
+void GLCDPutSpecialCharDigMin(unsigned char c)
 {
     unsigned short index;
     unsigned char data;
@@ -858,7 +858,7 @@ __attribute__((weak)) void GLCDPutSpecialCharDigMin(unsigned char c)
     GLCD_Render();
 }
 
-__attribute__((weak)) void GLCDPutSpecialCharDigMax(unsigned char c)
+void GLCDPutSpecialCharDigMax(unsigned char c)
 {
     unsigned short index;
     unsigned char data;
@@ -919,7 +919,7 @@ __attribute__((weak)) void GLCDPutSpecialCharDigMax(unsigned char c)
     GLCD_Render();
 }
 
-__attribute__((weak)) void GLCDPutCharDigMax(unsigned char c)
+void GLCDPutCharDigMax(unsigned char c)
 {
     unsigned short index;
     unsigned char data;
@@ -972,7 +972,7 @@ __attribute__((weak)) void GLCDPutCharDigMax(unsigned char c)
     GLCD_Render();
 }
 
-__attribute__((weak)) void GLCDPutCharDigMaxFirst(unsigned char c)
+void GLCDPutCharDigMaxFirst(unsigned char c)
 {
     unsigned short index;
     c -= '+';
@@ -1014,7 +1014,7 @@ __attribute__((weak)) void GLCDPutCharDigMaxFirst(unsigned char c)
     GLCD_Render();
 }
 
-__attribute__((weak)) void GLCDPutCharDigMaxSecond(unsigned char c)
+void GLCDPutCharDigMaxSecond(unsigned char c)
 {
     unsigned short index;
     unsigned char data;
@@ -1034,7 +1034,7 @@ __attribute__((weak)) void GLCDPutCharDigMaxSecond(unsigned char c)
 }
 
 // Resim basma fonksiyonları (RAM Tamponuna ve Donanıma Yazma)
-__attribute__((weak)) void GLCD_Picture(char *str)
+void GLCD_Picture(char *str)
 {
     memcpy(glcd_buffer, str, 1536);
     GLCD_Render();
