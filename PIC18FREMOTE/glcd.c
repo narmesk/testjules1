@@ -3,7 +3,7 @@
 
 /*
 ================================================================================-------------------
-  LMC19264A-01 / AIP31108 (KS0108) 192x64 GLCD SÜRÜCÜSÜ (SHADOW RAM / OPTİMİZE DENGELİ ZAMANLAMA)
+  LMC19264A-01 / AIP31108 (KS0108) 192x64 GLCD SÜRÜCÜSÜ (SHADOW RAM / MAKSİMUM HIZ OPTİMİZASYONU)
 ================================================================================-------------------
   ÇALIŞMA PRENSİBİ VE KULLANIM REHBERİ:
 
@@ -20,9 +20,9 @@
   3. İSTEĞE BAĞLI BÖLGE/TÜM EKRAN REFRESH (GLCD_Render):
      İhtiyaç duyulması halinde tüm ekranı hafızadan yeniden basmak için GLCD_Render() kullanılabilir.
 
-  4. DENGELİ SÜRE ZAMANLAMASI (OPTIMIZED TIMING):
-     Piksellenmeyi önleyen tam doğruluk ile maksimum ekran yenileme hızını birleştiren 3us EN Strobe
-     ve 2us veriyolu kurulum zamanlaması kullanılmıştır.
+  4. MAKSİMUM SÜRÜCÜ HIZI (1us KS0108 TIMING):
+     KS0108 donanım kataloğundaki 450ns En_Strobe süresine karşılık %100 güvenlik marjı ile
+     1us (1000ns) EN Strobe ve veriyolu süresi seçilmiş, tam kararlılıkta maksimum hız sağlanmıştır.
 ================================================================================-------------------
 */
 
@@ -85,7 +85,7 @@ void GLCD_Chip_Select_Direct(unsigned char Chip_idx)
         CS2_SetLow();
         CS3_SetLow();
     }
-    __delay_us(3);
+    __delay_us(2);
 }
 
 void GLCD_Chip_Select(char Chip_idx)
@@ -110,9 +110,9 @@ void GLCD_Command_Direct(unsigned char command)
     __delay_us(1);
 
     EN_SetHigh();       // EN = 1 (Enable Strobe YÜKSEK)
-    __delay_us(3);
+    __delay_us(1);
     EN_SetLow();        // EN = 0 (Enable Strobe DÜŞÜK - Düşen Kenarda İşlenir)
-    __delay_us(3);
+    __delay_us(1);
 
     BUFEN_SetHigh();    // BUFEN Deaktif
     BUFE2_SetHigh();    // BUFE2 Deaktif
@@ -140,9 +140,9 @@ void GLCD_Data_Direct(unsigned char data)
     __delay_us(1);
 
     EN_SetHigh();       // EN = 1 (Enable Strobe YÜKSEK)
-    __delay_us(3);
+    __delay_us(1);
     EN_SetLow();        // EN = 0 (Enable Strobe DÜŞÜK - Düşen Kenarda Yazılır)
-    __delay_us(3);
+    __delay_us(1);
 
     BUFEN_SetHigh();    // BUFEN Deaktif
     BUFE2_SetHigh();    // BUFE2 Deaktif
