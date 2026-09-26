@@ -10,13 +10,7 @@
 void GLCD_Init(void);
 void GLCD_Render(void);
 void GLCD_ClearAll(void);
-void GLCD_Chip_Select(unsigned char Chip_idx);
-void GLCD_Command(unsigned char command);
-void GLCD_Data(unsigned char data);
 void GLCD_GoTo(unsigned char x, unsigned char y);
-void GLCDWriteData(unsigned char data);
-void GLCD_WriteData(unsigned char dataToWrite);
-void GotoXY(unsigned char x, unsigned char y);
 void GLCD_SetPixel(unsigned char x, unsigned char y, unsigned char color);
 
 // Grafik Çizim Fonksiyonları
@@ -36,13 +30,37 @@ void GLCD_StringHead8x8(unsigned char x, unsigned char y, char *str);
 void GLCDPutChar5x7(unsigned char c);
 void GLCDPutChar_ArialBold14(unsigned char c);
 void GLCDPutCharCalibri36(unsigned char c);
-void GLCDPutCharHead8x8(unsigned char c);
+
 void GLCDPutCharDigMin(unsigned char c);
 void GLCDPutSpecialCharDigMin(unsigned char c);
 void GLCDPutSpecialCharDigMax(unsigned char c);
 void GLCDPutCharDigMax(unsigned char c);
+
+
+// Prototipler
+void GLCD_Chip_Select_Direct(unsigned char Chip_idx);
+void GLCD_Command_Direct(unsigned char command);
+void GLCD_Data_Direct(unsigned char data);
+void GLCD_GoTo_Direct(unsigned char x, unsigned char page);
+
+void GLCD_Command(char Command);
+void GLCD_Data(char Data);
+void GLCD_Chip_Select(char Chip_idx);
+void GLCD_WriteData(unsigned char dataToWrite);
+
+void GLCD_Picture(char *str);
+void GLCDWriteData(unsigned char data);
+void GotoXY(unsigned char x, unsigned char y);
+
+
+void GLCD_StringCalibri36(unsigned char x, unsigned char y, char *str);
+void GLCDPutCharCalibri36(unsigned char c);
+void GLCD_StringHead8x8(unsigned char x, unsigned char y, char *str);
+void GLCDPutCharHead8x8(unsigned char c);
+void GLCDPutCharDigMax(unsigned char c);
 void GLCDPutCharDigMaxFirst(unsigned char c);
 void GLCDPutCharDigMaxSecond(unsigned char c);
+void GLCDPutChar5x7(unsigned char c);
 
 // Resim Fonksiyonu
 void GLCD_Picture(char *str);
