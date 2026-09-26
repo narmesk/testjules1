@@ -3,7 +3,7 @@
 
 /*
 ================================================================================-------------------
-  LMC19264A-01 / AIP31108 (KS0108) 192x64 GLCD SÜRÜCÜSÜ (SHADOW RAM / MAKSİMUM HIZ OPTİMİZASYONU)
+  LMC19264A-01 / AIP31108 (KS0108) 192x64 GLCD SÜRÜCÜSÜ (SHADOW RAM / KARARLI STABİL SÜRÜCÜ)
 ================================================================================-------------------
   ÇALIŞMA PRENSİBİ VE KULLANIM REHBERİ:
 
@@ -20,9 +20,9 @@
   3. İSTEĞE BAĞLI BÖLGE/TÜM EKRAN REFRESH (GLCD_Render):
      İhtiyaç duyulması halinde tüm ekranı hafızadan yeniden basmak için GLCD_Render() kullanılabilir.
 
-  4. MAKSİMUM SÜRÜCÜ HIZI (1us KS0108 TIMING):
-     KS0108 donanım kataloğundaki 450ns En_Strobe süresine karşılık %100 güvenlik marjı ile
-     1us (1000ns) EN Strobe ve veriyolu süresi seçilmiş, tam kararlılıkta maksimum hız sağlanmıştır.
+  4. TAM KARARLI VE SIFIR PİKSELLENME ZAMANLAMASI (3us STABLE TIMING):
+     Ekranda hiçbir piksellenme ve gürültü yapmayan tam kararlı 3us EN Strobe ve veriyolu
+     kurulum zamanlaması kullanılmıştır.
 ================================================================================-------------------
 */
 
@@ -85,7 +85,7 @@ void GLCD_Chip_Select_Direct(unsigned char Chip_idx)
         CS2_SetLow();
         CS3_SetLow();
     }
-    __delay_us(2);
+    __delay_us(3);
 }
 
 void GLCD_Chip_Select(char Chip_idx)
@@ -103,16 +103,16 @@ void GLCD_Command_Direct(unsigned char command)
     BUFDIR_SetHigh();   // BUFDIR = 1 (MCU -> LCD)
     BUFEN_SetLow();     // BUFEN = 0 (Tampon Etkin)
     BUFE2_SetLow();     // BUFE2 = 0 (Ek Tampon Etkin)
-    __delay_us(1);
+    __delay_us(2);
 
     LATD = command;     // Komut Byte'ını Data Bus'a Koy
     RS_SetLow();        // RS = 0 (Komut Modu)
-    __delay_us(1);
+    __delay_us(2);
 
     EN_SetHigh();       // EN = 1 (Enable Strobe YÜKSEK)
-    __delay_us(1);
+    __delay_us(3);
     EN_SetLow();        // EN = 0 (Enable Strobe DÜŞÜK - Düşen Kenarda İşlenir)
-    __delay_us(1);
+    __delay_us(3);
 
     BUFEN_SetHigh();    // BUFEN Deaktif
     BUFE2_SetHigh();    // BUFE2 Deaktif
@@ -133,16 +133,16 @@ void GLCD_Data_Direct(unsigned char data)
     BUFDIR_SetHigh();   // BUFDIR = 1 (MCU -> LCD)
     BUFEN_SetLow();     // BUFEN = 0 (Tampon Etkin)
     BUFE2_SetLow();     // BUFE2 = 0 (Ek Tampon Etkin)
-    __delay_us(1);
+    __delay_us(2);
 
     LATD = data;        // Veri Byte'ını Data Bus'a Koy
     RS_SetHigh();       // RS = 1 (Veri Modu)
-    __delay_us(1);
+    __delay_us(2);
 
     EN_SetHigh();       // EN = 1 (Enable Strobe YÜKSEK)
-    __delay_us(1);
+    __delay_us(3);
     EN_SetLow();        // EN = 0 (Enable Strobe DÜŞÜK - Düşen Kenarda Yazılır)
-    __delay_us(1);
+    __delay_us(3);
 
     BUFEN_SetHigh();    // BUFEN Deaktif
     BUFE2_SetHigh();    // BUFE2 Deaktif
