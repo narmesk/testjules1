@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{0B21D0DF-69EF-4041-A956-70AC7DE12E7E}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="PTsimulator.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="..\..\4GRADE_PUMP_TOPPER_NEW_KEYBOARD_NOBLE_MONROE\LEDOPT_NEW_KEYS.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="PTsimulator">
+        <MSBuild Projects="PTsimulator.dproj"/>
+    </Target>
+    <Target Name="PTsimulator:Clean">
+        <MSBuild Projects="PTsimulator.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="PTsimulator:Make">
+        <MSBuild Projects="PTsimulator.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="LEDOPT_NEW_KEYS">
+        <MSBuild Projects="..\..\4GRADE_PUMP_TOPPER_NEW_KEYBOARD_NOBLE_MONROE\LEDOPT_NEW_KEYS.dproj"/>
+    </Target>
+    <Target Name="LEDOPT_NEW_KEYS:Clean">
+        <MSBuild Projects="..\..\4GRADE_PUMP_TOPPER_NEW_KEYBOARD_NOBLE_MONROE\LEDOPT_NEW_KEYS.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="LEDOPT_NEW_KEYS:Make">
+        <MSBuild Projects="..\..\4GRADE_PUMP_TOPPER_NEW_KEYBOARD_NOBLE_MONROE\LEDOPT_NEW_KEYS.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="PTsimulator;LEDOPT_NEW_KEYS"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="PTsimulator:Clean;LEDOPT_NEW_KEYS:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="PTsimulator:Make;LEDOPT_NEW_KEYS:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
