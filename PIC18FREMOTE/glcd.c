@@ -3,7 +3,7 @@
 
 /*
 ================================================================================-------------------
-  LMC19264A-01 / AIP31108 (KS0108) 192x64 GLCD SÜRÜCÜSÜ (SHADOW RAM / KARARLI STABİL SÜRÜCÜ)
+  LMC19264A-01 / AIP31108 (KS0108) 192x64 GLCD SÜRÜCÜSÜ (TEMİZ VE HIZLI SÜRÜCÜ)
 ================================================================================-------------------
   ÇALIŞMA PRENSİBİ VE KULLANIM REHBERİ:
 
@@ -12,23 +12,17 @@
      Piksel okuma sorunları (RMW problemleri) yaşanmaması için dikey 8-bit sütun durumları
      bu bellekte saklanır.
 
-  2. OTOMATİK DONANIM YAZMA (MANUEL RENDER GEREKMEZ!):
+  2. OTOMATİK DONANIM YAZMA:
      Tüm çizim ve yazı fonksiyonları (GLCD_SetPixel, GLCD_String5x7, GLCD_Line, GLCD_Rectangle vb.)
      çağrıldıkları ANINDA hem gölge belleği günceller hem de doğrudan LCD donanımına yazar.
-     Kullanıcının manuel olarak GLCD_Render() çağırmasına KESİNLİKLE GEREK YOKTUR.
 
-  3. İSTEĞE BAĞLI BÖLGE/TÜM EKRAN REFRESH (GLCD_Render):
+  3. İSTEĞE BAĞLI REFRESH (GLCD_Render):
      İhtiyaç duyulması halinde tüm ekranı hafızadan yeniden basmak için GLCD_Render() kullanılabilir.
-
-  4. TAM KARARLI VE SIFIR PİKSELLENME ZAMANLAMASI (3us STABLE TIMING):
-     Ekranda hiçbir piksellenme ve gürültü yapmayan tam kararlı 3us EN Strobe ve veriyolu
-     kurulum zamanlaması kullanılmıştır.
 ================================================================================-------------------
 */
 
 unsigned char screen_x = 0, screen_y = 0;
 unsigned char tx = 0, ty = 0;
-
 
 // AIP31108 / KS0108 GLCD Komut Sabitleri
 #define DISPLAY_ON_CMD         0x3F
@@ -40,20 +34,19 @@ unsigned char tx = 0, ty = 0;
 // 192x64 Piksel Grafik Ekran İçin MCU RAM Gölge Tamponu (192 Sütun x 8 Sayfa = 1536 Bayt)
 unsigned char glcd_buffer[1536];
 
-
-struct {
+struct
+{
     unsigned char x;
     unsigned char y;
 } Coord;
 
-
-
+// Dışarıdan bildirilen okuma/durum fonksiyonu
+extern unsigned char GLCD_ReadStatus(unsigned char chip);
 
 //-------------------------------------------------------------------------------------------------
-// MCC Pin Makroları İle Donanım Çip Seçim Fonksiyonu (LMC19264A-01: 3 x 64x64 = 192x64)
-// Active LOW Chip Select Yapısı
+// Donanım Çip Seçim Fonksiyonu (Active LOW)
 //-------------------------------------------------------------------------------------------------
-void GLCD_Chip_Select_Direct(unsigned char Chip_idx)
+void GLCD_Chip_Select(unsigned char Chip_idx)
 {
     if (Chip_idx == 0) // Hiçbirini seçme (All Deselected)
     {
@@ -85,76 +78,65 @@ void GLCD_Chip_Select_Direct(unsigned char Chip_idx)
         CS2_SetLow();
         CS3_SetLow();
     }
-    __delay_us(3);
-}
-
-void GLCD_Chip_Select(char Chip_idx)
-{
-    GLCD_Chip_Select_Direct((unsigned char)Chip_idx);
+    __nop();
 }
 
 //-------------------------------------------------------------------------------------------------
-// MCC Pin Makroları İle Doğrudan Donanıma Komut Gönderme
+// Donanıma Komut Gönderme
 //-------------------------------------------------------------------------------------------------
-void GLCD_Command_Direct(unsigned char command)
+void GLCD_Command(unsigned char command)
 {
     TRISD = 0x00;       // PORTD Çıkış
+    __nop();
     RW_SetLow();        // RW = 0 (Yazma Modu)
+    __nop();
     BUFDIR_SetHigh();   // BUFDIR = 1 (MCU -> LCD)
+    __nop();
     BUFEN_SetLow();     // BUFEN = 0 (Tampon Etkin)
+    __nop();
     BUFE2_SetLow();     // BUFE2 = 0 (Ek Tampon Etkin)
-    __delay_us(2);
-
+    __nop();
     LATD = command;     // Komut Byte'ını Data Bus'a Koy
+    __nop();
     RS_SetLow();        // RS = 0 (Komut Modu)
-    __delay_us(2);
-
+    __nop();
     EN_SetHigh();       // EN = 1 (Enable Strobe YÜKSEK)
-    __delay_us(3);
-    EN_SetLow();        // EN = 0 (Enable Strobe DÜŞÜK - Düşen Kenarda İşlenir)
-    __delay_us(3);
-
+    __nop();
+    EN_SetLow();        // EN = 0 (Enable Strobe DÜŞÜK)
     BUFEN_SetHigh();    // BUFEN Deaktif
+    __nop();
     BUFE2_SetHigh();    // BUFE2 Deaktif
 }
 
-void GLCD_Command(char Command)
-{
-    GLCD_Command_Direct((unsigned char)Command);
-}
-
 //-------------------------------------------------------------------------------------------------
-// MCC Pin Makroları İle Doğrudan Donanıma Veri Gönderme
+// Donanıma Veri Gönderme
 //-------------------------------------------------------------------------------------------------
-void GLCD_Data_Direct(unsigned char data)
+void GLCD_Data(unsigned char data)
 {
     TRISD = 0x00;       // PORTD Çıkış
+    __nop();
     RW_SetLow();        // RW = 0 (Yazma Modu)
+    __nop();
     BUFDIR_SetHigh();   // BUFDIR = 1 (MCU -> LCD)
+    __nop();
     BUFEN_SetLow();     // BUFEN = 0 (Tampon Etkin)
+    __nop();
     BUFE2_SetLow();     // BUFE2 = 0 (Ek Tampon Etkin)
-    __delay_us(2);
-
+    __nop();
     LATD = data;        // Veri Byte'ını Data Bus'a Koy
+    __nop();
     RS_SetHigh();       // RS = 1 (Veri Modu)
-    __delay_us(2);
-
+    __nop();
     EN_SetHigh();       // EN = 1 (Enable Strobe YÜKSEK)
-    __delay_us(3);
-    EN_SetLow();        // EN = 0 (Enable Strobe DÜŞÜK - Düşen Kenarda Yazılır)
-    __delay_us(3);
-
+    __nop();
+    EN_SetLow();        // EN = 0 (Enable Strobe DÜŞÜK)
     BUFEN_SetHigh();    // BUFEN Deaktif
+    __nop();
     BUFE2_SetHigh();    // BUFE2 Deaktif
 }
 
-void GLCD_Data(char Data)
-{
-    GLCD_Data_Direct((unsigned char)Data);
-}
-
 //-------------------------------------------------------------------------------------------------
-// GLCD Doğrudan Konumlandırma (x: 0..191 piksel, page: 0..7 sayfa adresi)
+// GLCD Doğrudan Konumlandırma
 //-------------------------------------------------------------------------------------------------
 void GLCD_GoTo_Direct(unsigned char x, unsigned char page)
 {
@@ -163,12 +145,12 @@ void GLCD_GoTo_Direct(unsigned char x, unsigned char page)
 
     if (x >= 192 || page >= 8) return;
 
-    chip = (x / 64) + 1; // 1: Sol (0..63), 2: Orta (64..127), 3: Sağ (128..191) Çip
+    chip = (x / 64) + 1; // 1: Sol, 2: Orta, 3: Sağ Çip
     column = x % 64;     // Çip içi sütun adresi (0..63)
 
-    GLCD_Chip_Select_Direct(chip);
-    GLCD_Command_Direct(DISPLAY_SET_X_CMD | page);   // Page (0xB8 + page)
-    GLCD_Command_Direct(DISPLAY_SET_Y_CMD | column); // Sütun (0x40 + column)
+    GLCD_Chip_Select(chip);
+    GLCD_Command(DISPLAY_SET_X_CMD | page);   // Page (0xB8 + page)
+    GLCD_Command(DISPLAY_SET_Y_CMD | column); // Sütun (0x40 + column)
 }
 
 void GLCD_GoTo(unsigned char x, unsigned char y)
@@ -186,17 +168,17 @@ void GLCD_Init(void)
     ANSELD = 0x00;              // PORTD Dijital Mod
     TRISD = 0x00;               // Data Bus Çıkış
     BUFE2_SetHigh();            // BUFE2 Deaktif
-
-    GLCD_Chip_Select_Direct(4); // Tüm Çipleri Seç
+    __delay_us(10);
+    GLCD_Chip_Select(4);        // Tüm Çipleri Seç
     __delay_ms(10);
 
-    GLCD_Command_Direct(DISPLAY_OFF_CMD);           // Ekran Kapalı (0x3E)
-    GLCD_Command_Direct(DISPLAY_SET_Y_CMD | 0);     // Column = 0
-    GLCD_Command_Direct(DISPLAY_SET_X_CMD | 0);     // Page = 0
-    GLCD_Command_Direct(DISPLAY_START_LINE_CMD | 0);// Start Line = 0
-    GLCD_Command_Direct(DISPLAY_ON_CMD);            // Ekran Açık (0x3F)
-
-    GLCD_Chip_Select_Direct(0); // Seçimleri Kaldır
+    GLCD_Command(DISPLAY_OFF_CMD);           // Ekran Kapalı (0x3E)
+    GLCD_Command(DISPLAY_SET_Y_CMD | 0);     // Column = 0
+    GLCD_Command(DISPLAY_SET_X_CMD | 0);     // Page = 0
+    GLCD_Command(DISPLAY_START_LINE_CMD | 0);// Start Line = 0
+    GLCD_Command(DISPLAY_ON_CMD);            // Ekran Açık (0x3F)
+    __delay_us(10);
+    GLCD_Chip_Select(0);        // Seçimleri Kaldır
     GLCD_ClearAll();            // Ekrana İlk Temizlik
 }
 
@@ -213,37 +195,37 @@ void GLCD_Render(void)
         ptr = page * 192;
 
         // Çip 1 (Sol 64 Sütun)
-        GLCD_Chip_Select_Direct(1);
-        GLCD_Command_Direct(DISPLAY_SET_X_CMD | page);
-        GLCD_Command_Direct(DISPLAY_SET_Y_CMD | 0);
+        GLCD_Chip_Select(1);
+        GLCD_Command(DISPLAY_SET_X_CMD | page);
+        GLCD_Command(DISPLAY_SET_Y_CMD | 0);
         for (col = 0; col < 64; col++)
         {
-            GLCD_Data_Direct(glcd_buffer[ptr + col]);
+            GLCD_Data(glcd_buffer[ptr + col]);
         }
 
         // Çip 2 (Orta 64 Sütun)
-        GLCD_Chip_Select_Direct(2);
-        GLCD_Command_Direct(DISPLAY_SET_X_CMD | page);
-        GLCD_Command_Direct(DISPLAY_SET_Y_CMD | 0);
+        GLCD_Chip_Select(2);
+        GLCD_Command(DISPLAY_SET_X_CMD | page);
+        GLCD_Command(DISPLAY_SET_Y_CMD | 0);
         for (col = 0; col < 64; col++)
         {
-            GLCD_Data_Direct(glcd_buffer[ptr + 64 + col]);
+            GLCD_Data(glcd_buffer[ptr + 64 + col]);
         }
 
         // Çip 3 (Sağ 64 Sütun)
-        GLCD_Chip_Select_Direct(3);
-        GLCD_Command_Direct(DISPLAY_SET_X_CMD | page);
-        GLCD_Command_Direct(DISPLAY_SET_Y_CMD | 0);
+        GLCD_Chip_Select(3);
+        GLCD_Command(DISPLAY_SET_X_CMD | page);
+        GLCD_Command(DISPLAY_SET_Y_CMD | 0);
         for (col = 0; col < 64; col++)
         {
-            GLCD_Data_Direct(glcd_buffer[ptr + 128 + col]);
+            GLCD_Data(glcd_buffer[ptr + 128 + col]);
         }
     }
-    GLCD_Chip_Select_Direct(0);
+    GLCD_Chip_Select(0);
 }
 
 //-------------------------------------------------------------------------------------------------
-// GLCD Tüm Ekranı Temizleme (RAM Buffera Yazıp Donanıma Anında Yansıtma)
+// GLCD Tüm Ekranı Temizleme
 //-------------------------------------------------------------------------------------------------
 void GLCD_ClearAll(void)
 {
@@ -255,7 +237,7 @@ void GLCD_WriteData(unsigned char dataToWrite)
 {
     unsigned char yOffset = screen_y % 8;
     unsigned char page = screen_y / 8;
-    unsigned short idx = (unsigned short)page * 192 + screen_x;
+    unsigned short idx = (unsigned short) page * 192 + screen_x;
 
     if (screen_x < 192 && page < 8)
     {
@@ -263,20 +245,20 @@ void GLCD_WriteData(unsigned char dataToWrite)
         {
             glcd_buffer[idx] = dataToWrite;
             GLCD_GoTo_Direct(screen_x, page);
-            GLCD_Data_Direct(glcd_buffer[idx]);
+            GLCD_Data(glcd_buffer[idx]);
         }
         else
         {
             glcd_buffer[idx] = (glcd_buffer[idx] & ~(0xFF << yOffset)) | (dataToWrite << yOffset);
             GLCD_GoTo_Direct(screen_x, page);
-            GLCD_Data_Direct(glcd_buffer[idx]);
+            GLCD_Data(glcd_buffer[idx]);
 
             if (page + 1 < 8)
             {
-                unsigned short idx2 = (unsigned short)(page + 1) * 192 + screen_x;
+                unsigned short idx2 = (unsigned short) (page + 1) * 192 + screen_x;
                 glcd_buffer[idx2] = (glcd_buffer[idx2] & ~(0xFF >> (8 - yOffset))) | (dataToWrite >> (8 - yOffset));
                 GLCD_GoTo_Direct(screen_x, page + 1);
-                GLCD_Data_Direct(glcd_buffer[idx2]);
+                GLCD_Data(glcd_buffer[idx2]);
             }
         }
     }
@@ -287,7 +269,7 @@ void GLCDWriteData(unsigned char data)
 {
     unsigned char yOffset = Coord.y % 8;
     unsigned char page = Coord.y / 8;
-    unsigned short idx = (unsigned short)page * 192 + Coord.x;
+    unsigned short idx = (unsigned short) page * 192 + Coord.x;
 
     if (Coord.x < 192 && page < 8)
     {
@@ -295,20 +277,20 @@ void GLCDWriteData(unsigned char data)
         {
             glcd_buffer[idx] = data;
             GLCD_GoTo_Direct(Coord.x, page);
-            GLCD_Data_Direct(glcd_buffer[idx]);
+            GLCD_Data(glcd_buffer[idx]);
         }
         else
         {
             glcd_buffer[idx] = (glcd_buffer[idx] & ~(0xFF << yOffset)) | (data << yOffset);
             GLCD_GoTo_Direct(Coord.x, page);
-            GLCD_Data_Direct(glcd_buffer[idx]);
+            GLCD_Data(glcd_buffer[idx]);
 
             if (page + 1 < 8)
             {
-                unsigned short idx2 = (unsigned short)(page + 1) * 192 + Coord.x;
+                unsigned short idx2 = (unsigned short) (page + 1) * 192 + Coord.x;
                 glcd_buffer[idx2] = (glcd_buffer[idx2] & ~(0xFF >> (8 - yOffset))) | (data >> (8 - yOffset));
                 GLCD_GoTo_Direct(Coord.x, page + 1);
-                GLCD_Data_Direct(glcd_buffer[idx2]);
+                GLCD_Data(glcd_buffer[idx2]);
             }
         }
     }
@@ -322,10 +304,9 @@ void GotoXY(unsigned char x, unsigned char y)
 }
 
 //-------------------------------------------------------------------------------------------------
-// MCU RAM Tamponu Kullanan Grafik Çizim Fonksiyonları (Otomatik Anında Donanıma Yansır)
+// MCU RAM Tamponu Kullanan Grafik Çizim Fonksiyonları
 //-------------------------------------------------------------------------------------------------
 
-// Tek Piksel Çizimi / Silimi (RAM Buffera Yazar ve Anında Donanıma Yansıtır)
 void GLCD_SetPixel(unsigned char x, unsigned char y, unsigned char color)
 {
     unsigned char page = y / 8;
@@ -334,7 +315,7 @@ void GLCD_SetPixel(unsigned char x, unsigned char y, unsigned char color)
 
     if (x >= 192 || y >= 64) return;
 
-    idx = (unsigned short)page * 192 + x;
+    idx = (unsigned short) page * 192 + x;
 
     if (color == BLACK)
     {
@@ -347,10 +328,9 @@ void GLCD_SetPixel(unsigned char x, unsigned char y, unsigned char color)
 
     // Anında donanıma yaz
     GLCD_GoTo_Direct(x, page);
-    GLCD_Data_Direct(glcd_buffer[idx]);
+    GLCD_Data(glcd_buffer[idx]);
 }
 
-// Çerçeve Dikdörtgen Çizimi
 void GLCD_Rectangle(unsigned char x, unsigned char y, unsigned char b, unsigned char a, unsigned char color)
 {
     unsigned char j;
@@ -366,7 +346,6 @@ void GLCD_Rectangle(unsigned char x, unsigned char y, unsigned char b, unsigned 
     }
 }
 
-// Dolu Dikdörtgen Çizimi
 void GLCD_Rectangle_Fill(unsigned char x, unsigned char y, unsigned char b, unsigned char a, unsigned char color)
 {
     unsigned char curr_x, curr_y;
@@ -379,13 +358,11 @@ void GLCD_Rectangle_Fill(unsigned char x, unsigned char y, unsigned char b, unsi
     }
 }
 
-// Alan Doldurma
 void SetPixels(unsigned char x, unsigned char y, unsigned char x2, unsigned char y2, unsigned char color)
 {
     GLCD_Rectangle_Fill(x, y, x2, y2, color);
 }
 
-// Çizgi Çizimi
 void GLCD_Line(unsigned char X1, unsigned char Y1, unsigned char X2, unsigned char Y2, unsigned char color)
 {
     int CurrentX, CurrentY, Xinc, Yinc,
@@ -457,7 +434,6 @@ void GLCD_Line(unsigned char X1, unsigned char Y1, unsigned char X2, unsigned ch
     }
 }
 
-// Çamber Çizimi
 void GLCD_Circle(unsigned char cx, unsigned char cy, unsigned char radius, unsigned char color)
 {
     int x, y, xchange, ychange, radiusError;
@@ -488,7 +464,6 @@ void GLCD_Circle(unsigned char cx, unsigned char cy, unsigned char radius, unsig
     }
 }
 
-// Dolu Çember Çizimi
 void GLCD_Circle_Fill(unsigned char cx, unsigned char cy, unsigned char radius, unsigned char color)
 {
     unsigned char temp = radius;
@@ -500,7 +475,7 @@ void GLCD_Circle_Fill(unsigned char cx, unsigned char cy, unsigned char radius, 
 }
 
 //-------------------------------------------------------------------------------------------------
-// Metin ve Font Fonksiyonları (MCU RAM Buffera Yazıp Donanıma Anında Basar)
+// Metin ve Font Fonksiyonları
 //-------------------------------------------------------------------------------------------------
 void GLCD_String5x7(unsigned char x, unsigned char y, char *str)
 {
@@ -624,7 +599,7 @@ void GLCDPutCharCalibri36(unsigned char c)
     unsigned char data;
     unsigned short j;
     unsigned short jj;
-        c -= 0x20;
+    c -= 0x20;
     if (c != 0)
     {
         index = Calibri36_index[c - 1] + 0x7 + FONT_WIDTH_TABLE;
