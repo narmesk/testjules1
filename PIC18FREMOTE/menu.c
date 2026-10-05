@@ -1,5 +1,5 @@
 #include "mcc_generated_files/mcc.h"
-#include "remotecontroller.h"
+#include "main.h"
 #include "glcd.h"
 #include <string.h>
 
