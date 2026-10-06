@@ -1,61 +1,87 @@
-#ifndef REMOTE_CONTROLLER_H
-#define REMOTE_CONTROLLER_H
+#ifndef REMOTECONTROLLER_H
+#define REMOTECONTROLLER_H
 
 #include <xc.h>
 #include <stdint.h>
 #include <stdbool.h>
 
-// -----------------------------------------------------------------------------
-// HMI Ekran / Menü Durum Tanımları (Menu States)
-// -----------------------------------------------------------------------------
-typedef enum {
-    Menu_Creating = 0, // Statik şablon ve çerçevelerin ilk kez çizildiği aşama
-    Menu_Created  = 1, // Şablonun hazır olduğu ve tazelemeye geçildiği aşama
-    Menu_Wait     = 2  // Ekranın sabit kaldığı / bekleme aşaması
-} Menu_State_t;
+#define Menu_Creating 0
+#define Menu_Created 1
+#define Menu_Wait 2
 
-// -----------------------------------------------------------------------------
-// Ana Sistem Durum Tanımları (Main States)
-// -----------------------------------------------------------------------------
-typedef enum {
-    IDLE          = 0, // Boşta / Fiyat Tablosu Ekranı
-    GOSLEEP       = 1, // Uyku Modu
-    CONFIGID      = 2, // Sequence / Slave / Sub ID Ayar Ekranı
-    CONFIGPARAM   = 3, // Alt Parametre Ayar Ekranı
-    CONFIGPRICE   = 4, // Ürün Fiyat Ayar Ekranı
-    ENTERPASSWORD = 5, // Şifre Giriş Ekranı
-    SENDING       = 6  // RF Modem Gönderim / Pano Durum Ekranı
-} Main_State_t;
+#define IDLE 0
+#define GOSLEEP 1
+#define CONFIGID 2
+#define CONFIGPARAM 3
+#define CONFIGPRICE 4
+#define ENTERPASSWORD 5
+#define SENDING 6
 
-// -----------------------------------------------------------------------------
-// Sayfa Numarası Tanımları (Page States)
-// -----------------------------------------------------------------------------
-#define IDLE_PAGE1      1
-#define IDLE_PAGE2      2
-#define IDLE_PAGE3      3
+#define IDLE_PAGE1 11
+#define IDLE_PAGE2 12
+#define IDLE_PAGE3 13
+#define CONFIG_ID_PAGE 14
+#define CONFIG_PARAM_PAGE 15
+#define CONFIG_PRICE_PAGE 16
+#define PASSWORD_PAGE 17
+#define SENDING_PAGE1 18
+#define SENDING_PAGE2 19
+#define SENDING_PAGE3 20
 
-#define SENDING_PAGE1   1
-#define SENDING_PAGE2   2
-#define SENDING_PAGE3   3
-#define SENDING_PAGE4   4
+#define RESEND_ENABLE 127
+#define POSLOCK_ENABLE 127
 
-#define CONFIG_ID_PAGE     1
-#define CONFIG_PARAM_PAGE  1
-#define CONFIG_PRICE_PAGE  1
-
-// -----------------------------------------------------------------------------
-// Ekran Komut Yapısı (Screen Command Structure)
-// -----------------------------------------------------------------------------
-typedef struct {
-    unsigned int Val_Pos1; // CASH / Birinci Değer
-    unsigned int Val_Pos2; // CREDIT / İkinci Değer
+typedef struct
+{
+  unsigned int Val_Pos1;
+  unsigned int Val_Pos2;
 } ScreenCommand;
 
-// -----------------------------------------------------------------------------
-// Yardımcı Sayı-Metin Dönüştürme Fonksiyonları Prototipleri
-// (Gövdeleri PIC18FREMOTE/eeprom_params.c İçerisindedir)
-// -----------------------------------------------------------------------------
+extern unsigned char ProductCSwapTable[8];
+extern unsigned char PosCSwapTable[16];
+
+extern unsigned char cursor_pos;
+extern unsigned char cursor_blink;
+extern unsigned short cursor_blink_time;
+extern unsigned char entering_mode;
+extern unsigned char entering_val;
+extern unsigned char config_menu_messageidx;
+extern unsigned char product_table_idx;
+extern unsigned char squence_table_idx;
+extern unsigned char slaveid_table_idx;
+extern unsigned char subid_table_idx;
+extern unsigned char subparam_table_idx;
+extern unsigned short ActPassVal;
+
+extern const unsigned char MessageTable[4][8];
+extern const unsigned char MenuProductTable[9][8];
+extern const unsigned char MenuProviderTable1[9][8];
+extern const unsigned char MenuProviderTable2[9][8];
+extern const unsigned char MenuProviderTable3[9][8];
+extern const unsigned char MenuProviderTable4[9][8];
+extern const unsigned char MenuProviderTable5[9][8];
+extern const unsigned char SqeunceIdTable[24][2];
+extern const unsigned char ConfigMenuMessageTable[24][24];
+extern const unsigned char ParameterNameTable[27][16];
+
+void REMOTE_CONTROLLER_init(void);
+
+// Sürükleyici ve Menü Prototipleri
+void CreateMenuIdle_Direct(unsigned char menucount);
+void RefreshMenuIdle_Direct(unsigned char menucount);
+void CreateMenuSender_Direct(unsigned char menucount);
+void RefreshMenuSender_Direct(unsigned char menucount);
+void CreateMenuConfigID_Direct(void);
+void RefreshMenuConfigID_Direct(void);
+void CreateMenuConfigParam_Direct(void);
+void RefreshMenuConfigParam_Direct(void);
+void CreateMenuConfigPrice_Direct(void);
+void RefreshMenuConfigPrice_Direct(void);
+void CreateMenuPassword_Direct(void);
+void RefreshMenuPassWord_Direct(void);
+void read_keyb(void);
+
 void WriteDecimalStringShort(short value);
 void WriteDecimalStringUChar(unsigned char value);
 
-#endif // REMOTE_CONTROLLER_H
+#endif /* REMOTECONTROLLER_H */

@@ -1,5 +1,4 @@
-#include "mcc_generated_files/mcc.h"
-#include "remotecontroller.h"
+#include "main.h"
 
 unsigned char SUBPARAMS[23] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,0,0,0,0,0,0,0,0,0,0,0};
 unsigned char SLAVEIDLIST[24] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -152,377 +151,377 @@ void eeprom_to_slave_idlist(void)
 void read_price_eeprom(void)
 {
   ClrWdt();
-  Screen_Vals[0].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(11) << 8) | (unsigned int) DATAEE_ReadByte(12);
-  Screen_Vals[0].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(13) << 8) | (unsigned int) DATAEE_ReadByte(14);
-  Screen_Vals[1].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(15) << 8) | (unsigned int) DATAEE_ReadByte(16);
-  Screen_Vals[1].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(17) << 8) | (unsigned int) DATAEE_ReadByte(18);
-  Screen_Vals[2].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(19) << 8) | (unsigned int) DATAEE_ReadByte(20);
-  Screen_Vals[2].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(21) << 8) | (unsigned int) DATAEE_ReadByte(22);
-  Screen_Vals[3].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(23) << 8) | (unsigned int) DATAEE_ReadByte(24);
-  Screen_Vals[3].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(25) << 8) | (unsigned int) DATAEE_ReadByte(26);
-  Screen_Vals[4].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(27) << 8) | (unsigned int) DATAEE_ReadByte(28);
-  Screen_Vals[4].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(29) << 8) | (unsigned int) DATAEE_ReadByte(30);
-  Screen_Vals[5].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(31) << 8) | (unsigned int) DATAEE_ReadByte(32);
-  Screen_Vals[5].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(33) << 8) | (unsigned int) DATAEE_ReadByte(34);
-  Screen_Vals[6].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(35) << 8) | (unsigned int) DATAEE_ReadByte(36);
-  Screen_Vals[6].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(37) << 8) | (unsigned int) DATAEE_ReadByte(38);
-  Screen_Vals[7].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(39) << 8) | (unsigned int) DATAEE_ReadByte(40);
-  Screen_Vals[7].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(41) << 8) | (unsigned int) DATAEE_ReadByte(42);
-  Screen_Vals[8].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(43) << 8) | (unsigned int) DATAEE_ReadByte(44);
-  Screen_Vals[8].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(45) << 8) | (unsigned int) DATAEE_ReadByte(46);
-  Screen_Vals[9].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(47) << 8) | (unsigned int) DATAEE_ReadByte(48);
-  Screen_Vals[9].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(49) << 8) | (unsigned int) DATAEE_ReadByte(50);
-  Screen_Vals[10].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(51) << 8) | (unsigned int) DATAEE_ReadByte(52);
-  Screen_Vals[10].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(53) << 8) | (unsigned int) DATAEE_ReadByte(54);
-  Screen_Vals[11].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(55) << 8) | (unsigned int) DATAEE_ReadByte(56);
-  Screen_Vals[11].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(57) << 8) | (unsigned int) DATAEE_ReadByte(58);
+  Screen_Vals[0].Val_Pos1 = (unsigned int) (EEPROM_Read(11) << 8) | (unsigned int) EEPROM_Read(12);
+  Screen_Vals[0].Val_Pos2 = (unsigned int) (EEPROM_Read(13) << 8) | (unsigned int) EEPROM_Read(14);
+  Screen_Vals[1].Val_Pos1 = (unsigned int) (EEPROM_Read(15) << 8) | (unsigned int) EEPROM_Read(16);
+  Screen_Vals[1].Val_Pos2 = (unsigned int) (EEPROM_Read(17) << 8) | (unsigned int) EEPROM_Read(18);
+  Screen_Vals[2].Val_Pos1 = (unsigned int) (EEPROM_Read(19) << 8) | (unsigned int) EEPROM_Read(20);
+  Screen_Vals[2].Val_Pos2 = (unsigned int) (EEPROM_Read(21) << 8) | (unsigned int) EEPROM_Read(22);
+  Screen_Vals[3].Val_Pos1 = (unsigned int) (EEPROM_Read(23) << 8) | (unsigned int) EEPROM_Read(24);
+  Screen_Vals[3].Val_Pos2 = (unsigned int) (EEPROM_Read(25) << 8) | (unsigned int) EEPROM_Read(26);
+  Screen_Vals[4].Val_Pos1 = (unsigned int) (EEPROM_Read(27) << 8) | (unsigned int) EEPROM_Read(28);
+  Screen_Vals[4].Val_Pos2 = (unsigned int) (EEPROM_Read(29) << 8) | (unsigned int) EEPROM_Read(30);
+  Screen_Vals[5].Val_Pos1 = (unsigned int) (EEPROM_Read(31) << 8) | (unsigned int) EEPROM_Read(32);
+  Screen_Vals[5].Val_Pos2 = (unsigned int) (EEPROM_Read(33) << 8) | (unsigned int) EEPROM_Read(34);
+  Screen_Vals[6].Val_Pos1 = (unsigned int) (EEPROM_Read(35) << 8) | (unsigned int) EEPROM_Read(36);
+  Screen_Vals[6].Val_Pos2 = (unsigned int) (EEPROM_Read(37) << 8) | (unsigned int) EEPROM_Read(38);
+  Screen_Vals[7].Val_Pos1 = (unsigned int) (EEPROM_Read(39) << 8) | (unsigned int) EEPROM_Read(40);
+  Screen_Vals[7].Val_Pos2 = (unsigned int) (EEPROM_Read(41) << 8) | (unsigned int) EEPROM_Read(42);
+  Screen_Vals[8].Val_Pos1 = (unsigned int) (EEPROM_Read(43) << 8) | (unsigned int) EEPROM_Read(44);
+  Screen_Vals[8].Val_Pos2 = (unsigned int) (EEPROM_Read(45) << 8) | (unsigned int) EEPROM_Read(46);
+  Screen_Vals[9].Val_Pos1 = (unsigned int) (EEPROM_Read(47) << 8) | (unsigned int) EEPROM_Read(48);
+  Screen_Vals[9].Val_Pos2 = (unsigned int) (EEPROM_Read(49) << 8) | (unsigned int) EEPROM_Read(50);
+  Screen_Vals[10].Val_Pos1 = (unsigned int) (EEPROM_Read(51) << 8) | (unsigned int) EEPROM_Read(52);
+  Screen_Vals[10].Val_Pos2 = (unsigned int) (EEPROM_Read(53) << 8) | (unsigned int) EEPROM_Read(54);
+  Screen_Vals[11].Val_Pos1 = (unsigned int) (EEPROM_Read(55) << 8) | (unsigned int) EEPROM_Read(56);
+  Screen_Vals[11].Val_Pos2 = (unsigned int) (EEPROM_Read(57) << 8) | (unsigned int) EEPROM_Read(58);
 }
 
 void write_price_eeprom(void)
 {
   ClrWdt();
-  DATAEE_WriteByte(11, (unsigned char) ((Screen_Vals[0].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(12, (unsigned char) (Screen_Vals[0].Val_Pos1));
-  DATAEE_WriteByte(13, (unsigned char) ((Screen_Vals[0].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(14, (unsigned char) (Screen_Vals[0].Val_Pos2));
+  EEPROM_Write(11, (unsigned char) ((Screen_Vals[0].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(12, (unsigned char) (Screen_Vals[0].Val_Pos1));
+  EEPROM_Write(13, (unsigned char) ((Screen_Vals[0].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(14, (unsigned char) (Screen_Vals[0].Val_Pos2));
   ClrWdt();
-  DATAEE_WriteByte(15, (unsigned char) ((Screen_Vals[1].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(16, (unsigned char) (Screen_Vals[1].Val_Pos1));
-  DATAEE_WriteByte(17, (unsigned char) ((Screen_Vals[1].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(18, (unsigned char) (Screen_Vals[1].Val_Pos2));
+  EEPROM_Write(15, (unsigned char) ((Screen_Vals[1].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(16, (unsigned char) (Screen_Vals[1].Val_Pos1));
+  EEPROM_Write(17, (unsigned char) ((Screen_Vals[1].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(18, (unsigned char) (Screen_Vals[1].Val_Pos2));
   ClrWdt();
-  DATAEE_WriteByte(19, (unsigned char) ((Screen_Vals[2].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(20, (unsigned char) (Screen_Vals[2].Val_Pos1));
-  DATAEE_WriteByte(21, (unsigned char) ((Screen_Vals[2].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(22, (unsigned char) (Screen_Vals[2].Val_Pos2));
+  EEPROM_Write(19, (unsigned char) ((Screen_Vals[2].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(20, (unsigned char) (Screen_Vals[2].Val_Pos1));
+  EEPROM_Write(21, (unsigned char) ((Screen_Vals[2].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(22, (unsigned char) (Screen_Vals[2].Val_Pos2));
   ClrWdt();
-  DATAEE_WriteByte(23, (unsigned char) ((Screen_Vals[3].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(24, (unsigned char) (Screen_Vals[3].Val_Pos1));
-  DATAEE_WriteByte(25, (unsigned char) ((Screen_Vals[3].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(26, (unsigned char) (Screen_Vals[3].Val_Pos2));
+  EEPROM_Write(23, (unsigned char) ((Screen_Vals[3].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(24, (unsigned char) (Screen_Vals[3].Val_Pos1));
+  EEPROM_Write(25, (unsigned char) ((Screen_Vals[3].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(26, (unsigned char) (Screen_Vals[3].Val_Pos2));
   ClrWdt();
-  DATAEE_WriteByte(27, (unsigned char) ((Screen_Vals[4].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(28, (unsigned char) (Screen_Vals[4].Val_Pos1));
-  DATAEE_WriteByte(29, (unsigned char) ((Screen_Vals[4].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(30, (unsigned char) (Screen_Vals[4].Val_Pos2));
+  EEPROM_Write(27, (unsigned char) ((Screen_Vals[4].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(28, (unsigned char) (Screen_Vals[4].Val_Pos1));
+  EEPROM_Write(29, (unsigned char) ((Screen_Vals[4].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(30, (unsigned char) (Screen_Vals[4].Val_Pos2));
   ClrWdt();
-  DATAEE_WriteByte(31, (unsigned char) ((Screen_Vals[5].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(32, (unsigned char) (Screen_Vals[5].Val_Pos1));
-  DATAEE_WriteByte(33, (unsigned char) ((Screen_Vals[5].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(34, (unsigned char) (Screen_Vals[5].Val_Pos2));
+  EEPROM_Write(31, (unsigned char) ((Screen_Vals[5].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(32, (unsigned char) (Screen_Vals[5].Val_Pos1));
+  EEPROM_Write(33, (unsigned char) ((Screen_Vals[5].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(34, (unsigned char) (Screen_Vals[5].Val_Pos2));
   ClrWdt();
-  DATAEE_WriteByte(35, (unsigned char) ((Screen_Vals[6].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(36, (unsigned char) (Screen_Vals[6].Val_Pos1));
-  DATAEE_WriteByte(37, (unsigned char) ((Screen_Vals[6].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(38, (unsigned char) (Screen_Vals[6].Val_Pos2));
+  EEPROM_Write(35, (unsigned char) ((Screen_Vals[6].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(36, (unsigned char) (Screen_Vals[6].Val_Pos1));
+  EEPROM_Write(37, (unsigned char) ((Screen_Vals[6].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(38, (unsigned char) (Screen_Vals[6].Val_Pos2));
   ClrWdt();
-  DATAEE_WriteByte(39, (unsigned char) ((Screen_Vals[7].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(40, (unsigned char) (Screen_Vals[7].Val_Pos1));
-  DATAEE_WriteByte(41, (unsigned char) ((Screen_Vals[7].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(42, (unsigned char) (Screen_Vals[7].Val_Pos2));
+  EEPROM_Write(39, (unsigned char) ((Screen_Vals[7].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(40, (unsigned char) (Screen_Vals[7].Val_Pos1));
+  EEPROM_Write(41, (unsigned char) ((Screen_Vals[7].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(42, (unsigned char) (Screen_Vals[7].Val_Pos2));
   ClrWdt();
-  DATAEE_WriteByte(43, (unsigned char) ((Screen_Vals[8].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(44, (unsigned char) (Screen_Vals[8].Val_Pos1));
-  DATAEE_WriteByte(45, (unsigned char) ((Screen_Vals[8].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(46, (unsigned char) (Screen_Vals[8].Val_Pos2));
+  EEPROM_Write(43, (unsigned char) ((Screen_Vals[8].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(44, (unsigned char) (Screen_Vals[8].Val_Pos1));
+  EEPROM_Write(45, (unsigned char) ((Screen_Vals[8].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(46, (unsigned char) (Screen_Vals[8].Val_Pos2));
   ClrWdt();
-  DATAEE_WriteByte(47, (unsigned char) ((Screen_Vals[9].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(48, (unsigned char) (Screen_Vals[9].Val_Pos1));
-  DATAEE_WriteByte(49, (unsigned char) ((Screen_Vals[9].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(50, (unsigned char) (Screen_Vals[9].Val_Pos2));
+  EEPROM_Write(47, (unsigned char) ((Screen_Vals[9].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(48, (unsigned char) (Screen_Vals[9].Val_Pos1));
+  EEPROM_Write(49, (unsigned char) ((Screen_Vals[9].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(50, (unsigned char) (Screen_Vals[9].Val_Pos2));
   ClrWdt();
-  DATAEE_WriteByte(51, (unsigned char) ((Screen_Vals[10].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(52, (unsigned char) (Screen_Vals[10].Val_Pos1));
-  DATAEE_WriteByte(53, (unsigned char) ((Screen_Vals[10].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(54, (unsigned char) (Screen_Vals[10].Val_Pos2));
+  EEPROM_Write(51, (unsigned char) ((Screen_Vals[10].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(52, (unsigned char) (Screen_Vals[10].Val_Pos1));
+  EEPROM_Write(53, (unsigned char) ((Screen_Vals[10].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(54, (unsigned char) (Screen_Vals[10].Val_Pos2));
   ClrWdt();
-  DATAEE_WriteByte(55, (unsigned char) ((Screen_Vals[11].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(56, (unsigned char) (Screen_Vals[11].Val_Pos1));
-  DATAEE_WriteByte(57, (unsigned char) ((Screen_Vals[11].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(58, (unsigned char) (Screen_Vals[11].Val_Pos2));
+  EEPROM_Write(55, (unsigned char) ((Screen_Vals[11].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(56, (unsigned char) (Screen_Vals[11].Val_Pos1));
+  EEPROM_Write(57, (unsigned char) ((Screen_Vals[11].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(58, (unsigned char) (Screen_Vals[11].Val_Pos2));
   ClrWdt();
 }
 
 void read_config_paremeter_eeprom(void)
 {
   ClrWdt();
-  Config_Vals[0].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(101) << 8) | (unsigned int) DATAEE_ReadByte(102);
-  Config_Vals[0].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(103) << 8) | (unsigned int) DATAEE_ReadByte(104);
-  Config_Vals[1].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(105) << 8) | (unsigned int) DATAEE_ReadByte(106);
-  Config_Vals[1].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(107) << 8) | (unsigned int) DATAEE_ReadByte(108);
-  Config_Vals[2].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(109) << 8) | (unsigned int) DATAEE_ReadByte(110);
-  Config_Vals[2].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(111) << 8) | (unsigned int) DATAEE_ReadByte(112);
-  Config_Vals[3].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(113) << 8) | (unsigned int) DATAEE_ReadByte(114);
-  Config_Vals[3].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(115) << 8) | (unsigned int) DATAEE_ReadByte(116);
-  Config_Vals[4].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(117) << 8) | (unsigned int) DATAEE_ReadByte(118);
-  Config_Vals[4].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(119) << 8) | (unsigned int) DATAEE_ReadByte(120);
-  Config_Vals[5].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(121) << 8) | (unsigned int) DATAEE_ReadByte(122);
-  Config_Vals[5].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(123) << 8) | (unsigned int) DATAEE_ReadByte(124);
-  Config_Vals[6].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(125) << 8) | (unsigned int) DATAEE_ReadByte(126);
-  Config_Vals[6].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(127) << 8) | (unsigned int) DATAEE_ReadByte(128);
-  Config_Vals[7].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(129) << 8) | (unsigned int) DATAEE_ReadByte(130);
-  Config_Vals[7].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(131) << 8) | (unsigned int) DATAEE_ReadByte(132);
-  Config_Vals[8].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(133) << 8) | (unsigned int) DATAEE_ReadByte(134);
-  Config_Vals[8].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(135) << 8) | (unsigned int) DATAEE_ReadByte(136);
-  Config_Vals[9].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(137) << 8) | (unsigned int) DATAEE_ReadByte(138);
-  Config_Vals[9].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(139) << 8) | (unsigned int) DATAEE_ReadByte(140);
-  Config_Vals[10].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(141) << 8) | (unsigned int) DATAEE_ReadByte(142);
-  Config_Vals[10].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(143) << 8) | (unsigned int) DATAEE_ReadByte(144);
-  Config_Vals[11].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(145) << 8) | (unsigned int) DATAEE_ReadByte(146);
-  Config_Vals[11].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(147) << 8) | (unsigned int) DATAEE_ReadByte(148);
+  Config_Vals[0].Val_Pos1 = (unsigned int) (EEPROM_Read(101) << 8) | (unsigned int) EEPROM_Read(102);
+  Config_Vals[0].Val_Pos2 = (unsigned int) (EEPROM_Read(103) << 8) | (unsigned int) EEPROM_Read(104);
+  Config_Vals[1].Val_Pos1 = (unsigned int) (EEPROM_Read(105) << 8) | (unsigned int) EEPROM_Read(106);
+  Config_Vals[1].Val_Pos2 = (unsigned int) (EEPROM_Read(107) << 8) | (unsigned int) EEPROM_Read(108);
+  Config_Vals[2].Val_Pos1 = (unsigned int) (EEPROM_Read(109) << 8) | (unsigned int) EEPROM_Read(110);
+  Config_Vals[2].Val_Pos2 = (unsigned int) (EEPROM_Read(111) << 8) | (unsigned int) EEPROM_Read(112);
+  Config_Vals[3].Val_Pos1 = (unsigned int) (EEPROM_Read(113) << 8) | (unsigned int) EEPROM_Read(114);
+  Config_Vals[3].Val_Pos2 = (unsigned int) (EEPROM_Read(115) << 8) | (unsigned int) EEPROM_Read(116);
+  Config_Vals[4].Val_Pos1 = (unsigned int) (EEPROM_Read(117) << 8) | (unsigned int) EEPROM_Read(118);
+  Config_Vals[4].Val_Pos2 = (unsigned int) (EEPROM_Read(119) << 8) | (unsigned int) EEPROM_Read(120);
+  Config_Vals[5].Val_Pos1 = (unsigned int) (EEPROM_Read(121) << 8) | (unsigned int) EEPROM_Read(122);
+  Config_Vals[5].Val_Pos2 = (unsigned int) (EEPROM_Read(123) << 8) | (unsigned int) EEPROM_Read(124);
+  Config_Vals[6].Val_Pos1 = (unsigned int) (EEPROM_Read(125) << 8) | (unsigned int) EEPROM_Read(126);
+  Config_Vals[6].Val_Pos2 = (unsigned int) (EEPROM_Read(127) << 8) | (unsigned int) EEPROM_Read(128);
+  Config_Vals[7].Val_Pos1 = (unsigned int) (EEPROM_Read(129) << 8) | (unsigned int) EEPROM_Read(130);
+  Config_Vals[7].Val_Pos2 = (unsigned int) (EEPROM_Read(131) << 8) | (unsigned int) EEPROM_Read(132);
+  Config_Vals[8].Val_Pos1 = (unsigned int) (EEPROM_Read(133) << 8) | (unsigned int) EEPROM_Read(134);
+  Config_Vals[8].Val_Pos2 = (unsigned int) (EEPROM_Read(135) << 8) | (unsigned int) EEPROM_Read(136);
+  Config_Vals[9].Val_Pos1 = (unsigned int) (EEPROM_Read(137) << 8) | (unsigned int) EEPROM_Read(138);
+  Config_Vals[9].Val_Pos2 = (unsigned int) (EEPROM_Read(139) << 8) | (unsigned int) EEPROM_Read(140);
+  Config_Vals[10].Val_Pos1 = (unsigned int) (EEPROM_Read(141) << 8) | (unsigned int) EEPROM_Read(142);
+  Config_Vals[10].Val_Pos2 = (unsigned int) (EEPROM_Read(143) << 8) | (unsigned int) EEPROM_Read(144);
+  Config_Vals[11].Val_Pos1 = (unsigned int) (EEPROM_Read(145) << 8) | (unsigned int) EEPROM_Read(146);
+  Config_Vals[11].Val_Pos2 = (unsigned int) (EEPROM_Read(147) << 8) | (unsigned int) EEPROM_Read(148);
 }
 
 void write_slaveidcnt_paremeter_eeprom(void)
 {
   Config_Vals[12].Val_Pos1 = (unsigned int) slaveid_cnt;
-  DATAEE_WriteByte(149, (unsigned char) ((Config_Vals[12].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(150, (unsigned char) (Config_Vals[12].Val_Pos1));
+  EEPROM_Write(149, (unsigned char) ((Config_Vals[12].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(150, (unsigned char) (Config_Vals[12].Val_Pos1));
   ClrWdt();
 }
 
 void write_loopcnt_paremeter_eeprom(void)
 {
   Config_Vals[12].Val_Pos2 = (unsigned int) loop_cnt;
-  DATAEE_WriteByte(151, (unsigned char) ((Config_Vals[12].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(152, (unsigned char) (Config_Vals[12].Val_Pos2));
+  EEPROM_Write(151, (unsigned char) ((Config_Vals[12].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(152, (unsigned char) (Config_Vals[12].Val_Pos2));
   ClrWdt();
 }
 
 void read_slaveidcnt_paremeter_eeprom(void)
 {
-  Config_Vals[12].Val_Pos1 = (unsigned int) (DATAEE_ReadByte(149) << 8) | (unsigned int) DATAEE_ReadByte(150);
+  Config_Vals[12].Val_Pos1 = (unsigned int) (EEPROM_Read(149) << 8) | (unsigned int) EEPROM_Read(150);
   slaveid_cnt = (unsigned char) Config_Vals[12].Val_Pos1;
 }
 
 void read_loopcnt_paremeter_eeprom(void)
 {
-  Config_Vals[12].Val_Pos2 = (unsigned int) (DATAEE_ReadByte(151) << 8) | (unsigned int) DATAEE_ReadByte(152);
+  Config_Vals[12].Val_Pos2 = (unsigned int) (EEPROM_Read(151) << 8) | (unsigned int) EEPROM_Read(152);
   loop_cnt = (unsigned char) Config_Vals[12].Val_Pos2;
 }
 
 void read_providerid_paremeter_eeprom(void)
 {
-  provider_id = DATAEE_ReadByte(201);
+  provider_id = EEPROM_Read(201);
 }
 
 void write_providerid_paremeter_eeprom(void)
 {
-  DATAEE_WriteByte(201, provider_id);
+  EEPROM_Write(201, provider_id);
   ClrWdt();
 }
 
 void read_retrytime_paremeter_eeprom(void)
 {
-  retrytime = DATAEE_ReadByte(202);
+  retrytime = EEPROM_Read(202);
 }
 
 void write_retrytime_paremeter_eeprom(void)
 {
-  DATAEE_WriteByte(202, retrytime);
+  EEPROM_Write(202, retrytime);
   ClrWdt();
 }
 
 void read_repeaterloopcnt_paremeter_eeprom(void)
 {
-  repeaterloopcnt = DATAEE_ReadByte(203);
+  repeaterloopcnt = EEPROM_Read(203);
 }
 
 void write_repeaterloopcnt_paremeter_eeprom(void)
 {
-  DATAEE_WriteByte(203, repeaterloopcnt);
+  EEPROM_Write(203, repeaterloopcnt);
   ClrWdt();
 }
 
 void read_posidentifier_paremeter_eeprom(void)
 {
-  posidentifier = DATAEE_ReadByte(205);
+  posidentifier = EEPROM_Read(205);
 }
 
 void write_posidentifier_paremeter_eeprom(void)
 {
-  DATAEE_WriteByte(205, posidentifier);
+  EEPROM_Write(205, posidentifier);
   ClrWdt();
 }
 
 void read_delayedpostime_paremeter_eeprom(void)
 {
-  delayedpostime = DATAEE_ReadByte(204);
+  delayedpostime = EEPROM_Read(204);
 }
 
 void write_delayedpostime_paremeter_eeprom(void)
 {
-  DATAEE_WriteByte(204, delayedpostime);
+  EEPROM_Write(204, delayedpostime);
   ClrWdt();
 }
 
 void read_posswap_paremeter_eeprom(void)
 {
-  if (DATAEE_ReadByte(210) < 8)
+  if (EEPROM_Read(210) < 8)
     {
-      PosCSwapTable[0] = DATAEE_ReadByte(210);
+      PosCSwapTable[0] = EEPROM_Read(210);
       PosCSwapTable[1] = PosCSwapTable[0] + 1;
     }
-  if (DATAEE_ReadByte(211) < 8)
+  if (EEPROM_Read(211) < 8)
     {
-      PosCSwapTable[2] = DATAEE_ReadByte(211);
+      PosCSwapTable[2] = EEPROM_Read(211);
       PosCSwapTable[3] = PosCSwapTable[2] + 1;
     }
-  if (DATAEE_ReadByte(212) < 8)
+  if (EEPROM_Read(212) < 8)
     {
-      PosCSwapTable[4] = DATAEE_ReadByte(212);
+      PosCSwapTable[4] = EEPROM_Read(212);
       PosCSwapTable[5] = PosCSwapTable[4] + 1;
     }
-  if (DATAEE_ReadByte(213) < 8)
+  if (EEPROM_Read(213) < 8)
     {
-      PosCSwapTable[6] = DATAEE_ReadByte(213);
+      PosCSwapTable[6] = EEPROM_Read(213);
       PosCSwapTable[7] = PosCSwapTable[6] + 1;
     }
-  if (DATAEE_ReadByte(214) < 8)
+  if (EEPROM_Read(214) < 8)
     {
-      PosCSwapTable[8] = DATAEE_ReadByte(214);
+      PosCSwapTable[8] = EEPROM_Read(214);
       PosCSwapTable[9] = PosCSwapTable[8] + 1;
     }
-  if (DATAEE_ReadByte(215) < 8)
+  if (EEPROM_Read(215) < 8)
     {
-      PosCSwapTable[10] = DATAEE_ReadByte(215);
+      PosCSwapTable[10] = EEPROM_Read(215);
       PosCSwapTable[11] = PosCSwapTable[10] + 1;
     }
-  if (DATAEE_ReadByte(216) < 8)
+  if (EEPROM_Read(216) < 8)
     {
-      PosCSwapTable[12] = DATAEE_ReadByte(216);
+      PosCSwapTable[12] = EEPROM_Read(216);
       PosCSwapTable[13] = PosCSwapTable[12] + 1;
     }
-  if (DATAEE_ReadByte(217) < 8)
+  if (EEPROM_Read(217) < 8)
     {
-      PosCSwapTable[14] = DATAEE_ReadByte(217);
+      PosCSwapTable[14] = EEPROM_Read(217);
       PosCSwapTable[15] = PosCSwapTable[14] + 1;
     }
 }
 
 void write_posswap_paremeter_eeprom(void)
 {
-  DATAEE_WriteByte(210, PosCSwapTable[0]);
-  DATAEE_WriteByte(211, PosCSwapTable[2]);
-  DATAEE_WriteByte(212, PosCSwapTable[4]);
-  DATAEE_WriteByte(213, PosCSwapTable[6]);
-  DATAEE_WriteByte(214, PosCSwapTable[8]);
-  DATAEE_WriteByte(215, PosCSwapTable[10]);
-  DATAEE_WriteByte(216, PosCSwapTable[12]);
-  DATAEE_WriteByte(217, PosCSwapTable[14]);
+  EEPROM_Write(210, PosCSwapTable[0]);
+  EEPROM_Write(211, PosCSwapTable[2]);
+  EEPROM_Write(212, PosCSwapTable[4]);
+  EEPROM_Write(213, PosCSwapTable[6]);
+  EEPROM_Write(214, PosCSwapTable[8]);
+  EEPROM_Write(215, PosCSwapTable[10]);
+  EEPROM_Write(216, PosCSwapTable[12]);
+  EEPROM_Write(217, PosCSwapTable[14]);
   ClrWdt();
 }
 
 void read_productswap_paremeter_eeprom(void)
 {
-  if (DATAEE_ReadByte(218) < 12)
+  if (EEPROM_Read(218) < 12)
     {
-      ProductCSwapTable[0] = DATAEE_ReadByte(218);
+      ProductCSwapTable[0] = EEPROM_Read(218);
     }
-  if (DATAEE_ReadByte(219) < 12)
+  if (EEPROM_Read(219) < 12)
     {
-      ProductCSwapTable[1] = DATAEE_ReadByte(219);
+      ProductCSwapTable[1] = EEPROM_Read(219);
     }
-  if (DATAEE_ReadByte(220) < 12)
+  if (EEPROM_Read(220) < 12)
     {
-      ProductCSwapTable[2] = DATAEE_ReadByte(220);
+      ProductCSwapTable[2] = EEPROM_Read(220);
     }
-  if (DATAEE_ReadByte(221) < 12)
+  if (EEPROM_Read(221) < 12)
     {
-      ProductCSwapTable[3] = DATAEE_ReadByte(221);
+      ProductCSwapTable[3] = EEPROM_Read(221);
     }
-  if (DATAEE_ReadByte(222) < 12)
+  if (EEPROM_Read(222) < 12)
     {
-      ProductCSwapTable[4] = DATAEE_ReadByte(222);
+      ProductCSwapTable[4] = EEPROM_Read(222);
     }
-  if (DATAEE_ReadByte(223) < 12)
+  if (EEPROM_Read(223) < 12)
     {
-      ProductCSwapTable[5] = DATAEE_ReadByte(223);
+      ProductCSwapTable[5] = EEPROM_Read(223);
     }
-  if (DATAEE_ReadByte(224) < 12)
+  if (EEPROM_Read(224) < 12)
     {
-      ProductCSwapTable[6] = DATAEE_ReadByte(224);
+      ProductCSwapTable[6] = EEPROM_Read(224);
     }
-  if (DATAEE_ReadByte(225) < 12)
+  if (EEPROM_Read(225) < 12)
     {
-      ProductCSwapTable[7] = DATAEE_ReadByte(225);
+      ProductCSwapTable[7] = EEPROM_Read(225);
     }
 }
 
 void write_productswap_paremeter_eeprom(void)
 {
-  DATAEE_WriteByte(218, ProductCSwapTable[0]);
-  DATAEE_WriteByte(219, ProductCSwapTable[1]);
-  DATAEE_WriteByte(220, ProductCSwapTable[2]);
-  DATAEE_WriteByte(221, ProductCSwapTable[3]);
-  DATAEE_WriteByte(222, ProductCSwapTable[4]);
-  DATAEE_WriteByte(223, ProductCSwapTable[5]);
-  DATAEE_WriteByte(224, ProductCSwapTable[6]);
-  DATAEE_WriteByte(225, ProductCSwapTable[7]);
+  EEPROM_Write(218, ProductCSwapTable[0]);
+  EEPROM_Write(219, ProductCSwapTable[1]);
+  EEPROM_Write(220, ProductCSwapTable[2]);
+  EEPROM_Write(221, ProductCSwapTable[3]);
+  EEPROM_Write(222, ProductCSwapTable[4]);
+  EEPROM_Write(223, ProductCSwapTable[5]);
+  EEPROM_Write(224, ProductCSwapTable[6]);
+  EEPROM_Write(225, ProductCSwapTable[7]);
   ClrWdt();
 }
 
 void write_config_paremeter_eeprom(void)
 {
   ClrWdt();
-  DATAEE_WriteByte(101, (unsigned char) ((Config_Vals[0].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(102, (unsigned char) (Config_Vals[0].Val_Pos1));
-  DATAEE_WriteByte(103, (unsigned char) ((Config_Vals[0].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(104, (unsigned char) (Config_Vals[0].Val_Pos2));
+  EEPROM_Write(101, (unsigned char) ((Config_Vals[0].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(102, (unsigned char) (Config_Vals[0].Val_Pos1));
+  EEPROM_Write(103, (unsigned char) ((Config_Vals[0].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(104, (unsigned char) (Config_Vals[0].Val_Pos2));
   ClrWdt();
-  DATAEE_WriteByte(105, (unsigned char) ((Config_Vals[1].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(106, (unsigned char) (Config_Vals[1].Val_Pos1));
-  DATAEE_WriteByte(107, (unsigned char) ((Config_Vals[1].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(108, (unsigned char) (Config_Vals[1].Val_Pos2));
+  EEPROM_Write(105, (unsigned char) ((Config_Vals[1].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(106, (unsigned char) (Config_Vals[1].Val_Pos1));
+  EEPROM_Write(107, (unsigned char) ((Config_Vals[1].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(108, (unsigned char) (Config_Vals[1].Val_Pos2));
   ClrWdt();
-  DATAEE_WriteByte(109, (unsigned char) ((Config_Vals[2].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(110, (unsigned char) (Config_Vals[2].Val_Pos1));
-  DATAEE_WriteByte(111, (unsigned char) ((Config_Vals[2].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(112, (unsigned char) (Config_Vals[2].Val_Pos2));
+  EEPROM_Write(109, (unsigned char) ((Config_Vals[2].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(110, (unsigned char) (Config_Vals[2].Val_Pos1));
+  EEPROM_Write(111, (unsigned char) ((Config_Vals[2].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(112, (unsigned char) (Config_Vals[2].Val_Pos2));
   ClrWdt();
-  DATAEE_WriteByte(113, (unsigned char) ((Config_Vals[3].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(114, (unsigned char) (Config_Vals[3].Val_Pos1));
-  DATAEE_WriteByte(115, (unsigned char) ((Config_Vals[3].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(116, (unsigned char) (Config_Vals[3].Val_Pos2));
+  EEPROM_Write(113, (unsigned char) ((Config_Vals[3].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(114, (unsigned char) (Config_Vals[3].Val_Pos1));
+  EEPROM_Write(115, (unsigned char) ((Config_Vals[3].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(116, (unsigned char) (Config_Vals[3].Val_Pos2));
   ClrWdt();
-  DATAEE_WriteByte(117, (unsigned char) ((Config_Vals[4].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(118, (unsigned char) (Config_Vals[4].Val_Pos1));
-  DATAEE_WriteByte(119, (unsigned char) ((Config_Vals[4].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(120, (unsigned char) (Config_Vals[4].Val_Pos2));
+  EEPROM_Write(117, (unsigned char) ((Config_Vals[4].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(118, (unsigned char) (Config_Vals[4].Val_Pos1));
+  EEPROM_Write(119, (unsigned char) ((Config_Vals[4].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(120, (unsigned char) (Config_Vals[4].Val_Pos2));
   ClrWdt();
-  DATAEE_WriteByte(121, (unsigned char) ((Config_Vals[5].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(122, (unsigned char) (Config_Vals[5].Val_Pos1));
-  DATAEE_WriteByte(123, (unsigned char) ((Config_Vals[5].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(124, (unsigned char) (Config_Vals[5].Val_Pos2));
+  EEPROM_Write(121, (unsigned char) ((Config_Vals[5].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(122, (unsigned char) (Config_Vals[5].Val_Pos1));
+  EEPROM_Write(123, (unsigned char) ((Config_Vals[5].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(124, (unsigned char) (Config_Vals[5].Val_Pos2));
   ClrWdt();
-  DATAEE_WriteByte(125, (unsigned char) ((Config_Vals[6].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(126, (unsigned char) (Config_Vals[6].Val_Pos1));
-  DATAEE_WriteByte(127, (unsigned char) ((Config_Vals[6].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(128, (unsigned char) (Config_Vals[6].Val_Pos2));
+  EEPROM_Write(125, (unsigned char) ((Config_Vals[6].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(126, (unsigned char) (Config_Vals[6].Val_Pos1));
+  EEPROM_Write(127, (unsigned char) ((Config_Vals[6].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(128, (unsigned char) (Config_Vals[6].Val_Pos2));
   ClrWdt();
-  DATAEE_WriteByte(129, (unsigned char) ((Config_Vals[7].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(130, (unsigned char) (Config_Vals[7].Val_Pos1));
-  DATAEE_WriteByte(131, (unsigned char) ((Config_Vals[7].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(132, (unsigned char) (Config_Vals[7].Val_Pos2));
+  EEPROM_Write(129, (unsigned char) ((Config_Vals[7].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(130, (unsigned char) (Config_Vals[7].Val_Pos1));
+  EEPROM_Write(131, (unsigned char) ((Config_Vals[7].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(132, (unsigned char) (Config_Vals[7].Val_Pos2));
   ClrWdt();
-  DATAEE_WriteByte(133, (unsigned char) ((Config_Vals[8].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(134, (unsigned char) (Config_Vals[8].Val_Pos1));
-  DATAEE_WriteByte(135, (unsigned char) ((Config_Vals[8].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(136, (unsigned char) (Config_Vals[8].Val_Pos2));
+  EEPROM_Write(133, (unsigned char) ((Config_Vals[8].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(134, (unsigned char) (Config_Vals[8].Val_Pos1));
+  EEPROM_Write(135, (unsigned char) ((Config_Vals[8].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(136, (unsigned char) (Config_Vals[8].Val_Pos2));
   ClrWdt();
-  DATAEE_WriteByte(137, (unsigned char) ((Config_Vals[9].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(138, (unsigned char) (Config_Vals[9].Val_Pos1));
-  DATAEE_WriteByte(139, (unsigned char) ((Config_Vals[9].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(140, (unsigned char) (Config_Vals[9].Val_Pos2));
+  EEPROM_Write(137, (unsigned char) ((Config_Vals[9].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(138, (unsigned char) (Config_Vals[9].Val_Pos1));
+  EEPROM_Write(139, (unsigned char) ((Config_Vals[9].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(140, (unsigned char) (Config_Vals[9].Val_Pos2));
   ClrWdt();
-  DATAEE_WriteByte(141, (unsigned char) ((Config_Vals[10].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(142, (unsigned char) (Config_Vals[10].Val_Pos1));
-  DATAEE_WriteByte(143, (unsigned char) ((Config_Vals[10].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(144, (unsigned char) (Config_Vals[10].Val_Pos2));
+  EEPROM_Write(141, (unsigned char) ((Config_Vals[10].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(142, (unsigned char) (Config_Vals[10].Val_Pos1));
+  EEPROM_Write(143, (unsigned char) ((Config_Vals[10].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(144, (unsigned char) (Config_Vals[10].Val_Pos2));
   ClrWdt();
-  DATAEE_WriteByte(145, (unsigned char) ((Config_Vals[11].Val_Pos1 >> 8) & 0x00FF));
-  DATAEE_WriteByte(146, (unsigned char) (Config_Vals[11].Val_Pos1));
-  DATAEE_WriteByte(147, (unsigned char) ((Config_Vals[11].Val_Pos2 >> 8) & 0x00FF));
-  DATAEE_WriteByte(148, (unsigned char) (Config_Vals[11].Val_Pos2));
+  EEPROM_Write(145, (unsigned char) ((Config_Vals[11].Val_Pos1 >> 8) & 0x00FF));
+  EEPROM_Write(146, (unsigned char) (Config_Vals[11].Val_Pos1));
+  EEPROM_Write(147, (unsigned char) ((Config_Vals[11].Val_Pos2 >> 8) & 0x00FF));
+  EEPROM_Write(148, (unsigned char) (Config_Vals[11].Val_Pos2));
   ClrWdt();
 }
 
@@ -569,24 +568,24 @@ void WriteDecimalStringUChar(unsigned char value)
 
 void read_resendrequest_eeprom(void)
 {
-  resend_request = DATAEE_ReadByte(241);
+  resend_request = EEPROM_Read(241);
 }
 
 void write_resendrequest_eeprom(unsigned char val)
 {
   resend_request = val;
-  DATAEE_WriteByte(241, resend_request);
+  EEPROM_Write(241, resend_request);
   ClrWdt();
 }
 
 void read_useposflag_eeprom(void)
 {
-  useposflag = DATAEE_ReadByte(242);
+  useposflag = EEPROM_Read(242);
 }
 
 void write_useposflag_eeprom(unsigned char val)
 {
   useposflag = val;
-  DATAEE_WriteByte(242, useposflag);
+  EEPROM_Write(242, useposflag);
   ClrWdt();
 }

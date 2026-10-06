@@ -8,23 +8,17 @@
   PIC18FREMOTE YENİ NESİL TEK GEÇİŞLİ (DIRECT BUFFER) HMI MENÜ SÜRÜCÜSÜ (menu.c)
 ================================================================================-------------------
   MİMARİ YENİLİKLER VE AVANTAJLARI:
-  1. Parçalı (case 0..63 switch-case) taranan eski sistem yerine, donanıma doğrudan gölge bellek
-     (glcd_buffer[1536]) üzerinden TEK GEÇİŞTE (Single-pass Direct Render) çizim yapan fonksiyonlar
-     geliştirilmiştir.
+  1. Donanıma doğrudan gölge bellek (glcd_buffer[1536]) üzerinden TEK GEÇİŞTE (Single-pass Direct Render)
+     çizim yapan fonksiyonlar geliştirilmiştir.
   2. Ekran titremesini (flicker) engellemek için CreateMenu* (statik çerçeveler) ve RefreshMenu*
-     (dinamik değerler, imleç yanıp sönme) mantığı korunmuş, ilk çağrıda (updatecnt == 0) anında
-     çizilecek şekilde optimize edilmiştir.
-  3. Donanım ekran tazelemesi `GLCD_Render()` fonksiyonu ile tek seferde 1536 bayt olarak basılır.
+     (dinamik değerler, imleç yanıp sönme) mantığı korunmuştur.
+  3. Çizim tamamlandıktan sonra `menu_state = Menu_Wait` yaplarak işlemcinin 2 kHz hızında gereksiz
+     ekran tazelemesi engellenmiş ve sistem kilitlenmeleri çözülmüştür.
 ================================================================================-------------------
 */
 
 extern ScreenCommand Screen_Vals[12];
 extern ScreenCommand Config_Vals[13];
-extern unsigned char MenuProductTable[9][8];
-extern unsigned char ConfigMenuMessageTable[15][24];
-extern unsigned char ParameterNameTable[15][16];
-extern unsigned char SqeunceIdTable[24][2];
-extern unsigned char MessageTable[8][8];
 
 extern unsigned char config_menu_messageidx;
 extern unsigned char squence_table_idx;
@@ -50,9 +44,6 @@ extern unsigned short ActPassVal;
 extern unsigned char val10, val11, val12, val13, val14, val15;
 extern unsigned char valc10, valc11, valc12;
 extern unsigned char tx, ty;
-
-extern void WriteDecimalStringShort(short value);
-extern void WriteDecimalStringUChar(unsigned char value);
 
 //-------------------------------------------------------------------------------------------------
 // Yardımcı Dijit / İmleç Çizim Fonksiyonu (Digit Render with Blink/Cursor support)
@@ -159,6 +150,7 @@ void RefreshMenuIdle_Direct(unsigned char menucount)
     GLCD_String5x7(3, 57, msg_str);
 
     GLCD_Render();
+    menu_state = Menu_Wait;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -250,6 +242,7 @@ void RefreshMenuSender_Direct(unsigned char menucount)
     }
 
     GLCD_Render();
+    menu_state = Menu_Wait;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -330,6 +323,7 @@ void RefreshMenuConfigID_Direct(void)
     GLCD_String5x7(3, 57, msg_str);
 
     GLCD_Render();
+    menu_state = Menu_Wait;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -378,6 +372,7 @@ void RefreshMenuConfigParam_Direct(void)
     GLCD_String5x7(3, 57, msg_str);
 
     GLCD_Render();
+    menu_state = Menu_Wait;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -454,6 +449,7 @@ void RefreshMenuConfigPrice_Direct(void)
     GLCD_String5x7(3, 57, msg_str);
 
     GLCD_Render();
+    menu_state = Menu_Wait;
 }
 
 //-------------------------------------------------------------------------------------------------
@@ -496,6 +492,7 @@ void RefreshMenuPassWord_Direct(void)
     GLCD_String5x7(3, 57, msg_str);
 
     GLCD_Render();
+    menu_state = Menu_Wait;
 }
 
 //-------------------------------------------------------------------------------------------------
