@@ -1,12 +1,12 @@
 /*
   ================================================================================
-  RemoteServer_Module.ino - Uzak Sunucu (Ledobe Cloud) İletişim Modülü
+  RemoteServer_Module.ino - Uzak Sunucu (ledobe.com Cloud) İletişim Modülü
   ================================================================================
-  Bu modül, ESP32 web sunucusu ile uzak bulut sunucu (ledobe.com) arasındaki
-  tüm HTTP iletişimini ve veri senkronizasyonunu yönetir.
+  Bu modül, ESP32 web sunucusu ile uzak bulut sunucu (https://ledobe.com) arasındaki
+  tüm HTTP/HTTPS iletişimini, periyodik sorgulamayı (polling) ve veri senkronizasyonunu yönetir.
 
   Temel İşlevler:
-  1. sendhttp(): HTTP GET/POST (JSON ve Form) isteklerini gönderir.
+  1. sendhttp(): HTTPS GET/POST (JSON ve Form) isteklerini gönderir.
   2. pollServer(): Sunucu havuzunu (ppool) periyodik olarak sorgular (Poll).
   3. checkncfj(): İndirilen konfigürasyon JSON paketinin geçerliliğini doğrular.
   4. receivepacketsend(): Cihaz çalışma / Modbus yanıt verilerini sunucuya iletir.
@@ -16,17 +16,18 @@
 
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
 
 // --- Sunucu URL Tanımlamaları ---
-String serverName         = "https://www.ledobe.com/app/";
-String serverName_process = serverName + "process.php";
-String serverName_pool    = serverName + "cfg/ppool/";
-String serverName_ledcfg  = serverName + "cfg/ledcfg/";
-String serverName_pres    = serverName + "cfg/pres/";
-String serverName_poolp   = ""; // Örn: https://www.ledobe.com/app/cfg/ppool/{sid}.json
+String serverName_mod         = "https://ledobe.com";
+String serverName_process_mod = serverName_mod + "/app/process.php";
+String serverName_pool_mod    = serverName_mod + "/app/cfg/ppool/";
+String serverName_ledcfg_mod  = serverName_mod + "/app/cfg/ledcfg/";
+String serverName_pres_mod    = serverName_mod + "/app/cfg/pres/";
+String serverName_poolp_mod   = ""; // Örn: https://ledobe.com/app/cfg/ppool/{sid}.json
 
-// --- Sistem Durum Değişkenleri ---
+// --- Sistem Durum Değişkenleri (Extern) ---
 extern String sid;                   // Station ID / Cihaz Benzersiz Kimliği
 extern String pid;                   // Price ID / Tabela ID
 extern String pmaster;               // Master Modu ("sv" = Server Master)
@@ -39,23 +40,25 @@ extern char change_source;           // Değişiklik kaynağı ('s' = server)
 extern char modbustask;              // Modbus görev bayrağı ('s' = server start)
 
 extern unsigned long cTime_serverpool;
-extern unsigned long intv_serverpool; // Sorgulama aralığı (örn. 5000ms)
+extern unsigned long intv_serverpool; // Sorgulama aralığı (60000 ms)
 
 // Yardımcı Fonksiyon Deklarasyonları (Main projeden çağrılan)
 extern void serverlog(String msg, String opt);
-extern void FileWriteF(String content, String filepath);
-extern void WriteLedConfig(String opt);
+extern int FileWriteF(String content, String filepath);
+extern String WriteLedConfig(char *proct);
 extern String LedPrepareResult(String mode);
 
 /**
- * @brief Genel HTTP İstemci Fonksiyonu
- * @param httpRequestData POST yapılcak gövde verisi (JSON veya Form)
+ * @brief Genel HTTPS / HTTP İstemci Fonksiyonu (WiFiClientSecure Destekli)
+ * @param httpRequestData POST yapılacak gövde verisi (JSON veya Form)
  * @param httpType "httpget", "httppost" veya "httpjson"
  * @param serverPath İstek atılacak tam URL adresi
  * @return String Sunucudan dönen yanıt metni (payload)
  */
-String sendhttp(String httpRequestData, String httpType, String serverPath) {
+String sendhttp_mod(String httpRequestData, String httpType, String serverPath) {
   if (WiFi.status() == WL_CONNECTED && mode_apsta == "apsta") {
+    WiFiClientSecure client;
+    // client.setInsecure(); // SSL sertifikası doğrulaması gerekirse açılabilir
     HTTPClient http;
     http.begin(serverPath.c_str());
     int httpResponseCode = 0;
@@ -92,7 +95,7 @@ String sendhttp(String httpRequestData, String httpType, String serverPath) {
  * @brief Sunucudan indirilen CFJ konfigürasyon verisinin geçerliliğini kontrol eder.
  * @return String "1" ise geçerli CFJ, "0" ise geçersiz.
  */
-String checkncfj() {
+String checkncfj_mod() {
   if (cfjres.substring(0, 8) == "{\"pdate\"") {
     serverlog("cfj download success", "ln");
     return "1";
@@ -104,9 +107,9 @@ String checkncfj() {
 
 /**
  * @brief Yerel panoda yapılan Modbus/Çalışma sonucunu sunucuya raporlar.
- * URL: process.php?procres={paket_ozeti}&pid={pid}
+ * URL: https://ledobe.com/app/process.php?procres={paket_ozeti}&pid={pid}
  */
-void receivepacketsend() {
+void receivepacketsend_mod() {
   String receivepacket_trim = LedPrepareResult("trim");
   String receivepacket_res  = LedPrepareResult("res");
 
@@ -114,8 +117,8 @@ void receivepacketsend() {
 
   if (pmaster == "sv" && receivepacket_before != receivepacket_trim) {
     cfjres = "";
-    String serverName_process1 = serverName_process + "?procres=" + receivepacket_trim + "&pid=" + pid;
-    cfjres = sendhttp(receivepacket_res, "httpjson", serverName_process1);
+    String serverName_process1 = serverName_process_mod + "?procres=" + receivepacket_trim + "&pid=" + pid;
+    cfjres = sendhttp_mod(receivepacket_res, "httpjson", serverName_process1);
     receivepacket_before = receivepacket_trim;
     serverlog("receivepacketsend success", "ln");
   }
@@ -123,40 +126,42 @@ void receivepacketsend() {
 
 /**
  * @brief Yerel Arayüzden Ayar/Fiyat Değişince Sunucuya Konfigürasyonu Yükler
- * URL: process.php?savecfj=t&sid={sid}
+ * URL: https://ledobe.com/app/process.php?savecfj=t&sid={sid}
  * @param ledconfigstr Yerel /ledconfig.json dosya içeriği
  */
-void uploadConfigToServer(String ledconfigstr) {
-  String serverName_process2 = serverName_process + "?savecfj=t&sid=" + sid;
-  sendhttp(ledconfigstr, "httpjson", serverName_process2);
+void uploadConfigToServer_mod(String ledconfigstr) {
+  String serverName_process2 = serverName_process_mod + "?savecfj=t&sid=" + sid;
+  sendhttp_mod(ledconfigstr, "httpjson", serverName_process2);
 }
 
 /**
  * @brief Uzak Sunucu Sorgulama Döngüsü (Polling Engine)
  * Main loop içerisinden zamanlayıcı (intv_serverpool) ile çağrılır.
  */
-void pollServer() {
+void pollServer_mod() {
   if ((millis() - cTime_serverpool >= intv_serverpool)) {
     cTime_serverpool = millis();
 
     if (WiFi.status() == WL_CONNECTED) {
       serverlog("WiFi is up, Pooling Server...", "ln");
 
-      // 1. Adım: Cihaza ait havuz durumunu kontrol et (Örn: ppool/{sid}.json)
-      serverName_poolp = serverName_pool + sid + ".json";
-      poolres = sendhttp("", "httpget", serverName_poolp);
+      // 1. Adım: Cihaza ait havuz durumunu kontrol et (Örn: /app/cfg/ppool/{sid}.json)
+      serverName_poolp_mod = serverName_pool_mod + sid + ".json";
+      serverlog(serverName_poolp_mod, "ln");
+
+      poolres = sendhttp_mod("", "httpget", serverName_poolp_mod);
 
       // 2. Adım: Sunucuda yeni güncellenmiş konfigürasyon/fiyat var mı? ("1")
       if (poolres == "1") {
         cfjres = "";
-        String serverName_process1 = serverName_process + "?getcfj=t&sid=" + sid + "&pstart=t";
-        cfjres = sendhttp("", "httpget", serverName_process1);
+        String serverName_process1 = serverName_process_mod + "?getcfj=t&sid=" + sid + "&pstart=t";
+        cfjres = sendhttp_mod("", "httpget", serverName_process1);
 
         serverlog("cfj:", "ln");
         serverlog(cfjres, "ln");
 
         // 3. Adım: İndirilen JSON geçerli mi?
-        if (cfjres != "" && checkncfj() == "1") {
+        if (cfjres != "" && checkncfj_mod() == "1") {
           // CFJ dosyasını yerel LittleFS belleğe kaydet
           FileWriteF(cfjres, "/ledconfig.json");
 
@@ -167,14 +172,14 @@ void pollServer() {
             receivepacket_before = "000000000000000000000000N";
             modbustask = 's'; // Modbus güncellemeyi başlat
           } else { // Parametre güncelleme onay süreci
-            String serverName_process_ok = serverName_process + "?procres=t&pid=" + pid;
+            String serverName_process_ok = serverName_process_mod + "?procres=t&pid=" + pid;
             String receivepacket_res = "{\"res\":\"paramok\"}";
-            cfjres = sendhttp(receivepacket_res, "httpjson", serverName_process_ok);
+            cfjres = sendhttp_mod(receivepacket_res, "httpjson", serverName_process_ok);
           }
         }
       }
     } else {
-      serverlog("WiFi Disconnected while pooling", "ln");
+      serverlog("Server Pooling try but WiFi was not connected", "ln");
     }
   }
 }
