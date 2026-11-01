@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <meta charset="utf-8">
+  <link rel="icon" href="data:,">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ledobe - Settings</title>
+
+  <style>
+    :root {
+      --bg-color: #f4f6f9;
+      --card-bg: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success: #10b981;
+      --error: #ef4444;
+      --border: #e2e8f0;
+      --input-bg: #f8fafc;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-main); padding-bottom: 70px; min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* Header - Ortalanmış Klasik Yapı */
+    header { background-color: #ffffff; padding: 20px 10px; border-bottom: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05); text-align: center; }
+    h1 { font-size: 1.4rem; letter-spacing: 0.5px; color: var(--primary); margin-bottom: 15px; text-transform: uppercase; font-weight: 700; }
+    h2 { font-size: 1.1rem; text-align: center; color: var(--text-muted); margin: 20px 0 10px 0; letter-spacing: 1.5px; font-weight: 600; }
+
+    /* Nav Buttons */
+    .nav-group { display: flex; justify-content: center; gap: 8px; max-width: 500px; margin: 0 auto; padding: 0 10px; }
+    .nav-btn { flex: 1; text-align: center; background: var(--input-bg); color: var(--text-main); padding: 10px; text-decoration: none; border-radius: 8px; font-size: 0.9rem; font-weight: 500; border: 1px solid var(--border); transition: all 0.2s; }
+    .nav-btn.active, .nav-btn:hover { background: var(--primary); color: #ffffff; border-color: var(--primary); font-weight: 600; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2); }
+
+    /* Layout Container */
+    .container { width: 100%; max-width: 800px; margin: 0 auto; padding: 15px; }
+    .grid { display: flex; flex-direction: column; gap: 15px; }
+
+    /* Status & Info Panels */
+    .status-panel { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 15px; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .status-msg { display: none; font-weight: bold; font-size: 1rem; color: #d97706; }
+
+    .info-bar { background: #eff6ff; border: 1px solid rgba(37, 99, 235, 0.15); border-radius: 12px; padding: 12px; text-align: center; font-size: 0.9rem; color: #1e3a8a; }
+    .info-bar span { color: var(--primary); font-weight: bold; margin-right: 15px; }
+
+    /* Table Design */
+    .table-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem; }
+    th { background: #f8fafc; color: var(--text-muted); font-weight: 600; padding: 12px 16px; border-bottom: 1px solid var(--border); text-transform: uppercase; font-size: 0.8rem; }
+    td { padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-main); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) { background-color: #f8fafc; }
+
+    /* Settings Text Inputs - Mobil Klavye Dostu */
+    .sett-input { width: 100%; max-width: 300px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; color: var(--text-main); font-size: 0.95rem; font-weight: 600; outline: none; transition: all 0.2s; }
+    .sett-input:focus { border-color: var(--primary); background: var(--input-bg); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+
+    /* Action Buttons */
+    .btn-group-actions { display: flex; gap: 12px; margin-top: 10px; flex-direction: column; }
+    @media(min-width: 480px) { .btn-group-actions { flex-direction: row; } }
+
+    .btn-submit { flex: 1; background: var(--primary); color: #ffffff; border: none; padding: 14px; font-size: 1rem; font-weight: 600; border-radius: 10px; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25); transition: all 0.2s; }
+    .btn-submit:hover { background: var(--primary-hover); }
+    .btn-submit:disabled { background: #cbd5e1; color: #94a3b8; cursor: not-allowed; box-shadow: none; }
+    .btn-secondary { background: #64748b; box-shadow: 0 4px 12px rgba(100, 116, 139, 0.25); }
+    .btn-secondary:hover { background: #475569; }
+
+    /* Ürün Adı / Renk Tablosu */
+    .color-input { width: 48px; height: 38px; padding: 2px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: var(--card-bg); }
+
+    /* SETTINGS Şifre Kilidi */
+    .lock-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 30px 20px; text-align: center; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 15px; }
+    .lock-box p { font-weight: 700; margin-bottom: 14px; color: var(--text-main); }
+    .lock-input { width: 100%; max-width: 180px; text-align: center; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px; font-size: 1.1rem; font-weight: 700; letter-spacing: 3px; outline: none; margin-bottom: 12px; }
+    .lock-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+    .lock-btn { display: block; width: 100%; max-width: 180px; margin: 0 auto; background: var(--primary); color: #ffffff; border: none; padding: 10px; font-weight: 600; border-radius: 8px; cursor: pointer; text-transform: uppercase; }
+    .lock-btn:hover { background: var(--primary-hover); }
+    .lock-error { color: var(--error); font-size: 0.85rem; margin-top: 10px; min-height: 1.2em; }
+
+    /* Kayıt İlerleme Modalı */
+    .save-modal { display: none; position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center; }
+    .save-modal-box { background: var(--card-bg); width: 100%; max-width: 340px; border-radius: 16px; padding: 24px 20px; box-shadow: 0 -5px 25px rgba(0,0,0,0.2); }
+    .save-modal-title { text-align: center; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--primary); margin-bottom: 15px; }
+    .save-progress-track { width: 100%; height: 16px; background: #e2e8f0; border-radius: 8px; overflow: hidden; }
+    .save-progress-fill { height: 16px; width: 0%; background: var(--primary); transition: width 0.15s linear; }
+    .save-progress-text { text-align: center; margin-top: 12px; font-weight: 700; font-size: 1rem; color: var(--text-main); }
+    .save-progress-text.done { color: var(--success); font-size: 1.1rem; }
+    .save-progress-text.error { color: var(--error); font-size: 1.1rem; }
+
+    .blink { animation: blinker 1.5s linear infinite; }
+    @keyframes blinker { 50% { opacity: 0.4; } }
+    footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 1px solid var(--border); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--text-muted); }
+    footer a { color: var(--primary); text-decoration: none; font-weight: 500; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>LEDOVATE GAS PRICE CHANGER</h1>
+    <div class="nav-group">
+      <a class="nav-btn" href="./">Price</a>
+      <!-- <a class="nav-btn" href="./parameters">Parameter</a> -->
+      <a class="nav-btn active" href="./settings">Settings</a>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- SETTINGS bölümü şifre korumalı: doğru şifre girilene kadar gizli -->
+    <div id="settingsLock" class="lock-box">
+      <p>🔒 Bu bölüm şifre korumalıdır</p>
+      <input type="password" id="settingsPasswordInput" class="lock-input" placeholder="Şifre" inputmode="numeric" maxlength="4">
+      <button type="button" id="settingsUnlockBtn" class="lock-btn">Aç</button>
+      <p id="settingsLockError" class="lock-error"></p>
+    </div>
+
+    <div id="settingsProtected" style="display:none;">
+      <h2>SETTINGS</h2>
+
+      <form id="ledpostform">
+        <div class="grid">
+
+          <div class="info-bar">
+            Customer ID: <span id="customerid">0</span>
+            Gas Station ID: <span id="gstationid">0</span>
+            <input name="gstationid" type="hidden" value="1">
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 50%">Parameter</th>
+                  <th style="width: 50%">Desc</th>
+                </tr>
+              </thead>
+              <tbody id="parametersdiv">
+                </tbody>
+            </table>
+          </div>
+
+          <div class="btn-group-actions">
+            <button type="submit" id="submit" name="submitsendhmiparam" disabled class="btn-submit">Send Param to HMI</button>
+            <button type="submit" id="submitsaveparam" name="submitsaveparam" class="btn-submit btn-secondary">Save Only Param</button>
+          </div>
+
+        </div>
+      </form>
+    </div>
+
+    <h2>PRODUCTS</h2>
+
+    <form id="stockform">
+      <div class="grid">
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 10%">#</th>
+                <th style="width: 60%">Full Service Ürün Adı</th>
+                <th style="width: 30%">Renk</th>
+              </tr>
+            </thead>
+            <tbody id="stockfulldiv"></tbody>
+          </table>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 10%">#</th>
+                <th style="width: 60%">Self Service Ürün Adı</th>
+                <th style="width: 30%">Renk</th>
+              </tr>
+            </thead>
+            <tbody id="stockselfdiv"></tbody>
+          </table>
+        </div>
+
+        <div class="btn-group-actions">
+          <button type="submit" id="submitstock" class="btn-submit">Save Products</button>
+        </div>
+
+      </div>
+    </form>
+
+    <h2>PT CONFIG</h2>
+
+    <form id="ptform">
+      <div class="grid">
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 10%">PT</th>
+                <th style="width: 45%">Cihaz Tipi</th>
+                <th style="width: 45%">Cihaz ID</th>
+              </tr>
+            </thead>
+            <tbody id="ptconfigdiv"></tbody>
+          </table>
+        </div>
+
+        <div class="btn-group-actions">
+          <button type="submit" id="submitpt" class="btn-submit">Save PT Config</button>
+        </div>
+
+      </div>
+    </form>
+  </main>
+
+  <!-- KAYIT İLERLEME MODALI -->
+  <div id="saveModal" class="save-modal">
+    <div class="save-modal-box">
+      <p id="saveModalTitle" class="save-modal-title">Kaydediliyor</p>
+      <div class="save-progress-track"><div id="saveProgressBar" class="save-progress-fill"></div></div>
+      <p id="saveProgressText" class="save-progress-text">0%</p>
+    </div>
+  </div>
+
+  <footer>
+    <span>© LEDOVATE - All Rights Reserved</span>
+    <a href="https://www.ledobe.com" target="_blank">ledobe.com</a>
+  </footer>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      let serialstart = "no";
+
+      // SETTINGS Şifre Kilidi: şifre, o anki saatin (S:DD) ters yazılmış hali.
+      // Örn. saat 6:38 ise "638" -> ters "836"; saat 17:32 ise "1732" -> ters "2317".
+      // Dakika geçişinde kullanıcı mağdur olmasın diye bir önceki dakikanın şifresi de kabul edilir.
+      function buildTimePassword(d) {
+        const h = String(d.getHours());
+        const m = String(d.getMinutes()).padStart(2, '0');
+        return (h + m).split('').reverse().join('');
+      }
+
+      function getValidPasswords() {
+        const now = new Date();
+        const prev = new Date(now.getTime() - 60000);
+        return [buildTimePassword(now), buildTimePassword(prev)];
+      }
+
+      function tryUnlockSettings() {
+        const input = document.getElementById('settingsPasswordInput');
+        const errorEl = document.getElementById('settingsLockError');
+        const entered = input.value.trim();
+
+        if (getValidPasswords().includes(entered)) {
+          document.getElementById('settingsLock').style.display = 'none';
+          document.getElementById('settingsProtected').style.display = 'block';
+          errorEl.textContent = '';
+        } else {
+          errorEl.textContent = 'Yanlış şifre, tekrar deneyin.';
+          input.value = '';
+          input.focus();
+        }
+      }
+
+      document.getElementById('settingsUnlockBtn').addEventListener('click', tryUnlockSettings);
+      document.getElementById('settingsPasswordInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') tryUnlockSettings();
+      });
+
+      // Kayıt İlerleme Modalı: gerçek fetch işlemi sürerken kozmetik bir ilerleme
+      // çubuğu gösterir, istek bitince başarı/hata durumuna göre kapanır.
+      function runWithProgressModal(title, fetchPromise) {
+        const modal = document.getElementById('saveModal');
+        const bar = document.getElementById('saveProgressBar');
+        const text = document.getElementById('saveProgressText');
+        const titleEl = document.getElementById('saveModalTitle');
+
+        titleEl.textContent = title;
+        text.classList.remove('done', 'error');
+        bar.style.width = '0%';
+        text.textContent = '0%';
+        modal.style.display = 'flex';
+
+        let progress = 0;
+        const tickId = setInterval(() => {
+          if (progress < 90) {
+            progress += 6;
+            bar.style.width = progress + '%';
+            text.textContent = progress + '%';
+          }
+        }, 100);
+
+        return fetchPromise
+          .then(ok => {
+            clearInterval(tickId);
+            bar.style.width = '100%';
+            text.textContent = ok ? '✓ Kaydedildi' : '✕ Hata Oluştu';
+            text.classList.add(ok ? 'done' : 'error');
+            return new Promise(resolve => setTimeout(() => {
+              modal.style.display = 'none';
+              resolve();
+            }, 1000));
+          });
+      }
+
+      function getledconfig() {
+        fetch("./getledconfig")
+          .then(res => res.json())
+          .then(myArr2 => {
+            document.getElementById('customerid').innerText = myArr2.customerid;
+            document.getElementById('gstationid').innerText = myArr2.gstationid;
+
+            const tableBody = document.getElementById("parametersdiv");
+            tableBody.innerHTML = "";
+
+            // 1. "sid" Girdisi Ekleme
+            let trSid = document.createElement('tr');
+            trSid.innerHTML = `
+              <td>
+                <input class="sett-input" id="sid" name="sid" value="${myArr2.sid}">
+              </td>
+              <td><strong>sid</strong></td>
+            `;
+            tableBody.appendChild(trSid);
+
+            // 2. Diğer "esp32sett" Girdilerini Ekleme
+            Object.keys(myArr2.esp32sett).forEach(index => {
+              let value = myArr2.esp32sett[index];
+              let tr = document.createElement('tr');
+              tr.innerHTML = `
+                <td>
+                  <input class="sett-input" id="${index}" name="${index}" value="${value}">
+                </td>
+                <td><strong>${index}</strong></td>
+              `;
+              tableBody.appendChild(tr);
+            });
+          })
+          .catch(err => console.error("Ayarlar yüklenirken hata oluştu:", err));
+      }
+
+      getledconfig();
+
+      // Form Submit Tetikleyicisi (Vanilla JS AJAX)
+      document.getElementById("ledpostform").addEventListener("submit", function(e) {
+        e.preventDefault();
+
+        const saveBtn = document.getElementById("submitsaveparam");
+        saveBtn.disabled = true;
+
+        const formData = new URLSearchParams(new FormData(this));
+
+        const req = fetch("./sendsett", {
+          method: "POST",
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: formData.toString()
+        })
+          .then(res => res.json())
+          .then(data => {
+            serialstart = "yes";
+            return Object.keys(data).some(key => data[key] === "paramok");
+          })
+          .catch(err => {
+            console.error("Ayarlar kaydedilemedi:", err);
+            return false;
+          });
+
+        runWithProgressModal("Ayarlar Kaydediliyor", req).then(() => {
+          saveBtn.disabled = false;
+        });
+      });
+
+      // Ürün Adı / Renk Tablosu + PT Config Tablosu (ikisi de stock.json'da tutulur)
+      function getstockconfig() {
+        fetch("./getstock")
+          .then(res => res.json())
+          .then(data => {
+            buildStockTable("stockfulldiv", "stock", "stockcolor", data, 14);
+            buildStockTable("stockselfdiv", "selfstock", "selfstockcolor", data, 14);
+            buildPtTable(data, 24);
+          })
+          .catch(err => console.error("stock.json verisi çekilemedi:", err));
+      }
+
+      function buildStockTable(tbodyId, namePrefix, colorPrefix, data, count) {
+        const tableBody = document.getElementById(tbodyId);
+        tableBody.innerHTML = "";
+        for (let i = 1; i <= count; i++) {
+          const nameKey = namePrefix + i;
+          const colorKey = colorPrefix + i;
+          let tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${i}</td>
+            <td><input class="sett-input" name="${nameKey}" value="${data[nameKey] || ''}"></td>
+            <td><input class="color-input" type="color" name="${colorKey}" value="${data[colorKey] || '#ffffff'}"></td>
+          `;
+          tableBody.appendChild(tr);
+        }
+      }
+
+      function buildPtTable(data, count) {
+        const tableBody = document.getElementById("ptconfigdiv");
+        tableBody.innerHTML = "";
+        for (let i = 1; i <= count; i++) {
+          const typeKey = "pttype" + i;
+          const idKey = "ptid" + i;
+          let tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><strong>PT${i}</strong></td>
+            <td><input class="sett-input" name="${typeKey}" value="${data[typeKey] || ''}"></td>
+            <td><input class="sett-input" name="${idKey}" value="${data[idKey] || ''}"></td>
+          `;
+          tableBody.appendChild(tr);
+        }
+      }
+
+      getstockconfig();
+
+      document.getElementById("stockform").addEventListener("submit", function(e) {
+        e.preventDefault();
+
+        const submitBtn = document.getElementById("submitstock");
+        submitBtn.disabled = true;
+
+        const formData = new URLSearchParams(new FormData(this));
+
+        const req = fetch("./sendstock", {
+          method: "POST",
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: formData.toString()
+        })
+          .then(res => res.json())
+          .then(data => data.res === "paramok")
+          .catch(err => {
+            console.error("Ürünler kaydedilemedi:", err);
+            return false;
+          });
+
+        runWithProgressModal("Ürünler Kaydediliyor", req).then(() => {
+          submitBtn.disabled = false;
+        });
+      });
+
+      document.getElementById("ptform").addEventListener("submit", function(e) {
+        e.preventDefault();
+
+        const submitBtn = document.getElementById("submitpt");
+        submitBtn.disabled = true;
+
+        const formData = new URLSearchParams(new FormData(this));
+
+        const req = fetch("./sendstock", {
+          method: "POST",
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: formData.toString()
+        })
+          .then(res => res.json())
+          .then(data => data.res === "paramok")
+          .catch(err => {
+            console.error("PT config kaydedilemedi:", err);
+            return false;
+          });
+
+        runWithProgressModal("PT Config Kaydediliyor", req).then(() => {
+          submitBtn.disabled = false;
+        });
+      });
+    });
+  </script>
+</body>
+</html>

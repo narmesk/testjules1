@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+  <head>
+	<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+	<meta http-equiv="Pragma" content="no-cache" />
+	<meta http-equiv="Expires" content="0" />
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+	<link rel="icon" href="data:,">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	<link href='./style.css' rel='stylesheet' type='text/css'>
+
+    <title>Ledobe</title>
+
+  </head>
+  <body>
+	  <section class=" text-center">
+    <div class="container">
+	 <div class="col-md-12">
+	       <h1>LEDOVATE GAS PRICE CHANGER</h1>
+	      </div>
+
+        <div class="col-md-12">
+
+<div class="btn-group">
+<!--
+    <a class="btn btn-primary" href="./maintanance">Maintenance</a>
+    <a class="btn btn-primary" href="./monitoring">Monitoring</a>
+	-->
+    <a class="btn btn-primary" href="./">Price</a>
+    <a class="btn btn-primary" href="./parameters">Parameter</a>
+    <a class="btn btn-primary" href="./settings">Settings</a>
+  </div>
+
+      </div>
+      </div>
+  </section>
+<main role="main">
+
+  <section class=" text-center">
+    <div class="container">
+      <h2>SETTINGS</h2>
+      <p class="lead text-muted"></p>
+    </div>
+  </section>
+
+<form id="ledpostform" method="post">
+  <div class="album py-5 bg-light">
+    <div class="container">
+
+      <div class="row">
+
+        <div class="col-md-12">
+          <div class="card mb-4 shadow-sm">
+            <div class="card-body ledresr" id="pumps">
+			<span id="sendingdata" class="sendingdata blink"><i class="bi bi-broadcast-pin"></i>Sending Data</span>
+			<!--
+<span id="ledres35" class="inotr"><i class="bi bi-tv-fill"></i>PT1</span>
+<span id="ledres36" class="inotr"><i class="bi bi-tv-fill"></i>PT2</span>
+-->
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-12">
+          <div class="card mb-4 shadow-sm">
+            <div class="card-body">
+              <p class="ledtag stationid">Customer ID: <span id="customerid">0</span>  Gas Station ID: <span id="gstationid">0</span>
+			  <input name="gstationid" type="hidden" value="1">
+			  </p>
+            </div>
+          </div>
+        </div>
+
+
+<div class="col-md-6">
+<div style="overflow-x:auto;">
+
+<table class="table table-bordered table-striped mb-0">
+  <thead>
+      <tr>
+        <th>Parameter</th>
+        <th>Desc</th>
+      </tr>
+    </thead>
+    <tbody id="parametersdiv">
+
+    <!--<tr>
+	<td><input size="10" id="devprod" name="devprod" value="d"></td>
+	<td>DEV/PROD (d,p)</td>
+	</tr>
+	<td><input size="10" id="log" name="log" value=""></td>
+	<td>LOG</td>
+	</tr>
+	<td><input size="10" id="wifiid" name="wifiid" value=""></td>
+	<td>WIFI ID</td>
+	</tr>
+	<td><input size="10" id="wifipw" name="wifipw" value=""></td>
+	<td>WIFI PW</td>
+	</tr>
+	<td><input size="10" id="apid" name="apid" value=""></td>
+	<td>AP ID</td>
+	</tr>
+	<td><input size="10" id="appw" name="appw" value=""></td>
+	<td>AP PW</td>
+	</tr>
+	-->
+	</tbody>
+  </table>
+
+  <div>
+	<input type="submit" id="submit" name="submitsendhmiparam" disabled="disabled" class="btn  btn-primary btn-info btn-lg" value="Send Param to HMI">
+	<input type="submit" id="submitsaveparam" name="submitsaveparam" class="btn  btn-primary btn-info btn-lg" value="Save Only Param">
+</div>
+</div>
+</div>
+
+
+      </div>
+    </div>
+  </div>
+</form>
+</main>
+
+<script src="./js.js" crossorigin="anonymous"></script>
+<script>
+$(document).ready(function(){
+
+/* $(".submit").click(function(){
+  $.post("sendserial.php", function(data, status){
+    alert("Data: " + data + "\nStatus: " + status);
+  });
+});
+$("#theForm").ajaxForm({url: 'sendserial.php', type: 'post'})
+*/
+ //checkserialv = setInterval(checkserial, 3000);
+var serialstart="no";
+
+function getledconfig()
+{
+
+ $.get("./getledconfig", function(data, status){
+     console.log("Data: " + data + "\nStatus: " + status);
+	 myArr2 = JSON.parse(data);
+	//console.log(myArr2["leds"][0]["v"]);
+
+/*	for(paramid=0;paramid<myArr2["esp32sett"].length;paramid++)
+	{
+		$("#parametersdiv").append('<tr><td>'+(paramid+1)+'</td><td><input size="10" id="ledparam'+(paramid+1)+'" name="ledparam'+(paramid+1)+'" value="'+myArr2["parameters"][paramid]["v"]+'"></td><td>'+myArr2["parameters"][paramid]["n"]+'</td><td>'+myArr2["parameters"][paramid]["d"]+'</td></tr>');
+	}
+*/
+	$('#customerid').text(myArr2["customerid"]);
+	$('#gstationid').text(myArr2["gstationid"]);
+
+	$("#parametersdiv").append('<tr><td><input size="20" id="sid" name="sid" value="'+myArr2["sid"]+'"></td><td>sid</td></tr>');
+
+	 $.each( myArr2["esp32sett"], function( index, value )  { //console.log(index+" "+value);
+	//if(value=="csrok") $('#ledres'+index).attr('class', "isuccess");
+	//else if(value=="csrerr") $('#ledres'+index).attr('class', "ierror");
+	//else if(value=="serialuseerr") alert("Sytem is in use by another user. Please wait for 1 minute.");
+		$("#parametersdiv").append('<tr><td><input size="20" id="'+index+'" name="'+index+'" value="'+value+'"></td><td>'+index+'</td></tr>');
+});
+  });
+
+}
+
+getledconfig();
+
+$('#sendingdata').hide();
+
+$("#ledpostform").submit(function(e) {
+
+	//$('[id^=ledres]').attr('class', "inotr");
+	$('.sendingdata').show();
+	$('#submitsaveparam').prop('disabled', true);
+
+    e.preventDefault(); // avoid to execute the actual submit of the form.
+
+    var form = $(this);
+    var url = "./sendsett";
+
+
+    $.ajax({
+           type: "POST",
+           url: url,
+           data: form.serialize(), // serializes the form's elements.
+		   dataType: 'json',
+           success: function(data)
+           {
+               //alert(data); // show response from the php script.
+			   console.log(data);
+			   var checkserialv ="";
+			    serialstart="yes";
+
+			    //clearInterval(blink);
+				$('#sendingdata').hide();
+				$('#submitsaveparam').prop('disabled', false);
+
+				//data.forEach(fledresshow);
+$.each( data, function( index, value )  {
+console.log(index+" "+value);
+	if(value=="paramok")
+		alert("Success");
+	//else if(value=="csrerr") $('#ledres'+index).attr('class', "ierror");
+	//else if(value=="serialuseerr") alert("Sytem is in use by another user. Please wait for 1 minute.");
+
+
+});
+           },
+ error: function (xhr, ajaxOptions, thrownError) {
+        //alert(xhr.status);
+        //alert(thrownError);
+
+						$('#sendingdata').hide();
+				$('#submitsaveparam').prop('disabled', false);
+    },
+	    timeout: 10000 // sets timeout to 3 seconds
+         });
+
+});
+
+function blink_text() {
+$(".blink").animate({opacity:0},200,"linear",function(){
+  $(this).animate({opacity:1},200);
+});
+}
+
+
+});
+
+</script>
+
+<nav class="navbar fixed-bottom navbar-expand-sm navbar-dark bg-dark">
+  <a class="navbar-brand" href="#">LEDOVATE</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarCollapse">
+    <ul class="navbar-nav mr-auto">
+      <li class="nav-item active">
+        <a class="nav-link" href="#">All Rights Reserved</a>
+      </li>
+	        <li class="nav-item active">
+        <a class="nav-link" href="https://www.ledobe.com"  target="_blank">ledobe.com</a>
+      </li>
+    </ul>
+  </div>
+</nav>
+
+
+  </body>
+</html>

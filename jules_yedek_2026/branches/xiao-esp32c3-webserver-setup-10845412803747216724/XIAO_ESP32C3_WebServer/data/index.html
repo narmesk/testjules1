@@ -1,0 +1,625 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <meta charset="utf-8">
+  <link rel="icon" href="data:,">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ledovate - Gas Price Changer</title>
+
+  <style>
+    :root {
+      --bg-color: #f4f6f9;
+      --card-bg: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+
+      --primary-full: #ea580c; /* Turuncu tema — Full/Self ayrımı olmadan her zaman kullanılır */
+      --primary-full-hover: #c2410c;
+
+      --success: #10b981;
+      --error: #ef4444;
+      --border: #e2e8f0;
+      --input-bg: #f8fafc;
+
+      --current-primary: var(--primary-full);
+      --current-primary-hover: var(--primary-full-hover);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-main); padding-bottom: 70px; min-height: 100vh; display: flex; flex-direction: column; transition: background 0.3s; }
+
+    header { background-color: #ffffff; padding: 20px 10px; border-bottom: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05); text-align: center; }
+    h1 { font-size: 1.4rem; letter-spacing: 0.5px; color: var(--current-primary); margin-bottom: 15px; text-transform: uppercase; font-weight: 700; transition: color 0.3s; }
+
+    .nav-group { display: flex; justify-content: center; gap: 8px; max-width: 500px; margin: 0 auto; padding: 0 10px; }
+    .nav-btn { flex: 1; text-align: center; background: var(--input-bg); color: var(--text-main); padding: 10px; text-decoration: none; border-radius: 8px; font-size: 0.9rem; font-weight: 500; border: 1px solid var(--border); transition: all 0.2s; }
+    .nav-btn.active, .nav-btn:hover { background: var(--current-primary); color: #ffffff; border-color: var(--current-primary); font-weight: 600; transition: all 0.3s; }
+
+    .container { width: 100%; max-width: 1100px; margin: 0 auto; padding: 15px; }
+
+    /* Service Type Tabs (Full / Self) */
+    .service-tabs { display: flex; justify-content: center; gap: 10px; margin: 15px 0 25px 0; background: #e2e8f0; padding: 6px; border-radius: 12px; }
+    .tab-btn { flex: 1; background: transparent; border: none; padding: 12px; font-size: 1rem; font-weight: 700; border-radius: 8px; cursor: pointer; color: var(--text-muted); transition: all 0.2s; text-transform: uppercase; }
+    .tab-btn.active.full-btn, .tab-btn.active.self-btn { background: #ffffff; color: var(--primary-full); box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+
+    /* Grid ve Panel Yapıları */
+    .grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+    @media (min-width: 640px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+
+    .full-width { grid-column: 1 / -1; }
+    .settings-subgrid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; grid-column: 1 / -1; }
+
+    /* Tab İçerik Kontrolü */
+    .tab-content { display: none; }
+    .tab-content.active { display: contents; }
+
+    .status-panel { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 15px; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .status-msg { display: none; font-weight: bold; font-size: 1rem; }
+    .sendingdata { color: #d97706; }
+    .allupdated { color: var(--success); }
+
+    #pumps { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; width: 100%; }
+    #pumps span { padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; background: #f1f5f9; color: var(--text-muted); border: 1px solid var(--border); }
+    #pumps span.isuccess { background: rgba(16, 185, 129, 0.15); color: #047857; border: 1px solid var(--success); }
+    #pumps span.inotr { background: #f8fafc; color: var(--text-muted); border: 1px solid var(--border); }
+
+    .info-bar { background: #fff7ed; border: 1px solid rgba(234, 88, 12, 0.15); border-radius: 12px; padding: 12px; text-align: center; font-size: 0.9rem; color: #7c2d12; transition: all 0.3s; }
+    .info-bar span { color: var(--current-primary); font-weight: bold; margin-right: 15px; transition: color 0.3s; }
+
+    /* Kartlar ve Renk Geçişleri (tema her iki sekmede de sabit turuncu) */
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: border-color 0.3s; }
+    #fullServiceTab .card, #selfServiceTab .card { border-color: rgba(234, 88, 12, 0.2); }
+    #fullServiceTab .ledtag, #selfServiceTab .ledtag { color: var(--primary-full); }
+
+    .ledtag { font-size: 0.65rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; transition: color 0.3s; }
+
+    /* Ürün Grupları: her ürün için tek başlık + CASH/CREDIT/DEBIT yan yana */
+    .products-grid { display: grid; grid-template-columns: 1fr; gap: 8px; grid-column: 1 / -1; }
+    .products-grid.page-content { display: none; }
+    .products-grid.page-content.active { display: grid; }
+    .product-title { font-size: 0.85rem; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: var(--current-primary); margin-bottom: 4px; transition: color 0.3s; }
+    .product-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .product-row .field { display: flex; flex-direction: column; gap: 3px; }
+
+    /* Ürün kartına özel arka plan rengi atanınca başlık/etiket yazıları beyaza döner */
+    .card.custom-bg .product-title,
+    .card.custom-bg .ledtag { color: #ffffff !important; }
+
+    /* Sayfa Sekmeleri (8'den fazla ürün olduğunda 2. sayfa) */
+    .page-tabs { display: none; gap: 8px; margin-bottom: 8px; grid-column: 1 / -1; }
+    .page-btn { padding: 5px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text-muted); font-size: 0.75rem; font-weight: 700; cursor: pointer; text-transform: uppercase; transition: all 0.2s; }
+    .page-btn.active { background: var(--current-primary); color: #ffffff; border-color: var(--current-primary); }
+
+    select { width: 100%; background: var(--input-bg); border: 1px solid var(--border); border-radius: 8px; padding: 8px; color: var(--text-main); font-size: 1rem; font-weight: 700; text-align: center; outline: none; cursor: pointer; transition: border-color 0.3s; }
+    select { appearance: none; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='%2364748b'><path d='M7 10l5 5 5-5z'/></svg>"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 30px; }
+
+    /* Fiyat Kutuları: siyah LED ekranı (7-segment font) */
+    .led { width: 100%; background: #0a0a0a; border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; display: flex; align-items: center; justify-content: flex-end; min-height: 32px; cursor: pointer; box-shadow: inset 0 0 8px rgba(0,0,0,0.7); transition: border-color 0.3s; overflow: hidden; }
+    #fullServiceTab .led, #selfServiceTab .led { border-color: rgba(234, 88, 12, 0.25); }
+
+    /* 7-Segment LED Font (CSS ile üretilir, dış font/network bağımlılığı yok) */
+    .seg-display { display: inline-flex; align-items: center; justify-content: flex-end; gap: 2px; color: var(--current-primary); transition: color 0.3s; --seg-w: 9px; --seg-h: 15px; --seg-t: 3px; }
+    .seg-display.lg { --seg-w: 22px; --seg-h: 40px; --seg-t: 6px; gap: 4px; }
+    .seg-char { position: relative; width: calc(var(--seg-w) + var(--seg-t)); height: calc(var(--seg-h) * 2 + var(--seg-t)); flex-shrink: 0; }
+    .seg-char i { position: absolute; background: currentColor; opacity: 0.15; }
+    .seg-char i.on { opacity: 1; filter: drop-shadow(0 0 3px currentColor); }
+    /* NOT: clip-path köşe noktaları bilerek yüzde DEĞİL calc()/px ile yazılıyor —
+       yan yana çok sayıda "%" işareti ESPAsyncWebServer template processor'unun
+       (kullanılmasa bile ileride yanlışlıkla açılırsa) araya sıkışan kısmı
+       placeholder sanıp silme riskini önlemek için. */
+    .seg-char i.seg-a, .seg-char i.seg-g, .seg-char i.seg-d { left: calc(var(--seg-t) / 2); width: var(--seg-w); height: var(--seg-t); clip-path: polygon(calc(var(--seg-w) * 0.15) 0, calc(var(--seg-w) * 0.85) 0, var(--seg-w) calc(var(--seg-t) * 0.5), calc(var(--seg-w) * 0.85) var(--seg-t), calc(var(--seg-w) * 0.15) var(--seg-t), 0 calc(var(--seg-t) * 0.5)); }
+    .seg-char i.seg-a { top: 0; }
+    .seg-char i.seg-g { top: var(--seg-h); }
+    .seg-char i.seg-d { top: calc(var(--seg-h) * 2); }
+    .seg-char i.seg-b, .seg-char i.seg-c, .seg-char i.seg-f, .seg-char i.seg-e { width: var(--seg-t); height: var(--seg-h); clip-path: polygon(0 calc(var(--seg-h) * 0.15), calc(var(--seg-t) * 0.5) 0, var(--seg-t) 0, var(--seg-t) calc(var(--seg-h) * 0.85), calc(var(--seg-t) * 0.5) var(--seg-h), 0 var(--seg-h)); }
+    .seg-char i.seg-b { top: calc(var(--seg-t) / 2); right: 0; }
+    .seg-char i.seg-c { top: calc(var(--seg-h) + var(--seg-t) / 2); right: 0; }
+    .seg-char i.seg-f { top: calc(var(--seg-t) / 2); left: 0; }
+    .seg-char i.seg-e { top: calc(var(--seg-h) + var(--seg-t) / 2); left: 0; }
+    .seg-dot { position: relative; width: calc(var(--seg-t) + 2px); height: calc(var(--seg-h) * 2 + var(--seg-t)); flex-shrink: 0; }
+    .seg-dot i { position: absolute; bottom: 0; left: 0; width: calc(var(--seg-t) + 2px); height: calc(var(--seg-t) + 2px); border-radius: 2px; background: currentColor; opacity: 1; filter: drop-shadow(0 0 3px currentColor); }
+
+    .btn-submit { width: 100%; background: var(--current-primary); color: #ffffff; border: none; padding: 15px; font-size: 1.1rem; font-weight: 600; border-radius: 10px; cursor: pointer; text-transform: uppercase; transition: all 0.3s; box-shadow: 0 4px 12px rgba(234, 88, 12, 0.25); }
+    .btn-submit:hover { background: var(--current-primary-hover); }
+    .btn-submit:disabled { background: #cbd5e1; color: #94a3b8; cursor: not-allowed; box-shadow: none; }
+
+    /* VIRTUAL KEYBOARD MODAL STYLES */
+    /* NOT: Genislik/yukseklik icin bilerek yuzde DEGIL, dort kenar offset'i kullaniliyor.
+       ESPAsyncWebServer template processor'u yuzde-isareti ile cevrelenmis araliklari
+       placeholder sanip silebilir; bu kuralda yuzde isareti kullanilmamalidir. */
+    .vk-modal { display: none; position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: flex-end; }
+    .vk-container { background: #e2e8f0; width: 100vw; max-width: 450px; max-height: 100vh; overflow-y: auto; border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 15px; box-shadow: 0 -5px 25px rgba(0,0,0,0.2); animation: slideUp 0.25s ease-out; }
+    @media (min-width: 500px) { .vk-modal { align-items: center; } .vk-container { border-radius: 20px; } }
+    @keyframes slideUp { from { transform: translateY(30px); } to { transform: translateY(0); } }
+
+    .vk-prev-price { text-align: right; color: var(--text-muted); font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; padding: 0 4px; }
+    .vk-prev-price span { color: var(--text-main); font-weight: 700; }
+    .vk-display { background: #000000; padding: 14px 18px; border-radius: 10px; margin-bottom: 15px; box-shadow: inset 0 0 10px rgba(0,0,0,0.8); min-height: 80px; display: flex; align-items: center; justify-content: flex-end; }
+    .vk-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
+    .vk-btn { background: #1e293b; color: #ffffff; border: 2px solid #334155; border-radius: 10px; font-size: 1.5rem; font-weight: bold; padding: 15px; cursor: pointer; text-align: center; user-select: none; }
+    .vk-btn:active { background: #475569; }
+    .vk-btn.fn-btn { background: #475569; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
+    .vk-btn-enter { grid-column: span 3; background: #0f172a; color: #ffffff; font-size: 1.8rem; letter-spacing: 2px; padding: 12px; text-transform: uppercase; }
+
+    .blink { animation: blinker 1.5s linear infinite; }
+    @keyframes blinker { 50% { opacity: 0.4; } }
+
+    /* GÖNDERİM İLERLEME MODALI */
+    .send-modal-title { text-align: center; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--current-primary); margin-bottom: 15px; transition: color 0.3s; }
+    /* NOT: iki yüzde işareti yan yana olursa ESPAsyncWebServer template processor'u
+       araya sıkışan kısmı placeholder sanıp silebilir; bu yüzden height burada px. */
+    .send-progress-track { width: 100%; height: 16px; background: #e2e8f0; border-radius: 8px; overflow: hidden; }
+    .send-progress-fill { height: 16px; width: 0%; background: var(--current-primary); transition: width 0.15s linear; }
+    .send-progress-text { text-align: center; margin-top: 12px; font-weight: 700; font-size: 1rem; color: var(--text-main); }
+    .send-progress-text.done { color: var(--success); font-size: 1.1rem; }
+    .send-progress-text.error { color: var(--error); font-size: 1.1rem; }
+    footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 1px solid var(--border); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--text-muted); }
+    footer a { color: var(--current-primary); text-decoration: none; font-weight: 500; transition: color 0.3s; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>LEDOVATE GAS PRICE CHANGER</h1>
+    <div class="nav-group">
+      <a class="nav-btn active" href="./">Price</a>
+      <!-- <a class="nav-btn" href="./parameters">Parameter</a> -->
+      <a class="nav-btn" href="./settings">Settings</a>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- FULL / SELF SERVICE SEÇİM SEKMLERİ -->
+    <div class="service-tabs">
+      <button type="button" class="tab-btn full-btn active" onclick="switchServiceTab('full')">Full Service</button>
+      <button type="button" class="tab-btn self-btn" onclick="switchServiceTab('self')">Self Service</button>
+    </div>
+
+    <form id="ledpostform">
+      <div class="grid">
+
+        <div class="full-width status-panel">
+          <div id="sendingdata" class="status-msg sendingdata blink">⏳ Sending Prices...</div>
+          <div id="allupdated" class="status-msg allupdated">✓ All PTs Updated</div>
+          <div id="pumps"></div>
+        </div>
+
+        <div class="full-width info-bar">
+          Customer ID: <span id="customerid">0</span>
+          Gas Station ID: <span id="gstationid">0</span>
+          <input name="customerid" type="hidden" value="1">
+          <input name="gstationid" type="hidden" value="1">
+        </div>
+
+        <!-- KATMAN 1: FULL SERVICE PANELİ (Turuncu Tema) — stock.json'dan dinamik dolar -->
+        <div id="fullServiceTab" class="tab-content active">
+          <div id="fullPageTabs" class="page-tabs">
+            <button type="button" class="page-btn active" data-page="1" onclick="switchProductPage('full',1)">Sayfa 1</button>
+            <button type="button" class="page-btn" data-page="2" onclick="switchProductPage('full',2)">Sayfa 2</button>
+          </div>
+          <div id="fullProductsPage1" class="products-grid page-content active"></div>
+          <div id="fullProductsPage2" class="products-grid page-content"></div>
+        </div>
+
+        <!-- KATMAN 2: SELF SERVICE PANELİ (Yeşil Tema) — stock.json'dan dinamik dolar -->
+        <div id="selfServiceTab" class="tab-content">
+          <div id="selfPageTabs" class="page-tabs">
+            <button type="button" class="page-btn active" data-page="1" onclick="switchProductPage('self',1)">Sayfa 1</button>
+            <button type="button" class="page-btn" data-page="2" onclick="switchProductPage('self',2)">Sayfa 2</button>
+          </div>
+          <div id="selfProductsPage1" class="products-grid page-content active"></div>
+          <div id="selfProductsPage2" class="products-grid page-content"></div>
+        </div>
+
+        <!-- ORTAK AYARLAR -->
+        <!--
+        <div class="settings-subgrid">
+          <div class="card">
+            <p class="ledtag">BRIGHTNESS</p>
+            <select name="brightness" id="brightness">
+              <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+              <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+            </select>
+          </div>
+          <div class="card">
+            <p class="ledtag">SPEED</p>
+            <select name="speed" id="speed">
+              <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+              <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+            </select>
+          </div>
+        </div>
+        -->
+
+        <div class="full-width btn-container">
+          <button type="submit" id="submit" class="btn-submit">Send Prices</button>
+        </div>
+
+      </div>
+    </form>
+  </main>
+
+  <!-- SANAL KLAVYE MODAL -->
+  <div id="vkModal" class="vk-modal">
+    <div class="vk-container">
+      <div id="vkPrevPrice" class="vk-prev-price">Önceki Fiyat: <span>0.00</span></div>
+      <div id="vkDisplay" class="vk-display"><div class="seg-display lg"></div></div>
+      <div class="vk-grid">
+        <button type="button" class="vk-btn" onclick="vkPress('1')">1</button>
+        <button type="button" class="vk-btn" onclick="vkPress('2')">2</button>
+        <button type="button" class="vk-btn" onclick="vkPress('3')">3</button>
+        <button type="button" class="vk-btn" onclick="vkPress('4')">4</button>
+        <button type="button" class="vk-btn" onclick="vkPress('5')">5</button>
+        <button type="button" class="vk-btn" onclick="vkPress('6')">6</button>
+        <button type="button" class="vk-btn" onclick="vkPress('7')">7</button>
+        <button type="button" class="vk-btn" onclick="vkPress('8')">8</button>
+        <button type="button" class="vk-btn" onclick="vkPress('9')">9</button>
+        <button type="button" class="vk-btn fn-btn" onclick="vkClear()">CLEAR</button>
+        <button type="button" class="vk-btn" onclick="vkPress('0')">0</button>
+        <button type="button" class="vk-btn fn-btn" onclick="closeKeyboard()">BACK</button>
+        <button type="button" class="vk-btn vk-btn-enter" onclick="vkEnter()">ENTER</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GÖNDERİM SİMÜLASYON MODALI -->
+  <div id="sendModal" class="vk-modal">
+    <div class="vk-container">
+      <p class="send-modal-title">Fiyatlar Gönderiliyor</p>
+      <div class="send-progress-track"><div id="sendProgressBar" class="send-progress-fill"></div></div>
+      <p id="sendProgressText" class="send-progress-text">0%</p>
+    </div>
+  </div>
+
+  <footer>
+    <span>© LEDOVATE - All Rights Reserved</span>
+    <a href="https://www.ledobe.com" target="_blank">ledobe.com</a>
+  </footer>
+
+  <script>
+    let currentInputTarget = null;
+    let rawInputString = "";
+    let currentFormattedValue = "0.00";
+
+    // 7-Segment LED Font: dış font/network bağımlılığı olmadan CSS ile üretilir
+    const SEG_MAP = {
+      '0': ['a','b','c','d','e','f'],
+      '1': ['b','c'],
+      '2': ['a','b','g','e','d'],
+      '3': ['a','b','g','c','d'],
+      '4': ['f','g','b','c'],
+      '5': ['a','f','g','c','d'],
+      '6': ['a','f','g','e','c','d'],
+      '7': ['a','b','c'],
+      '8': ['a','b','c','d','e','f','g'],
+      '9': ['a','b','c','d','f','g']
+    };
+
+    function createSegChar(ch) {
+      if (ch === '.' || ch === ',') {
+        const dot = document.createElement('span');
+        dot.className = 'seg-dot';
+        dot.innerHTML = '<i></i>';
+        return dot;
+      }
+      const wrap = document.createElement('span');
+      wrap.className = 'seg-char';
+      const segs = SEG_MAP[ch] || [];
+      ['a', 'b', 'c', 'd', 'e', 'f', 'g'].forEach(key => {
+        const i = document.createElement('i');
+        i.className = 'seg-' + key + (segs.includes(key) ? ' on' : '');
+        wrap.appendChild(i);
+      });
+      return wrap;
+    }
+
+    function renderSegDisplay(containerEl, text) {
+      if (!containerEl) return;
+      containerEl.innerHTML = '';
+      String(text).split('').forEach(ch => containerEl.appendChild(createSegChar(ch)));
+    }
+
+    // Tab Değiştirme Fonksiyonu
+    // NOT: Self Service seçildiğinde tema artık yeşile dönmüyor, turuncu tema
+    // her zaman sabit kalıyor (kullanıcı isteği). body.self-mode class'ı bilerek
+    // eklenmiyor; renk CSS değişkenleri sadece --primary-full değerini kullanacak.
+    window.switchServiceTab = function(type) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+      if (type === 'full') {
+        document.getElementById('fullServiceTab').classList.add('active');
+        document.querySelector('.full-btn').classList.add('active');
+      } else {
+        document.getElementById('selfServiceTab').classList.add('active');
+        document.querySelector('.self-btn').classList.add('active');
+      }
+    }
+
+    function openKeyboard(fieldEl) {
+      currentInputTarget = fieldEl;
+      const hidden = fieldEl.querySelector('input[type="hidden"]');
+      const currentVal = hidden ? hidden.value : "0.00";
+      document.querySelector('#vkPrevPrice span').textContent = currentVal || "0.00";
+      rawInputString = "0";
+      updateKeyboardDisplay();
+      document.getElementById("vkModal").style.display = "flex";
+    }
+
+    function updateKeyboardDisplay() {
+      if (!rawInputString || rawInputString === "0") {
+        currentFormattedValue = "0.00";
+      } else {
+        if (rawInputString.length > 3) rawInputString = rawInputString.slice(0, 3);
+        let padded = rawInputString.padStart(3, '0');
+        currentFormattedValue = padded.slice(0, padded.length - 2) + "." + padded.slice(padded.length - 2);
+      }
+      renderSegDisplay(document.querySelector("#vkDisplay .seg-display"), currentFormattedValue);
+    }
+
+    function vkPress(num) {
+      if (rawInputString === "0") rawInputString = "";
+      if (rawInputString.length >= 3) return;
+      rawInputString += num;
+      updateKeyboardDisplay();
+    }
+
+    window.vkClear = function() { rawInputString = "0"; updateKeyboardDisplay(); };
+    window.vkEnter = function() {
+      if (currentInputTarget) {
+        const hidden = currentInputTarget.querySelector('input[type="hidden"]');
+        if (hidden) {
+          hidden.value = currentFormattedValue;
+          renderSegDisplay(currentInputTarget.querySelector('.seg-display'), currentFormattedValue);
+        }
+      }
+      closeKeyboard();
+    };
+    function closeKeyboard() { document.getElementById("vkModal").style.display = "none"; currentInputTarget = null; }
+
+    document.addEventListener("DOMContentLoaded", function() {
+      let myArr2 = null;
+      let serialstart = "no";
+      let timerduration = 3000;
+      let timerObj = null;
+
+      const timer = {
+        start: function() { if (!timerObj) timerObj = setInterval(checkserial, timerduration); },
+        stop: function() { if (timerObj) { clearInterval(timerObj); timerObj = null; } },
+        reset: function(newT) { timerduration = newT; this.stop(); this.start(); }
+      };
+
+      document.body.addEventListener('click', function(e) {
+        const ledEl = e.target.closest('.led');
+        if (ledEl) openKeyboard(ledEl);
+      });
+
+      function checkserial() {
+        if (serialstart !== "yes") return;
+        fetch("./checkserial")
+          .then(res => res.json())
+          .then(myArr => {
+            let resstr = myArr.res;
+            let resarr = resstr.split("");
+            resarr.forEach((value, index) => {
+              let el = document.getElementById('ledres' + (index + 1));
+              if (el) el.className = (value === "1") ? "isuccess" : "inotr";
+            });
+            if (resarr[resarr.length - 1] === "O") {
+              serialstart = "no"; timer.stop();
+              document.getElementById('sendingdata').style.display = 'none';
+              document.getElementById('allupdated').style.display = 'block';
+            }
+          });
+      }
+
+      function getledconfig() {
+        fetch("./getledconfig")
+          .then(res => res.json())
+          .then(data => {
+            myArr2 = data;
+
+            // Brightness ve Speed verileri
+            // if (myArr2.leds[24]) document.getElementById("brightness").value = myArr2.leds[24].v;
+            // if (myArr2.leds[25]) document.getElementById("speed").value = myArr2.leds[25].v;
+
+            document.getElementById('customerid').innerText = myArr2.customerid;
+            document.getElementById('gstationid').innerText = myArr2.gstationid;
+          });
+      }
+
+      // PT rozetleri artık stock.json'daki pttype{i}/ptid{i}'den geliyor;
+      // cihaz tipi veya ID girilmemiş PT'ler hiç gösterilmez
+      function buildPumpBadges(data) {
+        const pumpsContainer = document.getElementById("pumps");
+        pumpsContainer.innerHTML = "";
+        for (let i = 1; i <= 24; i++) {
+          const ptType = data['pttype' + i] || "";
+          const ptId = data['ptid' + i] || "";
+          if (!ptType && !ptId) continue;
+
+          let span = document.createElement('span');
+          span.id = `ledres${i}`;
+          span.className = "inotr";
+          span.innerText = `PT${i}`;
+          span.title = 'Tip: ' + (ptType || '-') + ' / ID: ' + (ptId || '-');
+          pumpsContainer.appendChild(span);
+        }
+      }
+
+      const PRODUCT_PAGE_SIZE = 4;
+
+      // Tek isim (stock{i} / selfstock{i}) ile CASH/CREDIT/DEBIT fiyatlarını (üç ayrı
+      // alan) eşleştirip, sadece ürün adı girilmiş olanları listeye toplar
+      function collectProducts(namePrefix, colorPrefix, priceCashPrefix, priceCreditPrefix, priceDebitPrefix, data, count) {
+        const list = [];
+        for (let i = 1; i <= count; i++) {
+          const title = data[namePrefix + i] || "";
+          if (!title) continue; // ürün girilmemiş, gösterme
+          list.push({
+            title: title,
+            color: data[colorPrefix + i] || "",
+            cashKey: priceCashPrefix + i, cashVal: data[priceCashPrefix + i] || '0.00',
+            creditKey: priceCreditPrefix + i, creditVal: data[priceCreditPrefix + i] || '0.00',
+            debitKey: priceDebitPrefix + i, debitVal: data[priceDebitPrefix + i] || '0.00'
+          });
+        }
+        return list;
+      }
+
+      function renderProductPage(containerId, products) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = "";
+        products.forEach(p => {
+          const group = document.createElement('div');
+          group.className = 'card';
+          if (p.color && p.color.toLowerCase() !== '#ffffff') {
+            group.style.backgroundColor = p.color;
+            group.classList.add('custom-bg');
+          }
+          group.innerHTML =
+            '<p class="product-title">' + p.title + '</p>' +
+            '<div class="product-row">' +
+              '<div class="field"><p class="ledtag">CASH</p><div class="led"><div class="seg-display"></div><input type="hidden" name="' + p.cashKey + '" value="' + p.cashVal + '"></div></div>' +
+              '<div class="field"><p class="ledtag">CREDIT</p><div class="led"><div class="seg-display"></div><input type="hidden" name="' + p.creditKey + '" value="' + p.creditVal + '"></div></div>' +
+              '<div class="field"><p class="ledtag">DEBIT</p><div class="led"><div class="seg-display"></div><input type="hidden" name="' + p.debitKey + '" value="' + p.debitVal + '"></div></div>' +
+            '</div>';
+          container.appendChild(group);
+
+          group.querySelectorAll('.led').forEach(fieldEl => {
+            const hidden = fieldEl.querySelector('input[type="hidden"]');
+            renderSegDisplay(fieldEl.querySelector('.seg-display'), hidden.value);
+          });
+        });
+      }
+
+      // Bir bölümü (full / self) doldurur: ilk 8 ürün Sayfa 1'e, kalanı Sayfa 2'ye;
+      // 8'den fazla ürün yoksa Sayfa 2 sekmesi hiç gösterilmez
+      function setupProductSection(sectionKey, namePrefix, colorPrefix, priceCashPrefix, priceCreditPrefix, priceDebitPrefix, data) {
+        const products = collectProducts(namePrefix, colorPrefix, priceCashPrefix, priceCreditPrefix, priceDebitPrefix, data, 14);
+        const page1 = products.slice(0, PRODUCT_PAGE_SIZE);
+        const page2 = products.slice(PRODUCT_PAGE_SIZE);
+
+        renderProductPage(sectionKey + 'ProductsPage1', page1);
+        renderProductPage(sectionKey + 'ProductsPage2', page2);
+
+        const tabsEl = document.getElementById(sectionKey + 'PageTabs');
+        if (page2.length > 0) {
+          tabsEl.style.display = 'flex';
+        } else {
+          tabsEl.style.display = 'none';
+          switchProductPage(sectionKey, 1);
+        }
+      }
+
+      window.switchProductPage = function(sectionKey, pageNum) {
+        document.querySelectorAll('#' + sectionKey + 'PageTabs .page-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelector('#' + sectionKey + 'PageTabs .page-btn[data-page="' + pageNum + '"]').classList.add('active');
+        document.getElementById(sectionKey + 'ProductsPage1').classList.toggle('active', pageNum === 1);
+        document.getElementById(sectionKey + 'ProductsPage2').classList.toggle('active', pageNum === 2);
+      };
+
+      function getstockconfig() {
+        fetch("./getstock")
+          .then(res => res.json())
+          .then(data => {
+            setupProductSection('full', 'stock', 'stockcolor', 'stockcashprice', 'stockcreditprice', 'stockdebitprice', data);
+            setupProductSection('self', 'selfstock', 'selfstockcolor', 'selfstockcashprice', 'selfstockcreditprice', 'selfstockdebitprice', data);
+            buildPumpBadges(data);
+          })
+          .catch(err => console.error("stock.json verisi çekilemedi:", err));
+      }
+
+      getledconfig();
+      getstockconfig();
+
+      // Fiyatları gerçekten kaydeder: stock.json'daki ...price{n} alanlarını /sendstock'a
+      // gönderir (aynı endpoint Settings > Products/PT Config için de kullanılıyor).
+      // NOT: Bu sadece fiyatları cihazdaki stock.json'a yazar; Modbus/HMI donanımına
+      // gerçek seri iletim (ModbusHandler.cpp) henüz tamamlanmadığı için ayrı bir konu —
+      // ona dokunulmadı.
+      function savePrices() {
+        const modal = document.getElementById('sendModal');
+        const bar = document.getElementById('sendProgressBar');
+        const text = document.getElementById('sendProgressText');
+        const submitBtn = document.getElementById('submit');
+        const badges = Array.from(document.querySelectorAll('#pumps span'));
+
+        badges.forEach(b => b.className = 'inotr');
+        bar.style.width = '0%';
+        text.textContent = '0%';
+        text.classList.remove('done', 'error');
+        submitBtn.disabled = true;
+        modal.style.display = 'flex';
+
+        const priceParams = new URLSearchParams();
+        new FormData(document.getElementById('ledpostform')).forEach((value, key) => {
+          if (/price\d+$/.test(key)) priceParams.append(key, value);
+        });
+
+        let progress = 0;
+        const tickId = setInterval(() => {
+          if (progress < 90) {
+            progress += 6;
+            bar.style.width = progress + '%';
+            text.textContent = progress + '%';
+          }
+        }, 120);
+
+        fetch("./sendstock", {
+          method: "POST",
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: priceParams.toString()
+        })
+          .then(res => res.json())
+          .then(data => data.res === "paramok")
+          .catch(err => {
+            console.error("Fiyatlar kaydedilemedi:", err);
+            return false;
+          })
+          .then(ok => {
+            clearInterval(tickId);
+            bar.style.width = '100%';
+            text.textContent = ok ? '✓ İşlem Başarılı' : '✕ Hata Oluştu';
+            text.classList.add(ok ? 'done' : 'error');
+            submitBtn.disabled = false;
+            setTimeout(() => { modal.style.display = 'none'; }, 1200);
+
+            // /sendserial: fiyatları fiziksel PT'lere (Modbus) iletir. Backend artık
+            // fiyatları ve hedef PT listesini (pttype/ptid) doğrudan stock.json'dan okuyor
+            // (bir önceki adımda kaydettiğimiz dosya), bu yüzden buraya ayrıca veri
+            // göndermemize gerek yok — sadece gönderimi tetikliyoruz.
+            //
+            // Rozetler burada "başarılı" diye toptan boyanmıyor artık — her PT'nin
+            // gerçekten yanıt verip vermediğini checkserial() polling'i ile tek tek
+            // öğreniyoruz (aşağıda serialstart="yes" + timer.reset ile başlatılıyor).
+            if (ok) {
+              document.getElementById('allupdated').style.display = 'none';
+              document.getElementById('sendingdata').style.display = 'block';
+
+              fetch("./sendserial", { method: "POST" })
+                .then(res => res.json())
+                .then(() => {
+                  serialstart = "yes";
+                  timer.reset(1000);
+                })
+                .catch(err => {
+                  console.error("Fiyatlar donanıma gönderilemedi:", err);
+                  document.getElementById('sendingdata').style.display = 'none';
+                });
+            }
+          });
+      }
+
+      document.getElementById("ledpostform").addEventListener("submit", function(e) {
+        e.preventDefault();
+        savePrices();
+      });
+    });
+  </script>
+</body>
+</html>
