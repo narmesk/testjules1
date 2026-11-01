@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurationDescriptor version="2.0">
+  <logicalFolder name="root" displayName="root" projectFiles="true">
+    <logicalFolder name="HeaderFiles" displayName="Header Files" projectFiles="true">
+      <logicalFolder name="mcc_generated_files" displayName="mcc_generated_files" projectFiles="true">
+        <itemPath>../mcc_generated_files/can1.h</itemPath>
+        <itemPath>../mcc_generated_files/mcc.h</itemPath>
+        <itemPath>../mcc_generated_files/system.h</itemPath>
+      </logicalFolder>
+      <itemPath>../asda2_control.h</itemPath>
+    </logicalFolder>
+    <logicalFolder name="SourceFiles" displayName="Source Files" projectFiles="true">
+      <logicalFolder name="mcc_generated_files" displayName="mcc_generated_files" projectFiles="true">
+        <itemPath>../mcc_generated_files/can1.c</itemPath>
+        <itemPath>../mcc_generated_files/mcc.c</itemPath>
+        <itemPath>../mcc_generated_files/system.c</itemPath>
+      </logicalFolder>
+      <itemPath>../asda2_control.c</itemPath>
+      <itemPath>../main.c</itemPath>
+    </logicalFolder>
+  </logicalFolder>
+  <projectDevice>dsPIC33EP64MC504</projectDevice>
+  <compiler>XC16</compiler>
+</configurationDescriptor>
