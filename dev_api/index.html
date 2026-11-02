@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ledovate Stations Management</title>
+    <!-- RESMİ SİTEDEN İNDİRDİĞİNİZ LOKAL BOOTSTRAP 5.3.3 CSS DOSYASI -->
+    <link rel="stylesheet" href="style/css/bootstrap.min.css">
+    <style>
+        body
+        {
+            background-color: #f4f6f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar
+        {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card
+        {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .card-header
+        {
+            border-top-left-radius: 10px !important;
+            border-top-right-radius: 10px !important;
+        }
+        .status-badge
+        {
+            width: 12px;
+            height: 12px;
+            display: inline-block;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-online
+        {
+            background-color: #2ecc71;
+            box-shadow: 0 0 10px #2ecc71;
+        }
+        .status-offline
+        {
+            background-color: #e74c3c;
+            box-shadow: 0 0 10px #e74c3c;
+        }
+        .price-matrix-input
+        {
+            font-weight: bold;
+            text-align: center;
+        }
+        .product-row
+        {
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 12px;
+            margin-bottom: 12px;
+        }
+        .product-row:last-child
+        {
+            border-bottom: none;
+            padding-bottom: 0;
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 py-3">
+        <div class="container">
+            <span class="navbar-brand mb-0 h1">Ledovate IoT Control Panel</span>
+            <span class="badge bg-primary px-3 py-2">Geliştirme Ortamı v2.0</span>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-4">
+        <div class="row">
+            <!-- Ekranda Sadece İstasyon Listesi Kalıyor -->
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center py-3">
+                        <h5 class="mb-0 fs-6">Station Network Status</h5>
+                        <button type="button" class="btn btn-sm btn-light text-primary fw-bold" onclick="loadStations()">Refresh List</button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 table-striped">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-3">Status</th>
+                                        <th>Station ID</th>
+                                        <th>Station Details</th>
+                                        <th>Last Pulse</th>
+                                        <th class="text-end pe-3">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="stationTableBody">
+                                    <tr>
+                                        <td colspan="5" class="text-center py-5 text-muted">
+                                            Loading stations from infrastructure...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- MODAL: İSTASYON YÖNETİM VE FİYAT MATRİSİ EKRANI -->
+    <div class="modal fade" id="stationModal" tabindex="-1" aria-labelledby="stationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title" id="stationModalLabel">Station Management Panel</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body bg-light">
+
+                    <div id="sendingAlert" class="alert alert-warning d-none align-items-center fade show border-0 mb-3" role="alert">
+                        <div><strong>Sending...</strong> Synchronizing data with ESP32 cloud queue.</div>
+                    </div>
+
+                    <form id="priceForm">
+                        <!-- Gizli veya Salt Okunur Bilgiler -->
+                        <div class="card p-3 mb-3 bg-white border">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label text-secondary small fw-bold">TARGET STATION ID</label>
+                                    <input type="text" id="targetSid" class="form-control bg-light fw-bold text-primary" readonly>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label text-secondary small fw-bold">BRIGHTNESS</label>
+                                    <select name="brightness" id="param_brightness" class="form-select fw-bold">
+                                        <option value="5">5%</option>
+                                        <option value="10" selected>10%</option>
+                                        <option value="20">20%</option>
+                                        <option value="50">50%</option>
+                                        <option value="100">100%</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label text-secondary small fw-bold">ANIMATION SPEED</label>
+                                    <select name="speed" id="param_speed" class="form-select fw-bold">
+                                        <option value="1">1</option>
+                                        <option value="5">5</option>
+                                        <option value="8" selected>8</option>
+                                        <option value="10">10</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 8 ÜRÜN X 3 ÖDEME TİPİ GELECEK NESİL FİYAT MATRİSİ -->
+                        <div class="card p-4 bg-white border">
+                            <h6 class="text-secondary fw-bold mb-4 border-bottom pb-2">8-PRODUCT FUEL PRICE MATRIX</h6>
+
+                            <div class="row text-secondary small fw-bold mb-2 text-center d-none d-md-flex">
+                                <div class="col-md-3 text-start">PRODUCT TYPE</div>
+                                <div class="col-md-3">CASH PRICE</div>
+                                <div class="col-md-3">CREDIT PRICE</div>
+                                <div class="col-md-3">DEBIT PRICE</div>
+                            </div>
+
+                            <!-- 1. DIESEL -->
+                            <div class="row product-row align-items-center">
+                                <div class="col-md-3 fw-bold text-dark">DIESEL</div>
+                                <div class="col-md-3"><div class="input-group"><span class="input-group-text">$</span><input type="text" name="p0_cash" id="p0_cash" class="form-control price-matrix-input" value="0.00"></div></div>
+                                <div class="col-md-3"><div class="input-group"><span class="input-group-text">$</span><input type="text" name="p0_credit" id="p0_credit" class="form-control price-matrix-input" value="0.00"></div></div>
+                                <div class="col-md-3"><div class="input-group"><span class="input-group-text">$</span><input type="text" name="p0_debit" id="p0_debit" class="form-control price-matrix-input" value="0.00"></div></div>
+                            </div>
+
+                            <!-- 2. REGULAR -->
+                            <div class="row product-row align-items-center">
+                                <div class="col-md-3 fw-bold text-dark">REGULAR</div>
+                                <div class="col-md-3"><div class="input-group"><span class="input-group-text">$</span><input type="text" name="p1_cash" id="p1_cash" class="form-control price-matrix-input" value="0.00"></div></div>
+                                <div class="col-md-3"><div class="input-group"><span class="input-group-text">$</span><input type="text" name="p1_credit" id="p1_credit" class="form-control price-matrix-input" value="0.00"></div></div>
+                                <div class="col-md-3"><div class="input-group"><span class="input-group-text">$</span><input type="text" name="p1_debit" id="p1_debit" class="form-control price-matrix-input" value="0.00"></div></div>
+                            </div>
+
+                            <!-- 3. PLUS -->
+                            <div class="row product-row align-items-center">
+                                <div class="col-md-3 fw-bold text-dark">PLUS</div>
+                                <div class="col-md-3"><div class="input-group"><span class="input-group-text">$</span><input type="text" name="p2_cash" id="p2_cash" class="form-control price-matrix-input" value="0.00"></div></div>
+                                <div class="col-md-3"><div class="input-group"><span class="input-group-text">$</span><input type="text" name="p2_credit" id="p2_credit" class="form-control price-matrix-input" value="0.00"></div></div>
+                                <div class="col-md-3"><div class="input-group"><span class="input-group-text">$</span><input type="text" name="p2_debit" id="p2_debit" class="form-control price-matrix-input" value="0.00"></div></div>
+                            </div>
+
+                            <!-- 4. SUPER -->
+                            <div class="row product-row align-items-center">
+                                <div class="col-md-3 fw-bold text-dark">SUPER</div>
+                                <div class="col-md-3"><div class="input-group"><span class="input-group-text">$</span><input type="text" name="p3_cash" id="p3_cash" class="form-control price-matrix-input" value="0.00"></div></div>
+                                <div class="col-md-3"><div class="input-group"><span class="input-group-text">$</span><input type="text" name="p3_credit" id="p3_credit" class="form-control price-matrix-input" value="0.00"></div></div>
+                                <div class="col-md-3"><div class="input-group"><span class="input-group-text">$</span><input type="text" name="p3_debit" id="p3_debit" class="form-control price-matrix-input" value="0.00"></div></div>
+                            </div>
+
+                            <!-- 5. PREMIUM -->
+                            <div class="row product-row align-items-center">
+                                <div class="col-md-3 fw-bold text-dark">PREMIUM</div>
+                                <div class="col-md-3"><div class="input-group"><span class="input-group-text">$</span><input type="text" name="p4_cash" id="p4_cash" class="form-control price-matrix-input" value="0.00"></div></div>
+                                <div class="col-md-3"><div class="input-group"><span class="input-group-text">$</span><input type="text" name="p4_credit" id="p4_credit" class="form-control price-matrix-input" value="0.00"></div></div>
+                                <div class="col-md-3"><div class="input-group"><span class="input-group-text">$</span><input type="text" name="p4_debit" id="p4_debit" class="form-control price-matrix-input" value="0.00"></div></div>
+                            </div>
+
+                            <!-- 6. DEF -->
+                            <div class="row product-row align-items-center">
+                                <div class="col-md-3 fw-bold text-dark">DEF</div>
+                                <div class="col-md-3"><div class="input-group"><span class="input-group-text">$</span><input type="text" name="p5_cash" id="p5_cash" class="form-control price-matrix-input" value="0.00"></div></div>
+                                <div class="col-md-3"><div class="input-group"><span class="input-group-text">$</span><input type="text" name="p5_credit" id="p5_credit" class="form-control price-matrix-input" value="0.00"></div></div>
+                                <div class="col-md-3"><div class="input-group"><span class="input-group-text">$</span><input type="text" name="p5_debit" id="p5_debit" class="form-control price-matrix-input" value="0.00"></div></div>
+                            </div>
+
+                                               <!-- 7. KEROSEN -->
+                        <div class="row product-row align-items-center">
+                            <div class="col-md-3 fw-bold text-dark">KEROSEN</div>
+                            <div class="col-md-3"><div class="input-group"><span class="input-group-text">$</span><input type="text" name="p6_cash" id="p6_cash" class="form-control price-matrix-input" value="0.00"></div></div>
+                            <div class="col-md-3"><div class="input-group"><span class="input-group-text">$</span><input type="text" name="p6_credit" id="p6_credit" class="form-control price-matrix-input" value="0.00"></div></div>
+                            <div class="col-md-3"><div class="input-group"><span class="input-group-text">$</span><input type="text" name="p6_debit" id="p6_debit" class="form-control price-matrix-input" value="0.00"></div></div>
+                        </div>
+
+                        <!-- 8. E85 -->
+                        <div class="row product-row align-items-center">
+                            <div class="col-md-3 fw-bold text-dark">E85</div>
+                            <div class="col-md-3"><div class="input-group"><span class="input-group-text">$</span><input type="text" name="p7_cash" id="p7_cash" class="form-control price-matrix-input" value="0.00"></div></div>
+                            <div class="col-md-3"><div class="input-group"><span class="input-group-text">$</span><input type="text" name="p7_credit" id="p7_credit" class="form-control price-matrix-input" value="0.00"></div></div>
+                            <div class="col-md-3"><div class="input-group"><span class="input-group-text">$</span><input type="text" name="p7_debit" id="p7_debit" class="form-control price-matrix-input" value="0.00"></div></div>
+                        </div>
+
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-white">
+                <button type="button" class="btn btn-secondary fw-bold px-4" data-bs-dismiss="modal">Close</button>
+                <button type="submit" form="priceForm" id="btnSubmit" class="btn btn-success fw-bold px-5">Push Configuration</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- BOOTSTRAP 5 JAVASCRIPT ÇALIŞTIRICI BUNDLE (MODAL İÇİN ŞARTTIR) -->
+<script src="style/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", () =>
+        {
+            loadStations();
+            setInterval(loadStations, 15000);
+        }
+        );
+
+        async function loadStations()
+        {
+            const tableBody = document.getElementById("stationTableBody");
+
+            try
+            {
+                const response = await fetch('web_api.php?action=list');
+
+                // Arka plandan dönen ham metni (raw text) ilk önce bir değişkene alıyoruz
+                const rawText = await response.text();
+
+                // Gelen verinin geçerli bir JSON olup olmadığını denetliyoruz
+                let data;
+                try
+                {
+                    data = JSON.parse(rawText);
+                }
+                catch (jsonError)
+                {
+                    // Eğer JSON çözülemezse, hatayı ve sunucudan dönen ham yazıyı ekrana basıyoruz
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="p-4">
+                                <div class="alert alert-danger mb-0">
+                                    <h6 class="fw-bold"><i class="bi bi-bug"></i> JSON Parse Error!</h6>
+                                    <p class="small mb-2">The server did not send a valid JSON list. It might be sending a PHP crash summary instead.</p>
+                                    <hr>
+                                    <div class="bg-dark text-white p-3 rounded font-monospace small" style="white-space: pre-wrap;">${rawText}</div>
+                                </div>
+                            </td>
+                        </tr>`;
+                    return;
+                }
+
+                tableBody.innerHTML = "";
+
+                // Gelen verinin bir dizi (Array) olup olmadığını kontrol ediyoruz
+                if (!Array.isArray(data))
+                {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="p-4">
+                                <div class="alert alert-warning mb-0">
+                                    <h6 class="fw-bold"><i class="bi bi-exclamation-triangle"></i> Data Format Mismatch</h6>
+                                    <p class="small mb-0">Expected a List (Array) from API, but received a: <strong>${typeof data}</strong></p>
+                                </div>
+                            </td>
+                        </tr>`;
+                    return;
+                }
+
+                if (data.length === 0)
+                {
+                    tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-danger">No active stations found.</td></tr>`;
+                    return;
+                }
+
+                data.forEach(station =>
+                {
+                    let isOnline = false;
+                    if (station.last_seen)
+                    {
+                        const lastSeenTime = new Date(station.last_seen.replace(/-/g, "/")).getTime();
+                        const nowTime = new Date().getTime();
+                        const differenceInMinutes = (nowTime - lastSeenTime) / 1000 / 60;
+                        isOnline = differenceInMinutes <= 3;
+                    }
+
+                    const statusDot = isOnline ? '<span class="status-badge status-online"></span><span class="text-success small fw-bold">Online</span>' : '<span class="status-badge status-offline"></span><span class="text-danger small fw-bold">Offline</span>';
+
+                    tableBody.innerHTML += `
+                        <tr>
+                            <td class="ps-3">${statusDot}</td>
+                            <td><span class="badge bg-secondary py-2 px-3">ID: ${station.sid}</span></td>
+                            <td><div class="fw-bold text-dark">${station.station_name}</div><div class="text-muted small">${station.address || 'No Address Listed'}</div></td>
+                            <td class="small text-muted fw-bold">${station.last_seen || 'Never Connected'}</td>
+                            <td class="text-end pe-3">
+                                <a href="price.html?sid=${station.sid}" class="btn btn-sm btn-primary px-3">
+                                    Manage Station
+                                </a>
+                            </td>
+                        </tr>
+                    `;
+                }
+                );
+            }
+            catch (error)
+            {
+                tableBody.innerHTML = `<tr><td colspan="5" class="text-center py-4 text-danger">Network transaction timeout or critical API connection error.</td></tr>`;
+            }
+        }
+    </script>
+</body>
+</html>

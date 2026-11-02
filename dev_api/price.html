@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ledovate - Price Management</title>
+    <!-- LOKAL BOOTSTRAP 5.3.3 CSS DOSYASI -->
+    <link rel="stylesheet" href="style/css/bootstrap.min.css">
+    <style>
+        body
+        {
+            background-color: #f4f6f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar
+        {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card
+        {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .price-matrix-input
+        {
+            font-weight: bold;
+            text-align: center;
+        }
+        .product-row
+        {
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 12px;
+            margin-bottom: 12px;
+        }
+        .product-row:last-child
+        {
+            border-bottom: none;
+            padding-bottom: 0;
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 py-3">
+        <div class="container">
+            <span class="navbar-brand mb-0 h1">Ledovate IoT Control Panel</span>
+            <a href="index.html" class="btn btn-outline-light btn-sm">Back to Station List</a>
+        </div>
+    </nav>
+
+    <div class="container mb-5">
+
+        <!-- ÜST PANEL: SEÇİLEN İSTASYONA AİT TÜM DETAYLAR -->
+        <div class="card p-4 mb-4 bg-white border">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <span class="text-secondary small fw-bold d-block mb-1">CURRENTLY MANAGING STATION</span>
+                    <h3 id="info_station_name" class="text-primary mb-1">Loading Station Name...</h3>
+                    <p id="info_station_address" class="text-muted mb-0 small">Loading station address details...</p>
+                </div>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <div class="mb-1"><span class="text-secondary small fw-bold">STATION ID:</span> <span id="info_station_id" class="badge badge-dark fs-6 py-2 px-3">---</span></div>
+                    <div><span class="text-secondary small fw-bold">LAST PULSE:</span> <span id="info_last_seen" class="fw-bold text-dark small">---</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODÜLER GEÇİŞ MENÜSÜ -->
+        <div class="d-flex gap-2 mb-4">
+            <a href="#" id="menu_price" class="btn btn-primary px-4 fw-bold shadow-sm">Price Matrix</a>
+            <a href="#" id="menu_settings" class="btn btn-outline-secondary px-4 fw-bold disabled">Station Settings (Soon)</a>
+        </div>
+
+        <div id="sendingAlert" class="alert alert-warning d-none align-items-center fade show border-0 mb-4" role="alert">
+            <div><strong>Sending...</strong> Synchronizing data with ESP32 cloud queue. Please wait.</div>
+        </div>
+
+        <!-- 8 ÜRÜN X 3 ÖDEME TİPİ MATRİS FORMU -->
+        <div class="card p-4 bg-white border">
+            <h5 class="text-secondary fw-bold mb-4 border-bottom pb-2">8-PRODUCT FUEL PRICE MATRIX</h5>
+
+            <form id="priceForm">
+                <div class="row text-secondary small fw-bold mb-2 text-center d-none d-md-flex">
+                    <div class="col-md-3 text-left">PRODUCT TYPE</div>
+                    <div class="col-md-3">CASH PRICE</div>
+                    <div class="col-md-3">CREDIT PRICE</div>
+                    <div class="col-md-3">DEBIT PRICE</div>
+                </div>
+
+                <!-- 1. DIESEL -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark">DIESEL</div>
+                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p0_cash" id="p0_cash" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p0_credit" id="p0_credit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p0_debit" id="p0_debit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                </div>
+
+                <!-- 2. REGULAR -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark">REGULAR</div>
+                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p1_cash" id="p1_cash" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p1_credit" id="p1_credit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p1_debit" id="p1_debit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                </div>
+
+                <!-- 3. PLUS -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark">PLUS</div>
+                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p2_cash" id="p2_cash" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p2_credit" id="p2_credit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p2_debit" id="p2_debit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                </div>
+
+                <!-- 4. SUPER -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark">SUPER</div>
+                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p3_cash" id="p3_cash" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p3_credit" id="p3_credit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p3_debit" id="p3_debit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                </div>
+
+                <!-- 5. PREMIUM -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark">PREMIUM</div>
+                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p4_cash" id="p4_cash" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p4_credit" id="p4_credit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p4_debit" id="p4_debit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                </div>
+
+               <!-- 6. DEF -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark">DEF</div>
+                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p5_cash" id="p5_cash" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p5_credit" id="p5_credit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p5_debit" id="p5_debit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                </div>
+
+                <!-- 7. KEROSEN -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark">KEROSEN</div>
+                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p6_cash" id="p6_cash" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p6_credit" id="p6_credit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p6_debit" id="p6_debit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                </div>
+
+                <!-- 8. E85 -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark">E85</div>
+                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p7_cash" id="p7_cash" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p7_credit" id="p7_credit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p7_debit" id="p7_debit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                </div>
+
+                <div class="mt-4 text-end">
+                    <a href="index.html" class="btn btn-secondary fw-bold px-4 me-2">Cancel</a>
+                    <button type="submit" id="btnSubmit" class="btn btn-success fw-bold px-5">Push Configuration</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const sid = urlParams.get('sid');
+
+        document.addEventListener("DOMContentLoaded", () =>
+        {
+            if (!sid)
+            {
+                alert("Error: Station ID missing.");
+                window.location.href = "index.html";
+                return;
+            }
+
+            document.getElementById("menu_price").href = "price.html?sid=" + sid;
+
+            loadStationDetails();
+            loadCurrentPrices();
+        }
+        );
+
+        async function loadStationDetails()
+        {
+            try
+            {
+                const response = await fetch("web_api.php?action=list");
+                const data = await response.json();
+                const targetStation = data.find(item => item.sid === sid);
+
+                if (targetStation)
+                {
+                    document.getElementById("info_station_name").innerText = targetStation.station_name;
+                    document.getElementById("info_station_address").innerText = targetStation.address || "No Address Listed";
+                    document.getElementById("info_station_id").innerText = targetStation.sid;
+                    document.getElementById("info_last_seen").innerText = targetStation.last_seen || "Never Connected";
+                }
+                else
+                {
+                    alert("Station nodes mismatch error.");
+                }
+            }
+            catch (error)
+            {
+                console.error("Infrastructure synchronizer error:", error);
+            }
+        }
+
+        async function loadCurrentPrices()
+        {
+            try
+            {
+                const response = await fetch("web_api.php?action=get_prices&sid=" + sid);
+                const result = await response.json();
+
+                if (result.status === "success")
+                {
+                    const priceFields = [
+                        "p0_cash", "p0_credit", "p0_debit",
+                        "p1_cash", "p1_credit", "p1_debit",
+                        "p2_cash", "p2_credit", "p2_debit",
+                        "p3_cash", "p3_credit", "p3_debit",
+                        "p4_cash", "p4_credit", "p4_debit",
+                        "p5_cash", "p5_credit", "p5_debit",
+                        "p6_cash", "p6_credit", "p6_debit",
+                        "p7_cash", "p7_credit", "p7_debit"
+                    ];
+
+                    for (let i = 0; i < 24; i++)
+                    {
+                        const fieldElement = document.getElementById(priceFields[i]);
+                        if (fieldElement && result.prices[i] !== undefined)
+                        {
+                            fieldElement.value = result.prices[i];
+                        }
+                    }
+                }
+            }
+            catch (error)
+            {
+                console.error("Error loading matrix prices:", error);
+            }
+        }
+
+        document.getElementById("priceForm").addEventListener("submit", async (e) =>
+        {
+            e.preventDefault();
+
+            const form = document.getElementById("priceForm");
+            const submitBtn = document.getElementById("btnSubmit");
+            const alertBox = document.getElementById("sendingAlert");
+
+            const formData = new FormData(form);
+            submitBtn.disabled = true;
+            alertBox.classList.remove("d-none");
+
+            try
+            {
+                const response = await fetch("web_api.php?action=update&sid=" + sid,
+                {
+                    method: "POST",
+                    body: formData
+                }
+                );
+                const result = await response.json();
+
+                if (result.status === "success")
+                {
+                    alert("Success! New configurations injected into the cloud node.");
+                    window.location.href = "index.html";
+                }
+                else
+                {
+                    alert("Error from cloud backend: " + result.message);
+                }
+            }
+            catch (error)
+            {
+                alert("Transaction network timeout.");
+            }
+            finally
+            {
+                submitBtn.disabled = false;
+                alertBox.classList.add("d-none");
+            }
+        }
+        );
+    </script>
+</body>
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hardware Settings</title>
+    <!-- Mevcut projenizdeki Bootstrap 5.3.3 CSS bağlantısı -->
+    <link rel="stylesheet" href="style/css/bootstrap.min.css">
+</head>
+<body class="bg-light text-dark">
+
+<div class="container my-5">
+    <!-- Üst Bilgi Paneli -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body d-flex justify-content-between align-items-center py-4">
+            <div>
+                <!-- İstasyon adı için okunaklı font boyutu -->
+                <h2 class="mb-1 fs-3 fw-bold text-secondary" id="stationName">Loading Station...</h2>
+                <p class="text-muted mb-0 fs-6" id="stationMeta">Station ID: --</p>
+            </div>
+            <a href="index.html" class="btn btn-outline-secondary fw-medium">Back to Dashboard</a>
+        </div>
+    </div>
+
+    <!-- Donanım Parametre Formu -->
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-dark text-white py-3">
+                    <h5 class="mb-0 fs-5 fw-semibold">ESP32 Hardware Parameters</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form id="settingsForm">
+                        <input type="hidden" id="stationIdInput" name="station_id">
+
+                        <!-- Parlaklık Ayarı (Brightness) -->
+                        <div class="mb-5">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label for="brightnessRange" class="form-label fs-5 fw-medium mb-0">LED Panel Brightness</label>
+                                <!-- Değer göstergesi görünürlüğü artırmak için yeşil ve büyük tonda -->
+                                <span id="brightnessVal" class="badge bg-success fs-5 px-3 py-2">50%</span>
+                            </div>
+                            <input type="range" class="form-range" id="brightnessRange" name="brightness" min="0" max="100" step="1">
+                            <div class="form-text fs-7 text-muted mt-2">Controls the duty cycle of the display LEDs to manage intense glare or night mode.</div>
+                        </div>
+
+                        <!-- Yenileme/Akış Hızı Ayarı (Speed) -->
+                        <div class="mb-5">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label for="speedRange" class="form-label fs-5 fw-medium mb-0">Animation Scrolling Speed</label>
+                                <span id="speedVal" class="badge bg-primary fs-5 px-3 py-2">10</span>
+                            </div>
+                            <input type="range" class="form-range" id="speedRange" name="speed" min="1" max="50" step="1">
+                            <div class="form-text fs-7 text-muted mt-2">Defines the marquee and transition speed of the pricing figures across digits.</div>
+                        </div>
+
+                        <!-- Buton Grubu -->
+                        <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                            <button type="button" class="btn btn-light border px-4 fw-medium" id="btnCancel">Reset Changes</button>
+                            <button type="submit" class="btn btn-dark px-4 fw-medium" id="btnSave">Save Framework Settings</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mevcut projenizdeki JQuery ve Bootstrap JS bileşenleri -->
+<script src="https://jquery.com"></script>
+    <link rel="stylesheet" href="style/css/bootstrap.min.css">
+
+<script>
+$(document).ready(function() )
+{
+    // URL parametresinden istasyon kimliğini yakalıyoruz
+    const urlParams = new URLSearchParams(window.location.search);
+    const stationId = urlParams.get('station_id');
+
+    if (!stationId)
+    {
+        alert('Invalid Station Selection!');
+        window.location.href = 'index.html';
+        return;
+    }
+
+    // İstasyon ID bilgisini form elementlerine set ediyoruz
+    $('#stationIdInput').val(stationId);
+    $('#stationMeta').text('Station ID: ' + stationId);
+
+    // Range slider değişimlerini anlık ekrana basıyoruz
+    $('#brightnessRange').on('input', function()
+    {
+        $('#brightnessVal').text($(this).val() + '%');
+    }
+    );
+
+    $('#speedRange').on('input', function()
+    {
+        $('#speedVal').text($(this).val());
+    }
+    );
+
+    // Mevcut verileri sunucudan çekip form alanlarına yerleştiriyoruz
+    function loadCurrentSettings()
+    {
+        $.ajax(
+        {
+            url: 'web_api.php',
+            type: 'GET',
+            data: { action: 'get_settings', station_id: stationId },
+            dataType: 'json',
+            success: function(data)
+            {
+                if (data.error)
+                {
+                    alert(data.error);
+                }
+                else
+                {
+                    // İstasyon adını simüle ediyoruz, isterseniz web_api.php listesinden de beslenebilir
+                    $('#stationName').text('Station Framework Configuration');
+                    $('#brightnessRange').val(data.Brightness).trigger('input');
+                    $('#speedRange').val(data.Speed).trigger('input');
+                }
+            }
+    }
+    );
+    }
+
+    // İptal butonuna basıldığında verileri yenileme mekanizması
+    $('#btnCancel').click(function()
+    {
+        loadCurrentSettings();
+    }
+    );
+
+    // Form kayıt işleyicisi (Allman Stili Kurallarına Göre)
+    $('#settingsForm').submit(function(e)
+    {
+        e.preventDefault();
+
+        $.ajax(
+        {
+            url: 'web_api.php?action=update_settings',
+            type: 'POST',
+            data: $(this).serialize(),
+            dataType: 'json',
+            success: function(response)
+            {
+                if (response.success)
+                {
+                    alert('Hardware configuration sent successfully to the queue!');
+                    loadCurrentSettings();
+                }
+                else
+                {
+                    alert('Error: ' + response.error);
+                }
+            }
+    }
+    );
+    }
+    );
+
+    // İlk açılışta verileri yüklüyoruz
+    loadCurrentSettings();
+}
+;
+</script>
+</body>
+</html>
