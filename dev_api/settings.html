@@ -3,170 +3,825 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hardware Settings</title>
-    <!-- Mevcut projenizdeki Bootstrap 5.3.3 CSS bağlantısı -->
+    <title>Ledovate - Station & Tuning Settings</title>
+    <!-- LOKAL BOOTSTRAP 5.3.3 CSS -->
     <link rel="stylesheet" href="style/css/bootstrap.min.css">
+    <style>
+        body
+        {
+            background-color: #f4f6f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar
+        {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card
+        {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .tuning-input
+        {
+            font-weight: bold;
+            text-align: center;
+            font-size: 1.25rem !important;
+            height: 46px;
+        }
+        .color-badge
+        {
+            width: 32px;
+            height: 32px;
+            display: inline-block;
+            border-radius: 6px;
+            border: 1px solid #ced4da;
+            vertical-align: middle;
+        }
+    </style>
 </head>
-<body class="bg-light text-dark">
+<body>
 
-<div class="container my-5">
-    <!-- Üst Bilgi Paneli -->
-    <div class="card mb-4 shadow-sm">
-        <div class="card-body d-flex justify-content-between align-items-center py-4">
-            <div>
-                <!-- İstasyon adı için okunaklı font boyutu -->
-                <h2 class="mb-1 fs-3 fw-bold text-secondary" id="stationName">Loading Station...</h2>
-                <p class="text-muted mb-0 fs-6" id="stationMeta">Station ID: --</p>
-            </div>
-            <a href="index.html" class="btn btn-outline-secondary fw-medium">Back to Dashboard</a>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 py-3">
+        <div class="container">
+            <span class="navbar-brand mb-0 h1">Ledovate IoT Control Panel</span>
+            <a href="index.html" class="btn btn-outline-light btn-sm">Back to Station List</a>
         </div>
-    </div>
+    </nav>
 
-    <!-- Donanım Parametre Formu -->
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-dark text-white py-3">
-                    <h5 class="mb-0 fs-5 fw-semibold">ESP32 Hardware Parameters</h5>
+    <div class="container mb-5">
+
+        <!-- ÜST PANEL: SEÇİLEN İSTASYONA AİT DETAYLAR -->
+        <div class="card p-4 mb-4 bg-white border">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <span class="text-secondary small fw-bold d-block mb-1">STATION SETTINGS & TUNING</span>
+                    <h3 id="info_station_name" class="text-primary mb-1">Loading Station Name...</h3>
+                    <p id="info_station_address" class="text-muted mb-0 small">Loading station address details...</p>
                 </div>
-                <div class="card-body p-4">
-                    <form id="settingsForm">
-                        <input type="hidden" id="stationIdInput" name="station_id">
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <div class="mb-1"><span class="text-secondary small fw-bold">STATION ID:</span> <span id="info_station_id" class="badge bg-dark fs-6 py-2 px-3">---</span></div>
+                    <div><span class="text-secondary small fw-bold">LAST PULSE:</span> <span id="info_last_seen" class="fw-bold text-dark small">---</span></div>
+                </div>
+            </div>
+        </div>
 
-                        <!-- Parlaklık Ayarı (Brightness) -->
-                        <div class="mb-5">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label for="brightnessRange" class="form-label fs-5 fw-medium mb-0">LED Panel Brightness</label>
-                                <!-- Değer göstergesi görünürlüğü artırmak için yeşil ve büyük tonda -->
-                                <span id="brightnessVal" class="badge bg-success fs-5 px-3 py-2">50%</span>
+        <!-- MODÜLER GEÇİŞ MENÜSÜ -->
+        <div class="d-flex flex-wrap gap-2 mb-4">
+            <a href="#" id="menu_price" class="btn btn-outline-secondary px-4 fw-bold">Price Station</a>
+            <a href="#" id="menu_settings" class="btn btn-primary px-4 fw-bold shadow-sm">Setting Station</a>
+            <a href="#" id="menu_ptconfig" class="btn btn-outline-secondary px-4 fw-bold">PTConfig Station</a>
+            <a href="#" id="menu_manage" class="btn btn-outline-secondary px-4 fw-bold">Manage Station</a>
+        </div>
+
+        <!-- ANA SEKMELER: 1. STATION CONFIGS (TEXT & COLORS), 2. PRICE TUNING OFFSETS, 3. HARDWARE PARAMETERS -->
+        <div class="card p-4 bg-white border">
+            <ul class="nav nav-pills mb-4" id="settingsTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active px-4 py-2 fs-5 fw-bold" id="tuning-tab" data-bs-toggle="pill" data-bs-target="#tuning-pane" type="button" role="tab" aria-controls="tuning-pane" aria-selected="true">
+                        Price Tuning Offsets
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link px-4 py-2 fs-5 fw-bold ms-2" id="configs-tab" data-bs-toggle="pill" data-bs-target="#configs-pane" type="button" role="tab" aria-controls="configs-pane" aria-selected="false">
+                        Product Names & Colors
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link px-4 py-2 fs-5 fw-bold ms-2" id="params-tab" data-bs-toggle="pill" data-bs-target="#params-pane" type="button" role="tab" aria-controls="params-pane" aria-selected="false">
+                        Hardware Parameters
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="settingsTabsContent">
+
+                <!-- SEKME 1: PRICE TUNING OFFSETS -->
+                <div class="tab-pane fade show active" id="tuning-pane" role="tabpanel" aria-labelledby="tuning-tab">
+                    <div class="alert alert-info py-2 px-3 small mb-4">
+                        <strong>Tuning Logic:</strong> Cash price tuning is strictly fixed at 0.00. Enter offset values for Credit and Debit (e.g., <code>+0.05</code> adds 5 cents, <code>-0.50</code> subtracts 50 cents from the typed Cash price).
+                    </div>
+                    <form id="tuningForm">
+                        <ul class="nav nav-tabs mb-3" id="tuningSubTabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active fw-bold" id="tuning-full-tab" data-bs-toggle="tab" data-bs-target="#tuning-full" type="button" role="tab">Full Service Tuning</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link fw-bold" id="tuning-self-tab" data-bs-toggle="tab" data-bs-target="#tuning-self" type="button" role="tab">Self Service Tuning</button>
+                            </li>
+                        </ul>
+
+                        <div class="tab-content" id="tuningSubTabsContent">
+                            <div class="tab-pane fade show active" id="tuning-full" role="tabpanel">
+                                <div class="row text-secondary small fw-bold mb-2 text-center d-none d-md-flex border-bottom pb-2">
+                                    <div class="col-md-3 text-start ps-3">PRODUCT</div>
+                                    <div class="col-md-3">CASH OFFSET (FIXED)</div>
+                                    <div class="col-md-3">CREDIT OFFSET</div>
+                                    <div class="col-md-3">DEBIT OFFSET</div>
+                                </div>
+
+        <div class="row align-items-center mb-2 pb-2 border-bottom">
+            <div class="col-md-3 fw-bold">1. REGULAR</div>
+            <div class="col-md-3">
+                <input type="text" class="form-control tuning-input bg-light" value="0.00" readonly disabled>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="FULLVAL1B" id="TUN_FULLVAL1B" class="form-control tuning-input" value="0.05">
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="FULLVAL1C" id="TUN_FULLVAL1C" class="form-control tuning-input" value="0.00">
+            </div>
+        </div>
+        <div class="row align-items-center mb-2 pb-2 border-bottom">
+            <div class="col-md-3 fw-bold">2. PLUS</div>
+            <div class="col-md-3">
+                <input type="text" class="form-control tuning-input bg-light" value="0.00" readonly disabled>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="FULLVAL2B" id="TUN_FULLVAL2B" class="form-control tuning-input" value="0.05">
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="FULLVAL2C" id="TUN_FULLVAL2C" class="form-control tuning-input" value="0.00">
+            </div>
+        </div>
+        <div class="row align-items-center mb-2 pb-2 border-bottom">
+            <div class="col-md-3 fw-bold">3. SUPREME</div>
+            <div class="col-md-3">
+                <input type="text" class="form-control tuning-input bg-light" value="0.00" readonly disabled>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="FULLVAL3B" id="TUN_FULLVAL3B" class="form-control tuning-input" value="0.05">
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="FULLVAL3C" id="TUN_FULLVAL3C" class="form-control tuning-input" value="0.00">
+            </div>
+        </div>
+        <div class="row align-items-center mb-2 pb-2 border-bottom">
+            <div class="col-md-3 fw-bold">4. DIESEL</div>
+            <div class="col-md-3">
+                <input type="text" class="form-control tuning-input bg-light" value="0.00" readonly disabled>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="FULLVAL4B" id="TUN_FULLVAL4B" class="form-control tuning-input" value="0.05">
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="FULLVAL4C" id="TUN_FULLVAL4C" class="form-control tuning-input" value="0.00">
+            </div>
+        </div>
+        <div class="row align-items-center mb-2 pb-2 border-bottom">
+            <div class="col-md-3 fw-bold">5. KEROSEN</div>
+            <div class="col-md-3">
+                <input type="text" class="form-control tuning-input bg-light" value="0.00" readonly disabled>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="FULLVAL5B" id="TUN_FULLVAL5B" class="form-control tuning-input" value="0.05">
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="FULLVAL5C" id="TUN_FULLVAL5C" class="form-control tuning-input" value="0.00">
+            </div>
+        </div>
+        <div class="row align-items-center mb-2 pb-2 border-bottom">
+            <div class="col-md-3 fw-bold">6. OFROAD</div>
+            <div class="col-md-3">
+                <input type="text" class="form-control tuning-input bg-light" value="0.00" readonly disabled>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="FULLVAL6B" id="TUN_FULLVAL6B" class="form-control tuning-input" value="0.05">
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="FULLVAL6C" id="TUN_FULLVAL6C" class="form-control tuning-input" value="0.00">
+            </div>
+        </div>
+        <div class="row align-items-center mb-2 pb-2 border-bottom">
+            <div class="col-md-3 fw-bold">7. UNUSED</div>
+            <div class="col-md-3">
+                <input type="text" class="form-control tuning-input bg-light" value="0.00" readonly disabled>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="FULLVAL7B" id="TUN_FULLVAL7B" class="form-control tuning-input" value="0.05">
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="FULLVAL7C" id="TUN_FULLVAL7C" class="form-control tuning-input" value="0.00">
+            </div>
+        </div>
+        <div class="row align-items-center mb-2 pb-2 border-bottom">
+            <div class="col-md-3 fw-bold">8. UNUSED</div>
+            <div class="col-md-3">
+                <input type="text" class="form-control tuning-input bg-light" value="0.00" readonly disabled>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="FULLVAL8B" id="TUN_FULLVAL8B" class="form-control tuning-input" value="0.05">
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="FULLVAL8C" id="TUN_FULLVAL8C" class="form-control tuning-input" value="0.00">
+            </div>
+        </div>
                             </div>
-                            <input type="range" class="form-range" id="brightnessRange" name="brightness" min="0" max="100" step="1">
-                            <div class="form-text fs-7 text-muted mt-2">Controls the duty cycle of the display LEDs to manage intense glare or night mode.</div>
+
+                            <div class="tab-pane fade" id="tuning-self" role="tabpanel">
+                                <div class="row text-secondary small fw-bold mb-2 text-center d-none d-md-flex border-bottom pb-2">
+                                    <div class="col-md-3 text-start ps-3">PRODUCT</div>
+                                    <div class="col-md-3">CASH OFFSET (FIXED)</div>
+                                    <div class="col-md-3">CREDIT OFFSET</div>
+                                    <div class="col-md-3">DEBIT OFFSET</div>
+                                </div>
+
+        <div class="row align-items-center mb-2 pb-2 border-bottom">
+            <div class="col-md-3 fw-bold">1. REGULAR</div>
+            <div class="col-md-3">
+                <input type="text" class="form-control tuning-input bg-light" value="0.00" readonly disabled>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="SELFVAL1B" id="TUN_SELFVAL1B" class="form-control tuning-input" value="0.05">
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="SELFVAL1C" id="TUN_SELFVAL1C" class="form-control tuning-input" value="0.00">
+            </div>
+        </div>
+        <div class="row align-items-center mb-2 pb-2 border-bottom">
+            <div class="col-md-3 fw-bold">2. PLUS</div>
+            <div class="col-md-3">
+                <input type="text" class="form-control tuning-input bg-light" value="0.00" readonly disabled>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="SELFVAL2B" id="TUN_SELFVAL2B" class="form-control tuning-input" value="0.05">
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="SELFVAL2C" id="TUN_SELFVAL2C" class="form-control tuning-input" value="0.00">
+            </div>
+        </div>
+        <div class="row align-items-center mb-2 pb-2 border-bottom">
+            <div class="col-md-3 fw-bold">3. SUPREME</div>
+            <div class="col-md-3">
+                <input type="text" class="form-control tuning-input bg-light" value="0.00" readonly disabled>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="SELFVAL3B" id="TUN_SELFVAL3B" class="form-control tuning-input" value="0.05">
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="SELFVAL3C" id="TUN_SELFVAL3C" class="form-control tuning-input" value="0.00">
+            </div>
+        </div>
+        <div class="row align-items-center mb-2 pb-2 border-bottom">
+            <div class="col-md-3 fw-bold">4. DIESEL</div>
+            <div class="col-md-3">
+                <input type="text" class="form-control tuning-input bg-light" value="0.00" readonly disabled>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="SELFVAL4B" id="TUN_SELFVAL4B" class="form-control tuning-input" value="0.05">
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="SELFVAL4C" id="TUN_SELFVAL4C" class="form-control tuning-input" value="0.00">
+            </div>
+        </div>
+        <div class="row align-items-center mb-2 pb-2 border-bottom">
+            <div class="col-md-3 fw-bold">5. KEROSEN</div>
+            <div class="col-md-3">
+                <input type="text" class="form-control tuning-input bg-light" value="0.00" readonly disabled>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="SELFVAL5B" id="TUN_SELFVAL5B" class="form-control tuning-input" value="0.05">
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="SELFVAL5C" id="TUN_SELFVAL5C" class="form-control tuning-input" value="0.00">
+            </div>
+        </div>
+        <div class="row align-items-center mb-2 pb-2 border-bottom">
+            <div class="col-md-3 fw-bold">6. OFROAD</div>
+            <div class="col-md-3">
+                <input type="text" class="form-control tuning-input bg-light" value="0.00" readonly disabled>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="SELFVAL6B" id="TUN_SELFVAL6B" class="form-control tuning-input" value="0.05">
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="SELFVAL6C" id="TUN_SELFVAL6C" class="form-control tuning-input" value="0.00">
+            </div>
+        </div>
+        <div class="row align-items-center mb-2 pb-2 border-bottom">
+            <div class="col-md-3 fw-bold">7. UNUSED</div>
+            <div class="col-md-3">
+                <input type="text" class="form-control tuning-input bg-light" value="0.00" readonly disabled>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="SELFVAL7B" id="TUN_SELFVAL7B" class="form-control tuning-input" value="0.05">
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="SELFVAL7C" id="TUN_SELFVAL7C" class="form-control tuning-input" value="0.00">
+            </div>
+        </div>
+        <div class="row align-items-center mb-2 pb-2 border-bottom">
+            <div class="col-md-3 fw-bold">8. UNUSED</div>
+            <div class="col-md-3">
+                <input type="text" class="form-control tuning-input bg-light" value="0.00" readonly disabled>
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="SELFVAL8B" id="TUN_SELFVAL8B" class="form-control tuning-input" value="0.05">
+            </div>
+            <div class="col-md-3">
+                <input type="text" name="SELFVAL8C" id="TUN_SELFVAL8C" class="form-control tuning-input" value="0.00">
+            </div>
+        </div>
+                            </div>
                         </div>
 
-                        <!-- Yenileme/Akış Hızı Ayarı (Speed) -->
-                        <div class="mb-5">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label for="speedRange" class="form-label fs-5 fw-medium mb-0">Animation Scrolling Speed</label>
-                                <span id="speedVal" class="badge bg-primary fs-5 px-3 py-2">10</span>
-                            </div>
-                            <input type="range" class="form-range" id="speedRange" name="speed" min="1" max="50" step="1">
-                            <div class="form-text fs-7 text-muted mt-2">Defines the marquee and transition speed of the pricing figures across digits.</div>
-                        </div>
-
-                        <!-- Buton Grubu -->
-                        <div class="d-flex justify-content-end gap-2 pt-3 border-top">
-                            <button type="button" class="btn btn-light border px-4 fw-medium" id="btnCancel">Reset Changes</button>
-                            <button type="submit" class="btn btn-dark px-4 fw-medium" id="btnSave">Save Framework Settings</button>
+                        <div class="mt-4 pt-3 border-top text-end">
+                            <button type="submit" class="btn btn-primary fw-bold px-5 py-2 fs-5">Save Tuning Configuration</button>
                         </div>
                     </form>
                 </div>
+
+                <!-- SEKME 2: PRODUCT NAMES & COLORS (configs.json) -->
+                <div class="tab-pane fade" id="configs-pane" role="tabpanel" aria-labelledby="configs-tab">
+                    <form id="configsForm">
+                        <div class="row text-secondary small fw-bold mb-2 text-center d-none d-md-flex border-bottom pb-2">
+                            <div class="col-md-1">#</div>
+                            <div class="col-md-3 text-start">PRODUCT LABEL</div>
+                            <div class="col-md-2">CASH TEXT</div>
+                            <div class="col-md-2">CREDIT TEXT</div>
+                            <div class="col-md-2">DEBIT TEXT</div>
+                            <div class="col-md-2">COLOR</div>
+                        </div>
+
+        <div class="row align-items-center mb-2 pb-2 border-bottom">
+            <div class="col-md-1 fw-bold text-center">1</div>
+            <div class="col-md-3">
+                <input type="text" name="TEXT1" id="CFG_TEXT1" class="form-control fw-bold" value="REGULAR">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="CASHTEXT1" id="CFG_CASHTEXT1" class="form-control" value="CASH">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="CREDITTEXT1" id="CFG_CREDITTEXT1" class="form-control" value="CREDIT">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="DEBITTEXT1" id="CFG_DEBITTEXT1" class="form-control" value="DEBIT">
+            </div>
+            <div class="col-md-2">
+                <select name="COLOR1" id="CFG_COLOR1" class="form-select fw-bold">
+                    <option value="R" selected>Red</option>
+                    <option value="G">Green</option>
+                    <option value="B">Blue</option>
+                    <option value="Y">Yellow</option>
+                    <option value="O">Orange</option>
+                    <option value="W">White</option>
+                    <option value="K">Black</option>
+                </select>
             </div>
         </div>
+        <div class="row align-items-center mb-2 pb-2 border-bottom">
+            <div class="col-md-1 fw-bold text-center">2</div>
+            <div class="col-md-3">
+                <input type="text" name="TEXT2" id="CFG_TEXT2" class="form-control fw-bold" value="PLUS">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="CASHTEXT2" id="CFG_CASHTEXT2" class="form-control" value="CASH">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="CREDITTEXT2" id="CFG_CREDITTEXT2" class="form-control" value="CREDIT">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="DEBITTEXT2" id="CFG_DEBITTEXT2" class="form-control" value="DEBIT">
+            </div>
+            <div class="col-md-2">
+                <select name="COLOR2" id="CFG_COLOR2" class="form-select fw-bold">
+                    <option value="R" selected>Red</option>
+                    <option value="G">Green</option>
+                    <option value="B">Blue</option>
+                    <option value="Y">Yellow</option>
+                    <option value="O">Orange</option>
+                    <option value="W">White</option>
+                    <option value="K">Black</option>
+                </select>
+            </div>
+        </div>
+        <div class="row align-items-center mb-2 pb-2 border-bottom">
+            <div class="col-md-1 fw-bold text-center">3</div>
+            <div class="col-md-3">
+                <input type="text" name="TEXT3" id="CFG_TEXT3" class="form-control fw-bold" value="SUPREME">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="CASHTEXT3" id="CFG_CASHTEXT3" class="form-control" value="CASH">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="CREDITTEXT3" id="CFG_CREDITTEXT3" class="form-control" value="CREDIT">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="DEBITTEXT3" id="CFG_DEBITTEXT3" class="form-control" value="DEBIT">
+            </div>
+            <div class="col-md-2">
+                <select name="COLOR3" id="CFG_COLOR3" class="form-select fw-bold">
+                    <option value="R" selected>Red</option>
+                    <option value="G">Green</option>
+                    <option value="B">Blue</option>
+                    <option value="Y">Yellow</option>
+                    <option value="O">Orange</option>
+                    <option value="W">White</option>
+                    <option value="K">Black</option>
+                </select>
+            </div>
+        </div>
+        <div class="row align-items-center mb-2 pb-2 border-bottom">
+            <div class="col-md-1 fw-bold text-center">4</div>
+            <div class="col-md-3">
+                <input type="text" name="TEXT4" id="CFG_TEXT4" class="form-control fw-bold" value="DIESEL">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="CASHTEXT4" id="CFG_CASHTEXT4" class="form-control" value="CASH">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="CREDITTEXT4" id="CFG_CREDITTEXT4" class="form-control" value="CREDIT">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="DEBITTEXT4" id="CFG_DEBITTEXT4" class="form-control" value="DEBIT">
+            </div>
+            <div class="col-md-2">
+                <select name="COLOR4" id="CFG_COLOR4" class="form-select fw-bold">
+                    <option value="R" selected>Red</option>
+                    <option value="G">Green</option>
+                    <option value="B">Blue</option>
+                    <option value="Y">Yellow</option>
+                    <option value="O">Orange</option>
+                    <option value="W">White</option>
+                    <option value="K">Black</option>
+                </select>
+            </div>
+        </div>
+        <div class="row align-items-center mb-2 pb-2 border-bottom">
+            <div class="col-md-1 fw-bold text-center">5</div>
+            <div class="col-md-3">
+                <input type="text" name="TEXT5" id="CFG_TEXT5" class="form-control fw-bold" value="KEROSEN">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="CASHTEXT5" id="CFG_CASHTEXT5" class="form-control" value="CASH">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="CREDITTEXT5" id="CFG_CREDITTEXT5" class="form-control" value="CREDIT">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="DEBITTEXT5" id="CFG_DEBITTEXT5" class="form-control" value="DEBIT">
+            </div>
+            <div class="col-md-2">
+                <select name="COLOR5" id="CFG_COLOR5" class="form-select fw-bold">
+                    <option value="R" selected>Red</option>
+                    <option value="G">Green</option>
+                    <option value="B">Blue</option>
+                    <option value="Y">Yellow</option>
+                    <option value="O">Orange</option>
+                    <option value="W">White</option>
+                    <option value="K">Black</option>
+                </select>
+            </div>
+        </div>
+        <div class="row align-items-center mb-2 pb-2 border-bottom">
+            <div class="col-md-1 fw-bold text-center">6</div>
+            <div class="col-md-3">
+                <input type="text" name="TEXT6" id="CFG_TEXT6" class="form-control fw-bold" value="OFROAD">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="CASHTEXT6" id="CFG_CASHTEXT6" class="form-control" value="CASH">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="CREDITTEXT6" id="CFG_CREDITTEXT6" class="form-control" value="CREDIT">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="DEBITTEXT6" id="CFG_DEBITTEXT6" class="form-control" value="DEBIT">
+            </div>
+            <div class="col-md-2">
+                <select name="COLOR6" id="CFG_COLOR6" class="form-select fw-bold">
+                    <option value="R" selected>Red</option>
+                    <option value="G">Green</option>
+                    <option value="B">Blue</option>
+                    <option value="Y">Yellow</option>
+                    <option value="O">Orange</option>
+                    <option value="W">White</option>
+                    <option value="K">Black</option>
+                </select>
+            </div>
+        </div>
+        <div class="row align-items-center mb-2 pb-2 border-bottom">
+            <div class="col-md-1 fw-bold text-center">7</div>
+            <div class="col-md-3">
+                <input type="text" name="TEXT7" id="CFG_TEXT7" class="form-control fw-bold" value="UNUSED">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="CASHTEXT7" id="CFG_CASHTEXT7" class="form-control" value="CASH">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="CREDITTEXT7" id="CFG_CREDITTEXT7" class="form-control" value="CREDIT">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="DEBITTEXT7" id="CFG_DEBITTEXT7" class="form-control" value="DEBIT">
+            </div>
+            <div class="col-md-2">
+                <select name="COLOR7" id="CFG_COLOR7" class="form-select fw-bold">
+                    <option value="R" selected>Red</option>
+                    <option value="G">Green</option>
+                    <option value="B">Blue</option>
+                    <option value="Y">Yellow</option>
+                    <option value="O">Orange</option>
+                    <option value="W">White</option>
+                    <option value="K">Black</option>
+                </select>
+            </div>
+        </div>
+        <div class="row align-items-center mb-2 pb-2 border-bottom">
+            <div class="col-md-1 fw-bold text-center">8</div>
+            <div class="col-md-3">
+                <input type="text" name="TEXT8" id="CFG_TEXT8" class="form-control fw-bold" value="UNUSED">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="CASHTEXT8" id="CFG_CASHTEXT8" class="form-control" value="CASH">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="CREDITTEXT8" id="CFG_CREDITTEXT8" class="form-control" value="CREDIT">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="DEBITTEXT8" id="CFG_DEBITTEXT8" class="form-control" value="DEBIT">
+            </div>
+            <div class="col-md-2">
+                <select name="COLOR8" id="CFG_COLOR8" class="form-select fw-bold">
+                    <option value="R" selected>Red</option>
+                    <option value="G">Green</option>
+                    <option value="B">Blue</option>
+                    <option value="Y">Yellow</option>
+                    <option value="O">Orange</option>
+                    <option value="W">White</option>
+                    <option value="K">Black</option>
+                </select>
+            </div>
+        </div>
+
+                        <div class="mt-4 pt-3 border-top text-end">
+                            <button type="submit" class="btn btn-primary fw-bold px-5 py-2 fs-5">Save Product Configs</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- SEKME 3: HARDWARE PARAMETERS (Brightness, Speed) -->
+                <div class="tab-pane fade" id="params-pane" role="tabpanel" aria-labelledby="params-tab">
+                    <form id="hardwareForm">
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label for="brightnessRange" class="form-label fs-5 fw-medium mb-0">LED Panel Brightness</label>
+                                <span id="brightnessVal" class="badge bg-success fs-5 px-3 py-2">33%</span>
+                            </div>
+                            <input type="range" class="form-range" id="brightnessRange" name="brightness" min="0" max="100" step="1" value="33">
+                            <div class="form-text fs-7 text-muted">Controls the duty cycle of the display LEDs (0-100%).</div>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <label for="speedRange" class="form-label fs-5 fw-medium mb-0">Animation Scrolling Speed</label>
+                                <span id="speedVal" class="badge bg-primary fs-5 px-3 py-2">27</span>
+                            </div>
+                            <input type="range" class="form-range" id="speedRange" name="speed" min="1" max="50" step="1" value="27">
+                            <div class="form-text fs-7 text-muted">Defines the transition speed across digits.</div>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-top text-end">
+                            <button type="submit" class="btn btn-dark fw-bold px-5 py-2 fs-5">Save Hardware Parameters</button>
+                        </div>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+
     </div>
-</div>
 
-<!-- Mevcut projenizdeki JQuery ve Bootstrap JS bileşenleri -->
-<script src="https://jquery.com"></script>
-    <link rel="stylesheet" href="style/css/bootstrap.min.css">
+    <!-- BOOTSTRAP 5.3.3 JS BUNDLE -->
+    <script src="style/js/bootstrap.bundle.min.js"></script>
 
-<script>
-$(document).ready(function() )
-{
-    // URL parametresinden istasyon kimliğini yakalıyoruz
-    const urlParams = new URLSearchParams(window.location.search);
-    const stationId = urlParams.get('station_id');
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const sid = urlParams.get('sid');
 
-    if (!stationId)
-    {
-        alert('Invalid Station Selection!');
-        window.location.href = 'index.html';
-        return;
-    }
-
-    // İstasyon ID bilgisini form elementlerine set ediyoruz
-    $('#stationIdInput').val(stationId);
-    $('#stationMeta').text('Station ID: ' + stationId);
-
-    // Range slider değişimlerini anlık ekrana basıyoruz
-    $('#brightnessRange').on('input', function()
-    {
-        $('#brightnessVal').text($(this).val() + '%');
-    }
-    );
-
-    $('#speedRange').on('input', function()
-    {
-        $('#speedVal').text($(this).val());
-    }
-    );
-
-    // Mevcut verileri sunucudan çekip form alanlarına yerleştiriyoruz
-    function loadCurrentSettings()
-    {
-        $.ajax(
+        document.addEventListener("DOMContentLoaded", () =>
         {
-            url: 'web_api.php',
-            type: 'GET',
-            data: { action: 'get_settings', station_id: stationId },
-            dataType: 'json',
-            success: function(data)
+            if (!sid)
             {
-                if (data.error)
+                alert("Error: Station ID missing.");
+                window.location.href = "index.html";
+                return;
+            }
+
+            document.getElementById("menu_price").href = "price.html?sid=" + sid;
+            document.getElementById("menu_settings").href = "settings.html?sid=" + sid;
+            document.getElementById("menu_ptconfig").href = "pt_config.html?sid=" + sid;
+            document.getElementById("menu_manage").href = "manage.html?sid=" + sid;
+
+            // Slider gösterge olayları
+            document.getElementById("brightnessRange").addEventListener("input", (e) =>
+            {
+                document.getElementById("brightnessVal").innerText = e.target.value + "%";
+            }
+            );
+
+            document.getElementById("speedRange").addEventListener("input", (e) =>
+            {
+                document.getElementById("speedVal").innerText = e.target.value;
+            }
+            );
+
+            loadStationDetails();
+            loadTuningData();
+            loadConfigsData();
+            loadHardwareParams();
+        }
+        );
+
+        async function loadStationDetails()
+        {
+            try
+            {
+                const response = await fetch("web_api.php?action=list");
+                const data = await response.json();
+                const targetStation = data.find(item => item.sid === sid);
+
+                if (targetStation)
                 {
-                    alert(data.error);
+                    document.getElementById("info_station_name").innerText = targetStation.station_name;
+                    document.getElementById("info_station_address").innerText = targetStation.address || "No Address Listed";
+                    document.getElementById("info_station_id").innerText = targetStation.sid;
+                    document.getElementById("info_last_seen").innerText = targetStation.last_seen || "Never Connected";
+                }
+            }
+            catch (error)
+            {
+                console.error("Infrastructure synchronizer error:", error);
+            }
+        }
+
+        async function loadTuningData()
+        {
+            try
+            {
+                const response = await fetch("web_api.php?action=get_tuning&sid=" + sid);
+                const result = await response.json();
+
+                if (result.status === "success" && result.tuning)
+                {
+                    for (const [key, val] of Object.entries(result.tuning))
+                    {
+                        const el = document.getElementById("TUN_" + key);
+                        if (el)
+                        {
+                            el.value = val;
+                        }
+                    }
+                }
+            }
+            catch (e)
+            {
+                console.log("Error loading tuning:", e);
+            }
+        }
+
+        async function loadConfigsData()
+        {
+            try
+            {
+                const response = await fetch("web_api.php?action=get_configs&sid=" + sid);
+                const result = await response.json();
+
+                if (result.status === "success" && result.configs)
+                {
+                    for (const [key, val] of Object.entries(result.configs))
+                    {
+                        const el = document.getElementById("CFG_" + key);
+                        if (el)
+                        {
+                            el.value = val;
+                        }
+                    }
+                }
+            }
+            catch (e)
+            {
+                console.log("Error loading configs:", e);
+            }
+        }
+
+        async function loadHardwareParams()
+        {
+            try
+            {
+                const response = await fetch("web_api.php?action=get_settings&sid=" + sid);
+                const result = await response.json();
+
+                if (result.status === "success")
+                {
+                    if (result.brightness !== undefined)
+                    {
+                        document.getElementById("brightnessRange").value = result.brightness;
+                        document.getElementById("brightnessVal").innerText = result.brightness + "%";
+                    }
+                    if (result.speed !== undefined)
+                    {
+                        document.getElementById("speedRange").value = result.speed;
+                        document.getElementById("speedVal").innerText = result.speed;
+                    }
+                }
+            }
+            catch (e)
+            {
+                console.log("Error loading hardware settings:", e);
+            }
+        }
+
+        // Tuning Form Submit
+        document.getElementById("tuningForm").addEventListener("submit", async (e) =>
+        {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+
+            try
+            {
+                const response = await fetch("web_api.php?action=update_tuning&sid=" + sid,
+                {
+                    method: "POST",
+                    body: formData
+                }
+                );
+                const res = await response.json();
+                if (res.status === "success")
+                {
+                    alert("Success! Tuning offset configurations saved.");
                 }
                 else
                 {
-                    // İstasyon adını simüle ediyoruz, isterseniz web_api.php listesinden de beslenebilir
-                    $('#stationName').text('Station Framework Configuration');
-                    $('#brightnessRange').val(data.Brightness).trigger('input');
-                    $('#speedRange').val(data.Speed).trigger('input');
+                    alert("Error: " + res.message);
                 }
             }
-    }
-    );
-    }
-
-    // İptal butonuna basıldığında verileri yenileme mekanizması
-    $('#btnCancel').click(function()
-    {
-        loadCurrentSettings();
-    }
-    );
-
-    // Form kayıt işleyicisi (Allman Stili Kurallarına Göre)
-    $('#settingsForm').submit(function(e)
-    {
-        e.preventDefault();
-
-        $.ajax(
-        {
-            url: 'web_api.php?action=update_settings',
-            type: 'POST',
-            data: $(this).serialize(),
-            dataType: 'json',
-            success: function(response)
+            catch (err)
             {
-                if (response.success)
+                alert("Network transaction error.");
+            }
+        }
+        );
+
+        // Configs Form Submit
+        document.getElementById("configsForm").addEventListener("submit", async (e) =>
+        {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+
+            try
+            {
+                const response = await fetch("web_api.php?action=update_configs&sid=" + sid,
                 {
-                    alert('Hardware configuration sent successfully to the queue!');
-                    loadCurrentSettings();
+                    method: "POST",
+                    body: formData
+                }
+                );
+                const res = await response.json();
+                if (res.status === "success")
+                {
+                    alert("Success! Product names and color configurations saved.");
                 }
                 else
                 {
-                    alert('Error: ' + response.error);
+                    alert("Error: " + res.message);
                 }
             }
-    }
-    );
-    }
-    );
+            catch (err)
+            {
+                alert("Network transaction error.");
+            }
+        }
+        );
 
-    // İlk açılışta verileri yüklüyoruz
-    loadCurrentSettings();
-}
-;
-</script>
+        // Hardware Form Submit
+        document.getElementById("hardwareForm").addEventListener("submit", async (e) =>
+        {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+
+            try
+            {
+                const response = await fetch("web_api.php?action=update_hardware&sid=" + sid,
+                {
+                    method: "POST",
+                    body: formData
+                }
+                );
+                const res = await response.json();
+                if (res.status === "success")
+                {
+                    alert("Success! Hardware brightness and speed saved.");
+                }
+                else
+                {
+                    alert("Error: " + res.message);
+                }
+            }
+            catch (err)
+            {
+                alert("Network transaction error.");
+            }
+        }
+        );
+    </script>
 </body>
 </html>

@@ -47,8 +47,17 @@
         }
         .price-matrix-input
         {
-            font-weight: bold;
+            font-size: 1.6rem !important;
+            font-weight: 700;
             text-align: center;
+            height: 52px;
+            letter-spacing: 1px;
+            color: #0d6efd;
+        }
+        .input-group-text
+        {
+            font-size: 1.3rem;
+            font-weight: 600;
         }
         .product-row
         {
@@ -325,9 +334,12 @@
                             <td><div class="fw-bold text-dark">${station.station_name}</div><div class="text-muted small">${station.address || 'No Address Listed'}</div></td>
                             <td class="small text-muted fw-bold">${station.last_seen || 'Never Connected'}</td>
                             <td class="text-end pe-3">
-                                <a href="price.html?sid=${station.sid}" class="btn btn-sm btn-primary px-3">
-                                    Manage Station
-                                </a>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="price.html?sid=${station.sid}" class="btn btn-primary fw-medium px-2">Price Station</a>
+                                    <a href="settings.html?sid=${station.sid}" class="btn btn-outline-secondary fw-medium px-2">Setting Station</a>
+                                    <a href="pt_config.html?sid=${station.sid}" class="btn btn-outline-secondary fw-medium px-2">PTConfig Station</a>
+                                    <a href="manage.html?sid=${station.sid}" class="btn btn-outline-secondary fw-medium px-2">Manage Station</a>
+                                </div>
                             </td>
                         </tr>
                     `;

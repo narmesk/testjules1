@@ -178,6 +178,165 @@ if ($action == 'get_prices' && !empty($sid))
     }
 }
 
+// -----------------------------------------------------------------------------
+// EYLEM 4: İstasyonun Tuning Ofset Değerlerini Çekme (?action=get_tuning&sid=45)
+// -----------------------------------------------------------------------------
+if ($action == 'get_tuning')
+{
+    $tuningPath = __DIR__ . '/jsons/tunning.json';
+    if (file_exists($tuningPath))
+    {
+        $jsonContent = file_get_contents($tuningPath);
+        $tuningData = json_decode($jsonContent, true);
+        echo json_encode(array("status" => "success", "tuning" => $tuningData));
+        exit;
+    }
+    else
+    {
+        echo json_encode(array("status" => "error", "message" => "Tuning configuration not found."));
+        exit;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// EYLEM 5: İstasyonun Ürün İsimleri ve Renk Konfigürasyonunu Çekme (?action=get_configs)
+// -----------------------------------------------------------------------------
+if ($action == 'get_configs')
+{
+    $configsPath = __DIR__ . '/jsons/configs.json';
+    if (file_exists($configsPath))
+    {
+        $jsonContent = file_get_contents($configsPath);
+        $configsData = json_decode($jsonContent, true);
+        echo json_encode(array("status" => "success", "configs" => $configsData));
+        exit;
+    }
+    else
+    {
+        echo json_encode(array("status" => "error", "message" => "Configs template not found."));
+        exit;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// EYLEM 6: Ürün İsimleri ve Renk Konfigürasyonunu Kaydetme (?action=update_configs)
+// -----------------------------------------------------------------------------
+if ($action == 'update_configs')
+{
+    $configsPath = __DIR__ . '/jsons/configs.json';
+    $currentData = array();
+    if (file_exists($configsPath))
+    {
+        $currentData = json_decode(file_get_contents($configsPath), true);
+    }
+
+    foreach ($_POST as $key => $val)
+    {
+        $currentData[$key] = $val;
+    }
+
+    file_put_contents($configsPath, json_encode($currentData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    echo json_encode(array("status" => "success", "message" => "Configs updated successfully."));
+    exit;
+}
+
+// -----------------------------------------------------------------------------
+// EYLEM 7: Tuning Ofset Konfigürasyonunu Kaydetme (?action=update_tuning)
+// -----------------------------------------------------------------------------
+if ($action == 'update_tuning')
+{
+    $tuningPath = __DIR__ . '/jsons/tunning.json';
+    $currentData = array();
+    if (file_exists($tuningPath))
+    {
+        $currentData = json_decode(file_get_contents($tuningPath), true);
+    }
+
+    foreach ($_POST as $key => $val)
+    {
+        $currentData[$key] = $val;
+    }
+
+    file_put_contents($tuningPath, json_encode($currentData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    echo json_encode(array("status" => "success", "message" => "Tuning offsets updated successfully."));
+    exit;
+}
+
+// -----------------------------------------------------------------------------
+// EYLEM 8: Donanım Ayarlarını Çekme (?action=get_settings)
+// -----------------------------------------------------------------------------
+if ($action == 'get_settings')
+{
+    $brightness = "33";
+    $speed = "27";
+
+    if (!empty($sid))
+    {
+        $sqlSelect = "SELECT ledcfg FROM station WHERE sid = '{$sid}'";
+        $resSelect = $mysqli->query($sqlSelect);
+        if ($resSelect && $resSelect->num_rows > 0)
+        {
+            $row = $resSelect->fetch_assoc();
+            $cfg = json_decode($row['ledcfg'], true);
+            if (isset($cfg['parameters'][0]['v']))
+            {
+                $brightness = $cfg['parameters'][0]['v'];
+            }
+            if (isset($cfg['parameters'][1]['v']))
+            {
+                $speed = $cfg['parameters'][1]['v'];
+            }
+        }
+    }
+
+    echo json_encode(array("status" => "success", "brightness" => $brightness, "speed" => $speed));
+    exit;
+}
+
+// -----------------------------------------------------------------------------
+// EYLEM 9: Donanım Ayarlarını Güncelleme (?action=update_hardware)
+// -----------------------------------------------------------------------------
+if ($action == 'update_hardware' && !empty($sid))
+{
+    $brightness = isset($_POST['brightness']) ? $_POST['brightness'] : '33';
+    $speed      = isset($_POST['speed']) ? $_POST['speed'] : '27';
+
+    $sqlSelect = "SELECT ledcfg FROM station WHERE sid = '{$sid}'";
+    $resSelect = $mysqli->query($sqlSelect);
+
+    if ($resSelect && $resSelect->num_rows > 0)
+    {
+        $row = $resSelect->fetch_assoc();
+        $configArray = json_decode($row['ledcfg'], true);
+
+        if (!is_array($configArray))
+        {
+            $configArray = array();
+        }
+
+        $configArray['parameters'][0] = array("v" => strval($brightness));
+        $configArray['parameters'][1] = array("v" => strval($speed));
+
+        $processId = strval(rand(11111111, 99999999));
+        $configArray['ptype']   = "pm";
+        $configArray['pmaster'] = "sv";
+        $configArray['pid']     = $processId;
+        $configArray['pdate']   = date("Y-m-d H:i:s");
+
+        $updatedJson = $mysqli->real_escape_string(json_encode($configArray, JSON_UNESCAPED_UNICODE));
+        $mysqli->query("UPDATE station SET ledcfg = '{$updatedJson}' WHERE sid = '{$sid}'");
+        $mysqli->query("UPDATE ledresult SET ptype = 'pm', processid = '{$processId}' WHERE stationid = '{$sid}'");
+
+        echo json_encode(array("status" => "success", "message" => "Hardware parameters queued."));
+        exit;
+    }
+    else
+    {
+        echo json_encode(array("status" => "error", "message" => "Station not found."));
+        exit;
+    }
+}
+
 echo json_encode(array("status" => "error", "message" => "Invalid action."));
 $mysqli->close();
 ?>

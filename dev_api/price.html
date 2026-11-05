@@ -24,8 +24,17 @@
         }
         .price-matrix-input
         {
-            font-weight: bold;
+            font-size: 1.6rem !important;
+            font-weight: 700;
             text-align: center;
+            height: 52px;
+            letter-spacing: 1px;
+            color: #0d6efd;
+        }
+        .input-group-text
+        {
+            font-size: 1.3rem;
+            font-weight: 600;
         }
         .product-row
         {
@@ -68,9 +77,11 @@
         </div>
 
         <!-- MODÜLER GEÇİŞ MENÜSÜ -->
-        <div class="d-flex gap-2 mb-4">
-            <a href="#" id="menu_price" class="btn btn-primary px-4 fw-bold shadow-sm">Price Matrix</a>
-            <a href="#" id="menu_settings" class="btn btn-outline-secondary px-4 fw-bold disabled">Station Settings (Soon)</a>
+        <div class="d-flex flex-wrap gap-2 mb-4">
+            <a href="#" id="menu_price" class="btn btn-primary px-4 fw-bold shadow-sm">Price Station</a>
+            <a href="#" id="menu_settings" class="btn btn-outline-secondary px-4 fw-bold">Setting Station</a>
+            <a href="#" id="menu_ptconfig" class="btn btn-outline-secondary px-4 fw-bold">PTConfig Station</a>
+            <a href="#" id="menu_manage" class="btn btn-outline-secondary px-4 fw-bold">Manage Station</a>
         </div>
 
         <div id="sendingAlert" class="alert alert-warning d-none align-items-center fade show border-0 mb-4" role="alert">
@@ -79,83 +90,400 @@
 
         <!-- 8 ÜRÜN X 3 ÖDEME TİPİ MATRİS FORMU -->
         <div class="card p-4 bg-white border">
-            <h5 class="text-secondary fw-bold mb-4 border-bottom pb-2">8-PRODUCT FUEL PRICE MATRIX</h5>
+            <!-- FULL SERVICE & SELF SERVICE TABS -->
+            <ul class="nav nav-pills mb-4" id="priceServiceTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active px-4 py-2 fs-5 fw-bold" id="full-service-tab" data-bs-toggle="pill" data-bs-target="#full-service" type="button" role="tab" aria-controls="full-service" aria-selected="true">
+                        <i class="bi bi-fuel-pump-fill me-2"></i>Full Service
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link px-4 py-2 fs-5 fw-bold ms-2" id="self-service-tab" data-bs-toggle="pill" data-bs-target="#self-service" type="button" role="tab" aria-controls="self-service" aria-selected="false">
+                        <i class="bi bi-fuel-pump me-2"></i>Self Service
+                    </button>
+                </li>
+            </ul>
 
             <form id="priceForm">
-                <div class="row text-secondary small fw-bold mb-2 text-center d-none d-md-flex">
-                    <div class="col-md-3 text-left">PRODUCT TYPE</div>
-                    <div class="col-md-3">CASH PRICE</div>
-                    <div class="col-md-3">CREDIT PRICE</div>
-                    <div class="col-md-3">DEBIT PRICE</div>
-                </div>
+                <div class="tab-content" id="priceServiceTabsContent">
+                    <!-- FULL SERVICE TAB -->
+                    <div class="tab-pane fade show active" id="full-service" role="tabpanel" aria-labelledby="full-service-tab">
+                        <div class="row text-secondary small fw-bold mb-3 text-center d-none d-md-flex border-bottom pb-2">
+                            <div class="col-md-3 text-start ps-3">PRODUCT TYPE</div>
+                            <div class="col-md-3">CASH PRICE</div>
+                            <div class="col-md-3">CREDIT PRICE</div>
+                            <div class="col-md-3">DEBIT PRICE</div>
+                        </div>
 
                 <!-- 1. DIESEL -->
                 <div class="row product-row align-items-center">
-                    <div class="col-md-3 fw-bold text-dark">DIESEL</div>
-                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p0_cash" id="p0_cash" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
-                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p0_credit" id="p0_credit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
-                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p0_debit" id="p0_debit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                    <div class="col-md-3 fw-bold text-dark fs-5">DIESEL</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL1A" id="FULLVAL1A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="FULL" data-index="1" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL1B" id="FULLVAL1B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL1C" id="FULLVAL1C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
                 </div>
-
                 <!-- 2. REGULAR -->
                 <div class="row product-row align-items-center">
-                    <div class="col-md-3 fw-bold text-dark">REGULAR</div>
-                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p1_cash" id="p1_cash" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
-                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p1_credit" id="p1_credit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
-                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p1_debit" id="p1_debit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                    <div class="col-md-3 fw-bold text-dark fs-5">REGULAR</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL2A" id="FULLVAL2A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="FULL" data-index="2" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL2B" id="FULLVAL2B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL2C" id="FULLVAL2C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
                 </div>
-
                 <!-- 3. PLUS -->
                 <div class="row product-row align-items-center">
-                    <div class="col-md-3 fw-bold text-dark">PLUS</div>
-                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p2_cash" id="p2_cash" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
-                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p2_credit" id="p2_credit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
-                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p2_debit" id="p2_debit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                    <div class="col-md-3 fw-bold text-dark fs-5">PLUS</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL3A" id="FULLVAL3A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="FULL" data-index="3" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL3B" id="FULLVAL3B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL3C" id="FULLVAL3C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
                 </div>
-
                 <!-- 4. SUPER -->
                 <div class="row product-row align-items-center">
-                    <div class="col-md-3 fw-bold text-dark">SUPER</div>
-                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p3_cash" id="p3_cash" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
-                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p3_credit" id="p3_credit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
-                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p3_debit" id="p3_debit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                    <div class="col-md-3 fw-bold text-dark fs-5">SUPER</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL4A" id="FULLVAL4A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="FULL" data-index="4" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL4B" id="FULLVAL4B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL4C" id="FULLVAL4C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
                 </div>
-
                 <!-- 5. PREMIUM -->
                 <div class="row product-row align-items-center">
-                    <div class="col-md-3 fw-bold text-dark">PREMIUM</div>
-                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p4_cash" id="p4_cash" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
-                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p4_credit" id="p4_credit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
-                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p4_debit" id="p4_debit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                    <div class="col-md-3 fw-bold text-dark fs-5">PREMIUM</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL5A" id="FULLVAL5A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="FULL" data-index="5" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL5B" id="FULLVAL5B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL5C" id="FULLVAL5C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
                 </div>
-
-               <!-- 6. DEF -->
+                <!-- 6. DEF -->
                 <div class="row product-row align-items-center">
-                    <div class="col-md-3 fw-bold text-dark">DEF</div>
-                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p5_cash" id="p5_cash" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
-                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p5_credit" id="p5_credit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
-                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p5_debit" id="p5_debit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                    <div class="col-md-3 fw-bold text-dark fs-5">DEF</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL6A" id="FULLVAL6A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="FULL" data-index="6" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL6B" id="FULLVAL6B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL6C" id="FULLVAL6C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
                 </div>
-
                 <!-- 7. KEROSEN -->
                 <div class="row product-row align-items-center">
-                    <div class="col-md-3 fw-bold text-dark">KEROSEN</div>
-                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p6_cash" id="p6_cash" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
-                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p6_credit" id="p6_credit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
-                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p6_debit" id="p6_debit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                    <div class="col-md-3 fw-bold text-dark fs-5">KEROSEN</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL7A" id="FULLVAL7A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="FULL" data-index="7" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL7B" id="FULLVAL7B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL7C" id="FULLVAL7C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
                 </div>
-
                 <!-- 8. E85 -->
                 <div class="row product-row align-items-center">
-                    <div class="col-md-3 fw-bold text-dark">E85</div>
-                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p7_cash" id="p7_cash" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
-                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p7_credit" id="p7_credit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
-                    <div class="col-md-3"><div class="input-group"><div class="input-group-prepend"><span class="input-group-text">$</span></div><input type="text" name="p7_debit" id="p7_debit" class="form-control price-matrix-input border-left-0 pl-0" value="0.00"></div></div>
+                    <div class="col-md-3 fw-bold text-dark fs-5">E85</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL8A" id="FULLVAL8A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="FULL" data-index="8" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL8B" id="FULLVAL8B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL8C" id="FULLVAL8C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                    </div>
+
+                    <!-- SELF SERVICE TAB -->
+                    <div class="tab-pane fade" id="self-service" role="tabpanel" aria-labelledby="self-service-tab">
+                        <div class="row text-secondary small fw-bold mb-3 text-center d-none d-md-flex border-bottom pb-2">
+                            <div class="col-md-3 text-start ps-3">PRODUCT TYPE</div>
+                            <div class="col-md-3">CASH PRICE</div>
+                            <div class="col-md-3">CREDIT PRICE</div>
+                            <div class="col-md-3">DEBIT PRICE</div>
+                        </div>
+
+                <!-- 1. DIESEL -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark fs-5">DIESEL</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL1A" id="SELFVAL1A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="SELF" data-index="1" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL1B" id="SELFVAL1B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL1C" id="SELFVAL1C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                <!-- 2. REGULAR -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark fs-5">REGULAR</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL2A" id="SELFVAL2A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="SELF" data-index="2" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL2B" id="SELFVAL2B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL2C" id="SELFVAL2C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                <!-- 3. PLUS -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark fs-5">PLUS</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL3A" id="SELFVAL3A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="SELF" data-index="3" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL3B" id="SELFVAL3B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL3C" id="SELFVAL3C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                <!-- 4. SUPER -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark fs-5">SUPER</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL4A" id="SELFVAL4A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="SELF" data-index="4" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL4B" id="SELFVAL4B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL4C" id="SELFVAL4C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                <!-- 5. PREMIUM -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark fs-5">PREMIUM</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL5A" id="SELFVAL5A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="SELF" data-index="5" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL5B" id="SELFVAL5B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL5C" id="SELFVAL5C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                <!-- 6. DEF -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark fs-5">DEF</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL6A" id="SELFVAL6A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="SELF" data-index="6" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL6B" id="SELFVAL6B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL6C" id="SELFVAL6C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                <!-- 7. KEROSEN -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark fs-5">KEROSEN</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL7A" id="SELFVAL7A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="SELF" data-index="7" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL7B" id="SELFVAL7B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL7C" id="SELFVAL7C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                <!-- 8. E85 -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark fs-5">E85</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL8A" id="SELFVAL8A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="SELF" data-index="8" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL8B" id="SELFVAL8B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL8C" id="SELFVAL8C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                    </div>
                 </div>
 
-                <div class="mt-4 text-end">
+                <div class="mt-4 pt-3 border-top text-end">
                     <a href="index.html" class="btn btn-secondary fw-bold px-4 me-2">Cancel</a>
-                    <button type="submit" id="btnSubmit" class="btn btn-success fw-bold px-5">Push Configuration</button>
+                    <button type="submit" id="btnSubmit" class="btn btn-success fw-bold px-5 py-2 fs-5">Push Configuration</button>
                 </div>
             </form>
         </div>
@@ -164,6 +492,9 @@
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const sid = urlParams.get('sid');
+
+        // Tuning ofset tablosu (Cash girildiğinde Credit ve Debit hesaplaması için)
+        let tuningOffsets = null;
 
         document.addEventListener("DOMContentLoaded", () =>
         {
@@ -175,11 +506,171 @@
             }
 
             document.getElementById("menu_price").href = "price.html?sid=" + sid;
+            document.getElementById("menu_settings").href = "settings.html?sid=" + sid;
+            document.getElementById("menu_ptconfig").href = "pt_config.html?sid=" + sid;
+            document.getElementById("menu_manage").href = "manage.html?sid=" + sid;
 
-            loadStationDetails();
-            loadCurrentPrices();
+
+        // Tab geçişi için hem Bootstrap data-bs-toggle hem de doğrudan Vanilla JS desteği
+        document.getElementById("full-service-tab").addEventListener("click", () =>
+        {
+            document.getElementById("full-service-tab").classList.add("active");
+            document.getElementById("self-service-tab").classList.remove("active");
+            document.getElementById("full-service").classList.add("show", "active");
+            document.getElementById("self-service").classList.remove("show", "active");
         }
         );
+
+        document.getElementById("self-service-tab").addEventListener("click", () =>
+        {
+            document.getElementById("self-service-tab").classList.add("active");
+            document.getElementById("full-service-tab").classList.remove("active");
+            document.getElementById("self-service").classList.add("show", "active");
+            document.getElementById("full-service").classList.remove("show", "active");
+        }
+        );
+
+            loadStationDetails();
+            loadTuningConfig();
+            loadCurrentPrices();
+            setupEnterNavigation();
+        }
+        );
+
+        // Tuning konfigürasyonunu yükleme (Offsetler)
+        async function loadTuningConfig()
+        {
+            try
+            {
+                const response = await fetch("web_api.php?action=get_tuning&sid=" + sid);
+                const data = await response.json();
+                if (data.status === "success")
+                {
+                    tuningOffsets = data.tuning;
+                }
+            }
+            catch (e)
+            {
+                console.log("Tuning config load skipped, defaulting to local offsets.");
+            }
+        }
+
+
+        // Fiyat formatlama fonksiyonu: Girilen değeri ondalıklı sayı formatına dönüştürür (ör: 4.5 -> 4.50, 45 -> 45.00)
+        function formatPriceValue(val)
+        {
+            if (!val) return "0.00";
+            let cleaned = val.toString().replace(/[^0-9.]/g, '');
+            if (!cleaned) return "0.00";
+
+            // Eğer nokta yoksa ve 3 basamaktan fazlaysa (örnek: 4250 -> 42.50) veya doğrudan sayı girilmişse
+            let num = parseFloat(cleaned);
+            if (isNaN(num)) return "0.00";
+            return num.toFixed(2);
+        }
+
+        // Enter tuşuna basıldığında formun submit olmasını engelleyip bir alt satırdaki kutuya odaklanma
+        function setupEnterNavigation()
+        {
+            ["FULL", "SELF"].forEach(service =>
+            {
+                // Kolon bazlı (A=Cash, B=Credit, C=Debit)
+                ["A", "B", "C"].forEach(col =>
+                {
+                    for (let row = 1; row <= 8; row++)
+                    {
+                        const inputId = `${service}VAL${row}${col}`;
+                        const el = document.getElementById(inputId);
+                        if (el)
+                        {
+                            // Enter tuşu dinleyicisi
+                            el.addEventListener("keydown", (e) =>
+                            {
+                                if (e.key === "Enter")
+                                {
+                                    e.preventDefault(); // Formun hemen submit olup sayfayı yenilemesini kesin engelliyoruz
+
+                                    // Değeri ondalıklı olarak düzelt
+                                    el.value = formatPriceValue(el.value);
+
+                                    // Cash kolonuysa tuning tetikle
+                                    if (col === "A")
+                                    {
+                                        applyTuningForInput(service, row, el.value);
+                                    }
+
+                                    // Bir alt satıra geç (1 -> 2 -> ... -> 8 -> 1 döngüsü)
+                                    let nextRow = row + 1;
+                                    if (nextRow > 8)
+                                    {
+                                        nextRow = 1;
+                                    }
+                                    const nextInput = document.getElementById(`${service}VAL${nextRow}${col}`);
+                                    if (nextInput)
+                                    {
+                                        nextInput.focus();
+                                        nextInput.select();
+                                    }
+                                }
+                            }
+                            );
+
+                            // Odak kaybolduğunda da formatı koru
+                            el.addEventListener("blur", () =>
+                            {
+                                el.value = formatPriceValue(el.value);
+                                if (col === "A")
+                                {
+                                    applyTuningForInput(service, row, el.value);
+                                }
+                            }
+                            );
+                        }
+                    }
+                }
+                );
+            }
+            );
+        }
+
+        // Belirli bir satır için Tuning ofsetlerini hesaplayıp Credit ve Debit alanlarına yazma
+        function applyTuningForInput(service, row, cashString)
+        {
+            const cashVal = parseFloat(cashString);
+            if (isNaN(cashVal)) return;
+
+            const creditInput = document.getElementById(`${service}VAL${row}B`);
+            const debitInput = document.getElementById(`${service}VAL${row}C`);
+
+            let creditOffset = 0.05;
+            let debitOffset = 0.00;
+
+            if (tuningOffsets)
+            {
+                const cKey = `${service}VAL${row}B`;
+                const dKey = `${service}VAL${row}C`;
+                if (tuningOffsets[cKey] !== undefined)
+                {
+                    creditOffset = parseFloat(tuningOffsets[cKey]) || 0;
+                }
+                if (tuningOffsets[dKey] !== undefined)
+                {
+                    debitOffset = parseFloat(tuningOffsets[dKey]) || 0;
+                }
+            }
+
+            if (creditInput && (!creditInput.value || creditInput.value === "0.00" || creditInput.dataset.autoFilled === "true"))
+            {
+                creditInput.value = (cashVal + creditOffset).toFixed(2);
+                creditInput.dataset.autoFilled = "true";
+            }
+
+            if (debitInput && (!debitInput.value || debitInput.value === "0.00" || debitInput.dataset.autoFilled === "true"))
+            {
+                debitInput.value = (cashVal + debitOffset).toFixed(2);
+                debitInput.dataset.autoFilled = "true";
+            }
+        }
 
         async function loadStationDetails()
         {
@@ -216,23 +707,40 @@
 
                 if (result.status === "success")
                 {
-                    const priceFields = [
-                        "p0_cash", "p0_credit", "p0_debit",
-                        "p1_cash", "p1_credit", "p1_debit",
-                        "p2_cash", "p2_credit", "p2_debit",
-                        "p3_cash", "p3_credit", "p3_debit",
-                        "p4_cash", "p4_credit", "p4_debit",
-                        "p5_cash", "p5_credit", "p5_debit",
-                        "p6_cash", "p6_credit", "p6_debit",
-                        "p7_cash", "p7_credit", "p7_debit"
-                    ];
-
-                    for (let i = 0; i < 24; i++)
+                    // 1. Yeni Full/Self JSON modeli varsa dolduruyoruz
+                    if (result.full_self)
                     {
-                        const fieldElement = document.getElementById(priceFields[i]);
-                        if (fieldElement && result.prices[i] !== undefined)
+                        for (const [key, val] of Object.entries(result.full_self))
                         {
-                            fieldElement.value = result.prices[i];
+                            const el = document.getElementById(key);
+                            if (el)
+                            {
+                                el.value = val;
+                            }
+                        }
+                    }
+                    // 2. Standart 24 fiyat dizisi varsa Full service alanlarını dolduruyoruz
+                    else if (result.prices && Array.isArray(result.prices))
+                    {
+                        for (let i = 0; i < 8; i++)
+                        {
+                            const pnum = i + 1;
+                            const cashEl = document.getElementById(`FULLVAL${pnum}A`);
+                            const creditEl = document.getElementById(`FULLVAL${pnum}B`);
+                            const debitEl = document.getElementById(`FULLVAL${pnum}C`);
+
+                            if (cashEl && result.prices[i * 3 + 0] !== undefined)
+                            {
+                                cashEl.value = result.prices[i * 3 + 0];
+                            }
+                            if (creditEl && result.prices[i * 3 + 1] !== undefined)
+                            {
+                                creditEl.value = result.prices[i * 3 + 1];
+                            }
+                            if (debitEl && result.prices[i * 3 + 2] !== undefined)
+                            {
+                                debitEl.value = result.prices[i * 3 + 2];
+                            }
                         }
                     }
                 }
@@ -267,8 +775,8 @@
 
                 if (result.status === "success")
                 {
+                    // Sayfadan ayrılmıyoruz, kullanıcı aynı ekranda kalarak işlem yapmaya devam edebiliyor
                     alert("Success! New configurations injected into the cloud node.");
-                    window.location.href = "index.html";
                 }
                 else
                 {
@@ -287,5 +795,6 @@
         }
         );
     </script>
+<script src="style/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
