@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <meta charset="utf-8">
+  <link rel="icon" href="data:,">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Ledobe - Parameters</title>
+
+  <style>
+    :root {
+      --bg-color: #f4f6f9;
+      --card-bg: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success: #10b981;
+      --error: #ef4444;
+      --border: #e2e8f0;
+      --input-bg: #f8fafc;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; }
+    body { background-color: var(--bg-color); color: var(--text-main); padding-bottom: 70px; min-height: 100vh; display: flex; flex-direction: column; }
+
+    /* Header - Ortalanmış Sade Yapı */
+    header { background-color: #ffffff; padding: 20px 10px; border-bottom: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05); text-align: center; }
+    h1 { font-size: 1.4rem; letter-spacing: 0.5px; color: var(--primary); margin-bottom: 15px; text-transform: uppercase; font-weight: 700; }
+    h2 { font-size: 1.1rem; text-align: center; color: var(--text-muted); margin: 20px 0 10px 0; letter-spacing: 1.5px; font-weight: 600; }
+
+    /* Nav Buttons */
+    .nav-group { display: flex; justify-content: center; gap: 8px; max-width: 500px; margin: 0 auto; padding: 0 10px; }
+    .nav-btn { flex: 1; text-align: center; background: var(--input-bg); color: var(--text-main); padding: 10px; text-decoration: none; border-radius: 8px; font-size: 0.9rem; font-weight: 500; border: 1px solid var(--border); transition: all 0.2s; }
+    .nav-btn.active, .nav-btn:hover { background: var(--primary); color: #ffffff; border-color: var(--primary); font-weight: 600; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2); }
+
+    /* Layout Container */
+    .container { width: 100%; max-width: 800px; margin: 0 auto; padding: 15px; }
+    .grid { display: flex; flex-direction: column; gap: 15px; }
+
+    /* Status & Info Panels */
+    .status-panel { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 15px; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .status-msg { display: none; font-weight: bold; font-size: 1rem; color: #d97706; }
+
+    .info-bar { background: #eff6ff; border: 1px solid rgba(37, 99, 235, 0.15); border-radius: 12px; padding: 12px; text-align: center; font-size: 0.9rem; color: #1e3a8a; }
+    .info-bar span { color: var(--primary); font-weight: bold; margin-right: 15px; }
+
+    /* Table Design */
+    .table-container { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.95rem; }
+    th { background: #f8fafc; color: var(--text-muted); font-weight: 600; padding: 12px 16px; border-bottom: 1px solid var(--border); text-transform: uppercase; font-size: 0.8rem; }
+    td { padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--text-main); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) { background-color: #f8fafc; }
+
+    /* Table Inputs */
+    .param-input { width: 80px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; padding: 8px; color: var(--text-main); font-size: 1rem; font-weight: 600; text-align: center; outline: none; cursor: pointer; transition: border 0.2s; }
+    .param-input:focus { border-color: var(--primary); background: var(--input-bg); }
+
+    /* Action Buttons */
+    .btn-group-actions { display: flex; gap: 12px; margin-top: 10px; flex-direction: column; }
+    @media(min-width: 480px) { .btn-group-actions { flex-direction: row; } }
+
+    .btn-submit { flex: 1; background: var(--primary); color: #ffffff; border: none; padding: 14px; font-size: 1rem; font-weight: 600; border-radius: 10px; cursor: pointer; text-transform: uppercase; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25); transition: all 0.2s; }
+    .btn-submit:hover { background: var(--primary-hover); }
+    .btn-submit:disabled { background: #cbd5e1; color: #94a3b8; cursor: not-allowed; box-shadow: none; }
+    .btn-secondary { background: #64748b; box-shadow: 0 4px 12px rgba(100, 116, 139, 0.25); }
+    .btn-secondary:hover { background: #475569; }
+
+    /* VIRTUAL KEYBOARD MODAL STYLES */
+    /* NOT: Genislik/yukseklik icin bilerek yuzde DEGIL, dort kenar offset'i kullaniliyor.
+       ESPAsyncWebServer template processor'u yuzde-isareti ile cevrelenmis araliklari
+       placeholder sanip silebilir; bu kuralda yuzde isareti kullanilmamalidir. */
+    .vk-modal { display: none; position: fixed; top: 0; right: 0; bottom: 0; left: 0; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: flex-end; }
+    .vk-container { background: #e2e8f0; width: 100vw; max-width: 450px; max-height: 100vh; overflow-y: auto; border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 15px; box-shadow: 0 -5px 25px rgba(0,0,0,0.2); animation: slideUp 0.25s ease-out; }
+    @media (min-width: 500px) {
+      .vk-modal { align-items: center; }
+      .vk-container { border-radius: 20px; }
+    }
+    @keyframes slideUp { from { transform: translateY(30px); } to { transform: translateY(0); } }
+
+    /* Keyboard Digital Display Window */
+    .vk-display { background: #000000; color: #00ff33; font-family: monospace, sans-serif; font-size: 3rem; text-align: right; padding: 12px 20px; border-radius: 10px; margin-bottom: 15px; font-weight: bold; letter-spacing: 2px; text-shadow: 0 0 10px rgba(0,255,51,0.6); box-shadow: inset 0 0 10px rgba(0,0,0,0.8); min-height: 70px; }
+
+    /* Keyboard Grid */
+    .vk-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 10px; }
+    .vk-btn { background: #1e293b; color: #ffffff; border: 2px solid #334155; border-radius: 10px; font-size: 1.5rem; font-weight: bold; padding: 15px; cursor: pointer; text-align: center; transition: background 0.1s; user-select: none; -webkit-tap-highlight-color: transparent; }
+    .vk-btn:active { background: #475569; }
+    .vk-btn.fn-btn { background: #475569; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
+    .vk-btn.fn-btn:active { background: #64748b; }
+    .vk-btn-enter { grid-column: span 3; background: #0f172a; color: #ffffff; font-size: 1.8rem; letter-spacing: 2px; padding: 12px; text-transform: uppercase; }
+    .vk-btn-enter:active { background: #334155; }
+
+    .blink { animation: blinker 1.5s linear infinite; }
+    @keyframes blinker { 50% { opacity: 0.4; } }
+    footer { position: fixed; bottom: 0; left: 0; width: 100%; background: #ffffff; border-top: 1px solid var(--border); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; color: var(--text-muted); }
+    footer a { color: var(--primary); text-decoration: none; font-weight: 500; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>LEDOVATE GAS PRICE CHANGER</h1>
+    <div class="nav-group">
+      <a class="nav-btn" href="./">Price</a>
+      <a class="nav-btn active" href="./parameters">Parameter</a>
+      <a class="nav-btn" href="./settings">Settings</a>
+    </div>
+  </header>
+
+  <main class="container">
+    <h2>PARAMETERS</h2>
+
+    <form id="ledpostform">
+      <div class="grid">
+
+        <div class="status-panel" id="statusBox" style="display:none;">
+          <div id="sendingdata" class="status-msg blink">⏳ Sending Data...</div>
+        </div>
+
+        <div class="info-bar">
+          Customer ID: <span id="customerid">0</span>
+          Gas Station ID: <span id="gstationid">0</span>
+          <input name="customerid" type="hidden" value="1">
+          <input name="gstationid" type="hidden" value="1">
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 15%">Number</th>
+                <th style="width: 25%">Actual Val</th>
+                <th style="width: 60%">Parameter Desc</th>
+              </tr>
+            </thead>
+            <tbody id="parametersdiv">
+              </tbody>
+          </table>
+        </div>
+
+        <div class="btn-group-actions">
+          <button type="submit" id="submit" name="submitsendhmiparam" disabled class="btn-submit">Send Param to HMI</button>
+          <button type="submit" id="submitsaveparam" name="submitsaveparam" class="btn-submit btn-secondary">Save Only Param</button>
+        </div>
+
+      </div>
+    </form>
+  </main>
+
+  <div id="vkModal" class="vk-modal">
+    <div class="vk-container">
+      <div id="vkDisplay" class="vk-display">0</div>
+      <div class="vk-grid">
+        <button type="button" class="vk-btn" onclick="vkPress('1')">1</button>
+        <button type="button" class="vk-btn" onclick="vkPress('2')">2</button>
+        <button type="button" class="vk-btn" onclick="vkPress('3')">3</button>
+        <button type="button" class="vk-btn" onclick="vkPress('4')">4</button>
+        <button type="button" class="vk-btn" onclick="vkPress('5')">5</button>
+        <button type="button" class="vk-btn" onclick="vkPress('6')">6</button>
+        <button type="button" class="vk-btn" onclick="vkPress('7')">7</button>
+        <button type="button" class="vk-btn" onclick="vkPress('8')">8</button>
+        <button type="button" class="vk-btn" onclick="vkPress('9')">9</button>
+        <button type="button" class="vk-btn fn-btn" onclick="vkClear()">CLEAR</button>
+        <button type="button" class="vk-btn" onclick="vkPress('0')">0</button>
+        <button type="button" class="vk-btn fn-btn" onclick="closeKeyboard()">BACK</button>
+        <button type="button" class="vk-btn vk-btn-enter" onclick="vkEnter()">ENTER</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>© LEDOVATE - All Rights Reserved</span>
+    <a href="https://www.ledobe.com" target="_blank">ledobe.com</a>
+  </footer>
+
+  <script>
+    let currentInputTarget = null;
+    let rawInputString = "";
+
+    // Sanal Klavye Fonksiyonları
+    function openKeyboard(inputEl) {
+      currentInputTarget = inputEl;
+      rawInputString = inputEl.value.trim() || "0";
+      updateKeyboardDisplay();
+      document.getElementById("vkModal").style.display = "flex";
+    }
+
+    function updateKeyboardDisplay() {
+      // Parametreler tam sayı (integer) olduğu için fiyat ekranındaki gibi noktalı ayrım yapmıyoruz, düz yazdırıyoruz.
+      document.getElementById("vkDisplay").innerText = rawInputString || "0";
+    }
+
+    function vkPress(num) {
+      if (rawInputString === "0") rawInputString = "";
+      if (rawInputString.length >= 5) return; // Parametre değerleri için maksimum 5 hane sınırı
+      rawInputString += num;
+      updateKeyboardDisplay();
+    }
+
+    window.vkClear = function() {
+      rawInputString = "0";
+      updateKeyboardDisplay();
+    };
+
+    window.vkEnter = function() {
+      if (currentInputTarget) {
+        let finalVal = document.getElementById("vkDisplay").innerText;
+        currentInputTarget.value = finalVal;
+      }
+      closeKeyboard();
+    };
+
+    function closeKeyboard() {
+      document.getElementById("vkModal").style.display = "none";
+      currentInputTarget = null;
+    }
+
+    document.getElementById("vkModal").addEventListener("click", function(e) {
+      if (e.target === this) closeKeyboard();
+    });
+
+    // Sayfa Yüklendiğinde Çalışacak ESP32 Haberleşme Kodları
+    document.addEventListener("DOMContentLoaded", function() {
+      let serialstart = "no";
+
+      function getledconfig() {
+        fetch("./getledconfig")
+          .then(res => res.json())
+          .then(data => {
+            const tableBody = document.getElementById("parametersdiv");
+            tableBody.innerHTML = "";
+
+            // Tabloyu oluşturma
+            data.parameters.forEach((param, index) => {
+              let tr = document.createElement('tr');
+              tr.innerHTML = `
+                <td>${index + 1}</td>
+                <td>
+                  <input class="param-input" id="ledparam${index + 1}" name="ledparam${index + 1}" value="${param.v}" readonly>
+                </td>
+                <td>${param.n}</td>
+              `;
+              tableBody.appendChild(tr);
+            });
+
+            // Inputlara tıklanınca sanal klavyeyi açma tetikleyicisi ekle
+            document.querySelectorAll('.param-input').forEach(input => {
+              input.addEventListener('click', function() {
+                openKeyboard(this);
+              });
+            });
+
+            document.getElementById('customerid').innerText = data.customerid;
+            document.getElementById('gstationid').innerText = data.gstationid;
+          })
+          .catch(err => console.error("Config verisi çekilemedi:", err));
+      }
+
+      getledconfig();
+
+      // Form Gönderimi (AJAX Post)
+      document.getElementById("ledpostform").addEventListener("submit", function(e) {
+        e.preventDefault();
+
+        const statusBox = document.getElementById("statusBox");
+        const sendingMsg = document.getElementById("sendingdata");
+        const saveBtn = document.getElementById("submitsaveparam");
+
+        statusBox.style.display = "flex";
+        sendingMsg.style.display = "block";
+        saveBtn.disabled = true;
+
+        const formData = new URLSearchParams(new FormData(this));
+
+        fetch("./sendparam", {
+          method: "POST",
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: formData.toString()
+        })
+        .then(res => res.json())
+        .then(data => {
+          serialstart = "yes";
+          statusBox.style.display = "none";
+          saveBtn.disabled = false;
+
+          Object.keys(data).forEach(key => {
+            if (data[key] === "paramok") {
+              alert("Success");
+            }
+          });
+        })
+        .catch(err => {
+          statusBox.style.display = "none";
+          saveBtn.disabled = false;
+          console.error("Parametre gönderilemedi:", err);
+        });
+      });
+    });
+  </script>
+</body>
+</html>

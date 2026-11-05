@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ledovate - Price Management</title>
+    <!-- LOKAL BOOTSTRAP 5.3.3 CSS DOSYASI -->
+    <link rel="stylesheet" href="style/css/bootstrap.min.css">
+    <style>
+        body
+        {
+            background-color: #f4f6f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar
+        {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card
+        {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .price-matrix-input
+        {
+            font-size: 1.6rem !important;
+            font-weight: 700;
+            text-align: center;
+            height: 52px;
+            letter-spacing: 1px;
+            color: #0d6efd;
+        }
+        .input-group-text
+        {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        .product-row
+        {
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 12px;
+            margin-bottom: 12px;
+        }
+        .product-row:last-child
+        {
+            border-bottom: none;
+            padding-bottom: 0;
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 py-3">
+        <div class="container">
+            <span class="navbar-brand mb-0 h1">Ledovate IoT Control Panel</span>
+            <a href="index.html" class="btn btn-outline-light btn-sm">Back to Station List</a>
+        </div>
+    </nav>
+
+    <div class="container mb-5">
+
+        <!-- ÜST PANEL: SEÇİLEN İSTASYONA AİT TÜM DETAYLAR -->
+        <div class="card p-4 mb-4 bg-white border">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <span class="text-secondary small fw-bold d-block mb-1">CURRENTLY MANAGING STATION</span>
+                    <h3 id="info_station_name" class="text-primary mb-1">Loading Station Name...</h3>
+                    <p id="info_station_address" class="text-muted mb-0 small">Loading station address details...</p>
+                </div>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <div class="mb-1"><span class="text-secondary small fw-bold">STATION ID:</span> <span id="info_station_id" class="badge badge-dark fs-6 py-2 px-3">---</span></div>
+                    <div><span class="text-secondary small fw-bold">LAST PULSE:</span> <span id="info_last_seen" class="fw-bold text-dark small">---</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODÜLER GEÇİŞ MENÜSÜ -->
+        <div class="d-flex flex-wrap gap-2 mb-4">
+            <a href="#" id="menu_price" class="btn btn-primary px-4 fw-bold shadow-sm">Price Station</a>
+            <a href="#" id="menu_settings" class="btn btn-outline-secondary px-4 fw-bold">Setting Station</a>
+            <a href="#" id="menu_ptconfig" class="btn btn-outline-secondary px-4 fw-bold">PTConfig Station</a>
+            <a href="#" id="menu_manage" class="btn btn-outline-secondary px-4 fw-bold">Manage Station</a>
+        </div>
+
+        <div id="sendingAlert" class="alert alert-warning d-none align-items-center fade show border-0 mb-4" role="alert">
+            <div><strong>Sending...</strong> Synchronizing data with ESP32 cloud queue. Please wait.</div>
+        </div>
+
+        <!-- 8 ÜRÜN X 3 ÖDEME TİPİ MATRİS FORMU -->
+        <div class="card p-4 bg-white border">
+            <!-- FULL SERVICE & SELF SERVICE TABS -->
+            <ul class="nav nav-pills mb-4" id="priceServiceTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active px-4 py-2 fs-5 fw-bold" id="full-service-tab" data-bs-toggle="pill" data-bs-target="#full-service" type="button" role="tab" aria-controls="full-service" aria-selected="true">
+                        <i class="bi bi-fuel-pump-fill me-2"></i>Full Service
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link px-4 py-2 fs-5 fw-bold ms-2" id="self-service-tab" data-bs-toggle="pill" data-bs-target="#self-service" type="button" role="tab" aria-controls="self-service" aria-selected="false">
+                        <i class="bi bi-fuel-pump me-2"></i>Self Service
+                    </button>
+                </li>
+            </ul>
+
+            <form id="priceForm">
+                <div class="tab-content" id="priceServiceTabsContent">
+                    <!-- FULL SERVICE TAB -->
+                    <div class="tab-pane fade show active" id="full-service" role="tabpanel" aria-labelledby="full-service-tab">
+                        <div class="row text-secondary small fw-bold mb-3 text-center d-none d-md-flex border-bottom pb-2">
+                            <div class="col-md-3 text-start ps-3">PRODUCT TYPE</div>
+                            <div class="col-md-3">CASH PRICE</div>
+                            <div class="col-md-3">CREDIT PRICE</div>
+                            <div class="col-md-3">DEBIT PRICE</div>
+                        </div>
+
+                <!-- 1. DIESEL -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark fs-5">DIESEL</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL1A" id="FULLVAL1A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="FULL" data-index="1" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL1B" id="FULLVAL1B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL1C" id="FULLVAL1C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                <!-- 2. REGULAR -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark fs-5">REGULAR</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL2A" id="FULLVAL2A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="FULL" data-index="2" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL2B" id="FULLVAL2B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL2C" id="FULLVAL2C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                <!-- 3. PLUS -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark fs-5">PLUS</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL3A" id="FULLVAL3A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="FULL" data-index="3" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL3B" id="FULLVAL3B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL3C" id="FULLVAL3C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                <!-- 4. SUPER -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark fs-5">SUPER</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL4A" id="FULLVAL4A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="FULL" data-index="4" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL4B" id="FULLVAL4B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL4C" id="FULLVAL4C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                <!-- 5. PREMIUM -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark fs-5">PREMIUM</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL5A" id="FULLVAL5A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="FULL" data-index="5" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL5B" id="FULLVAL5B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL5C" id="FULLVAL5C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                <!-- 6. DEF -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark fs-5">DEF</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL6A" id="FULLVAL6A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="FULL" data-index="6" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL6B" id="FULLVAL6B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL6C" id="FULLVAL6C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                <!-- 7. KEROSEN -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark fs-5">KEROSEN</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL7A" id="FULLVAL7A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="FULL" data-index="7" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL7B" id="FULLVAL7B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL7C" id="FULLVAL7C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                <!-- 8. E85 -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark fs-5">E85</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL8A" id="FULLVAL8A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="FULL" data-index="8" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL8B" id="FULLVAL8B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="FULLVAL8C" id="FULLVAL8C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                    </div>
+
+                    <!-- SELF SERVICE TAB -->
+                    <div class="tab-pane fade" id="self-service" role="tabpanel" aria-labelledby="self-service-tab">
+                        <div class="row text-secondary small fw-bold mb-3 text-center d-none d-md-flex border-bottom pb-2">
+                            <div class="col-md-3 text-start ps-3">PRODUCT TYPE</div>
+                            <div class="col-md-3">CASH PRICE</div>
+                            <div class="col-md-3">CREDIT PRICE</div>
+                            <div class="col-md-3">DEBIT PRICE</div>
+                        </div>
+
+                <!-- 1. DIESEL -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark fs-5">DIESEL</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL1A" id="SELFVAL1A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="SELF" data-index="1" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL1B" id="SELFVAL1B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL1C" id="SELFVAL1C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                <!-- 2. REGULAR -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark fs-5">REGULAR</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL2A" id="SELFVAL2A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="SELF" data-index="2" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL2B" id="SELFVAL2B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL2C" id="SELFVAL2C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                <!-- 3. PLUS -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark fs-5">PLUS</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL3A" id="SELFVAL3A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="SELF" data-index="3" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL3B" id="SELFVAL3B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL3C" id="SELFVAL3C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                <!-- 4. SUPER -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark fs-5">SUPER</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL4A" id="SELFVAL4A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="SELF" data-index="4" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL4B" id="SELFVAL4B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL4C" id="SELFVAL4C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                <!-- 5. PREMIUM -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark fs-5">PREMIUM</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL5A" id="SELFVAL5A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="SELF" data-index="5" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL5B" id="SELFVAL5B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL5C" id="SELFVAL5C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                <!-- 6. DEF -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark fs-5">DEF</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL6A" id="SELFVAL6A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="SELF" data-index="6" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL6B" id="SELFVAL6B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL6C" id="SELFVAL6C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                <!-- 7. KEROSEN -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark fs-5">KEROSEN</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL7A" id="SELFVAL7A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="SELF" data-index="7" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL7B" id="SELFVAL7B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL7C" id="SELFVAL7C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                <!-- 8. E85 -->
+                <div class="row product-row align-items-center">
+                    <div class="col-md-3 fw-bold text-dark fs-5">E85</div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL8A" id="SELFVAL8A" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="SELF" data-index="8" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL8B" id="SELFVAL8B" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="text" name="SELFVAL8C" id="SELFVAL8C" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                        </div>
+                    </div>
+                </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-top text-end">
+                    <a href="index.html" class="btn btn-secondary fw-bold px-4 me-2">Cancel</a>
+                    <button type="submit" id="btnSubmit" class="btn btn-success fw-bold px-5 py-2 fs-5">Push Configuration</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const sid = urlParams.get('sid');
+
+        // Tuning ofset tablosu (Cash girildiğinde Credit ve Debit hesaplaması için)
+        let tuningOffsets = null;
+
+        document.addEventListener("DOMContentLoaded", () =>
+        {
+            if (!sid)
+            {
+                alert("Error: Station ID missing.");
+                window.location.href = "index.html";
+                return;
+            }
+
+            document.getElementById("menu_price").href = "price.html?sid=" + sid;
+            document.getElementById("menu_settings").href = "settings.html?sid=" + sid;
+            document.getElementById("menu_ptconfig").href = "pt_config.html?sid=" + sid;
+            document.getElementById("menu_manage").href = "manage.html?sid=" + sid;
+
+
+        // Tab geçişi için hem Bootstrap data-bs-toggle hem de doğrudan Vanilla JS desteği
+        document.getElementById("full-service-tab").addEventListener("click", () =>
+        {
+            document.getElementById("full-service-tab").classList.add("active");
+            document.getElementById("self-service-tab").classList.remove("active");
+            document.getElementById("full-service").classList.add("show", "active");
+            document.getElementById("self-service").classList.remove("show", "active");
+        }
+        );
+
+        document.getElementById("self-service-tab").addEventListener("click", () =>
+        {
+            document.getElementById("self-service-tab").classList.add("active");
+            document.getElementById("full-service-tab").classList.remove("active");
+            document.getElementById("self-service").classList.add("show", "active");
+            document.getElementById("full-service").classList.remove("show", "active");
+        }
+        );
+
+            loadStationDetails();
+            loadTuningConfig();
+            loadCurrentPrices();
+            setupEnterNavigation();
+        }
+        );
+
+        // Tuning konfigürasyonunu yükleme (Offsetler)
+        async function loadTuningConfig()
+        {
+            try
+            {
+                const response = await fetch("web_api.php?action=get_tuning&sid=" + sid);
+                const data = await response.json();
+                if (data.status === "success")
+                {
+                    tuningOffsets = data.tuning;
+                }
+            }
+            catch (e)
+            {
+                console.log("Tuning config load skipped, defaulting to local offsets.");
+            }
+        }
+
+
+        // Fiyat formatlama fonksiyonu: Girilen değeri ondalıklı sayı formatına dönüştürür (ör: 4.5 -> 4.50, 45 -> 45.00)
+        function formatPriceValue(val)
+        {
+            if (!val) return "0.00";
+            let cleaned = val.toString().replace(/[^0-9.]/g, '');
+            if (!cleaned) return "0.00";
+
+            // Eğer nokta yoksa ve 3 basamaktan fazlaysa (örnek: 4250 -> 42.50) veya doğrudan sayı girilmişse
+            let num = parseFloat(cleaned);
+            if (isNaN(num)) return "0.00";
+            return num.toFixed(2);
+        }
+
+        // Enter tuşuna basıldığında formun submit olmasını engelleyip bir alt satırdaki kutuya odaklanma
+        function setupEnterNavigation()
+        {
+            ["FULL", "SELF"].forEach(service =>
+            {
+                // Kolon bazlı (A=Cash, B=Credit, C=Debit)
+                ["A", "B", "C"].forEach(col =>
+                {
+                    for (let row = 1; row <= 8; row++)
+                    {
+                        const inputId = `${service}VAL${row}${col}`;
+                        const el = document.getElementById(inputId);
+                        if (el)
+                        {
+                            // Enter tuşu dinleyicisi
+                            el.addEventListener("keydown", (e) =>
+                            {
+                                if (e.key === "Enter")
+                                {
+                                    e.preventDefault(); // Formun hemen submit olup sayfayı yenilemesini kesin engelliyoruz
+
+                                    // Değeri ondalıklı olarak düzelt
+                                    el.value = formatPriceValue(el.value);
+
+                                    // Cash kolonuysa tuning tetikle
+                                    if (col === "A")
+                                    {
+                                        applyTuningForInput(service, row, el.value);
+                                    }
+
+                                    // Bir alt satıra geç (1 -> 2 -> ... -> 8 -> 1 döngüsü)
+                                    let nextRow = row + 1;
+                                    if (nextRow > 8)
+                                    {
+                                        nextRow = 1;
+                                    }
+                                    const nextInput = document.getElementById(`${service}VAL${nextRow}${col}`);
+                                    if (nextInput)
+                                    {
+                                        nextInput.focus();
+                                        nextInput.select();
+                                    }
+                                }
+                            }
+                            );
+
+                            // Odak kaybolduğunda da formatı koru
+                            el.addEventListener("blur", () =>
+                            {
+                                el.value = formatPriceValue(el.value);
+                                if (col === "A")
+                                {
+                                    applyTuningForInput(service, row, el.value);
+                                }
+                            }
+                            );
+                        }
+                    }
+                }
+                );
+            }
+            );
+        }
+
+        // Belirli bir satır için Tuning ofsetlerini hesaplayıp Credit ve Debit alanlarına yazma
+        function applyTuningForInput(service, row, cashString)
+        {
+            const cashVal = parseFloat(cashString);
+            if (isNaN(cashVal)) return;
+
+            const creditInput = document.getElementById(`${service}VAL${row}B`);
+            const debitInput = document.getElementById(`${service}VAL${row}C`);
+
+            let creditOffset = 0.05;
+            let debitOffset = 0.00;
+
+            if (tuningOffsets)
+            {
+                const cKey = `${service}VAL${row}B`;
+                const dKey = `${service}VAL${row}C`;
+                if (tuningOffsets[cKey] !== undefined)
+                {
+                    creditOffset = parseFloat(tuningOffsets[cKey]) || 0;
+                }
+                if (tuningOffsets[dKey] !== undefined)
+                {
+                    debitOffset = parseFloat(tuningOffsets[dKey]) || 0;
+                }
+            }
+
+            if (creditInput && (!creditInput.value || creditInput.value === "0.00" || creditInput.dataset.autoFilled === "true"))
+            {
+                creditInput.value = (cashVal + creditOffset).toFixed(2);
+                creditInput.dataset.autoFilled = "true";
+            }
+
+            if (debitInput && (!debitInput.value || debitInput.value === "0.00" || debitInput.dataset.autoFilled === "true"))
+            {
+                debitInput.value = (cashVal + debitOffset).toFixed(2);
+                debitInput.dataset.autoFilled = "true";
+            }
+        }
+
+        async function loadStationDetails()
+        {
+            try
+            {
+                const response = await fetch("web_api.php?action=list");
+                const data = await response.json();
+                const targetStation = data.find(item => item.sid === sid);
+
+                if (targetStation)
+                {
+                    document.getElementById("info_station_name").innerText = targetStation.station_name;
+                    document.getElementById("info_station_address").innerText = targetStation.address || "No Address Listed";
+                    document.getElementById("info_station_id").innerText = targetStation.sid;
+                    document.getElementById("info_last_seen").innerText = targetStation.last_seen || "Never Connected";
+                }
+                else
+                {
+                    alert("Station nodes mismatch error.");
+                }
+            }
+            catch (error)
+            {
+                console.error("Infrastructure synchronizer error:", error);
+            }
+        }
+
+        async function loadCurrentPrices()
+        {
+            try
+            {
+                const response = await fetch("web_api.php?action=get_prices&sid=" + sid);
+                const result = await response.json();
+
+                if (result.status === "success")
+                {
+                    // 1. Yeni Full/Self JSON modeli varsa dolduruyoruz
+                    if (result.full_self)
+                    {
+                        for (const [key, val] of Object.entries(result.full_self))
+                        {
+                            const el = document.getElementById(key);
+                            if (el)
+                            {
+                                el.value = val;
+                            }
+                        }
+                    }
+                    // 2. Standart 24 fiyat dizisi varsa Full service alanlarını dolduruyoruz
+                    else if (result.prices && Array.isArray(result.prices))
+                    {
+                        for (let i = 0; i < 8; i++)
+                        {
+                            const pnum = i + 1;
+                            const cashEl = document.getElementById(`FULLVAL${pnum}A`);
+                            const creditEl = document.getElementById(`FULLVAL${pnum}B`);
+                            const debitEl = document.getElementById(`FULLVAL${pnum}C`);
+
+                            if (cashEl && result.prices[i * 3 + 0] !== undefined)
+                            {
+                                cashEl.value = result.prices[i * 3 + 0];
+                            }
+                            if (creditEl && result.prices[i * 3 + 1] !== undefined)
+                            {
+                                creditEl.value = result.prices[i * 3 + 1];
+                            }
+                            if (debitEl && result.prices[i * 3 + 2] !== undefined)
+                            {
+                                debitEl.value = result.prices[i * 3 + 2];
+                            }
+                        }
+                    }
+                }
+            }
+            catch (error)
+            {
+                console.error("Error loading matrix prices:", error);
+            }
+        }
+
+        document.getElementById("priceForm").addEventListener("submit", async (e) =>
+        {
+            e.preventDefault();
+
+            const form = document.getElementById("priceForm");
+            const submitBtn = document.getElementById("btnSubmit");
+            const alertBox = document.getElementById("sendingAlert");
+
+            const formData = new FormData(form);
+            submitBtn.disabled = true;
+            alertBox.classList.remove("d-none");
+
+            try
+            {
+                const response = await fetch("web_api.php?action=update&sid=" + sid,
+                {
+                    method: "POST",
+                    body: formData
+                }
+                );
+                const result = await response.json();
+
+                if (result.status === "success")
+                {
+                    // Sayfadan ayrılmıyoruz, kullanıcı aynı ekranda kalarak işlem yapmaya devam edebiliyor
+                    alert("Success! New configurations injected into the cloud node.");
+                }
+                else
+                {
+                    alert("Error from cloud backend: " + result.message);
+                }
+            }
+            catch (error)
+            {
+                alert("Transaction network timeout.");
+            }
+            finally
+            {
+                submitBtn.disabled = false;
+                alertBox.classList.add("d-none");
+            }
+        }
+        );
+    </script>
+<script src="style/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
