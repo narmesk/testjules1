@@ -331,6 +331,17 @@ if ($action == 'get_settings')
 {
     $brightness = "33";
     $speed = "27";
+    $settingsData = array();
+
+    $settingsPath = __DIR__ . '/jsons/settings.json';
+    if (file_exists($settingsPath))
+    {
+        $settingsData = json_decode(file_get_contents($settingsPath), true);
+        if (!is_array($settingsData))
+        {
+            $settingsData = array();
+        }
+    }
 
     if ($mysqli && !empty($sid))
     {
@@ -351,7 +362,38 @@ if ($action == 'get_settings')
         }
     }
 
-    echo json_encode(array("status" => "success", "brightness" => $brightness, "speed" => $speed));
+    echo json_encode(array(
+        "status" => "success",
+        "brightness" => $brightness,
+        "speed" => $speed,
+        "settings" => $settingsData
+    ));
+    exit;
+}
+
+// -----------------------------------------------------------------------------
+// EYLEM: Genel Sistem Ayarlarını Kaydetme (?action=update_settings)
+// -----------------------------------------------------------------------------
+if ($action == 'update_settings')
+{
+    $settingsPath = __DIR__ . '/jsons/settings.json';
+    $settingsData = array();
+    if (file_exists($settingsPath))
+    {
+        $settingsData = json_decode(file_get_contents($settingsPath), true);
+        if (!is_array($settingsData))
+        {
+            $settingsData = array();
+        }
+    }
+
+    foreach ($_POST as $key => $val)
+    {
+        $settingsData[$key] = $val;
+    }
+
+    file_put_contents($settingsPath, json_encode($settingsData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    echo json_encode(array("status" => "success", "message" => "Settings updated successfully."));
     exit;
 }
 

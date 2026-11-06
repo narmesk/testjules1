@@ -310,19 +310,43 @@
 
         <!-- 8 ÜRÜN X 3 ÖDEME TİPİ MATRİS FORMU -->
         <div class="card p-4 bg-white border">
-            <!-- FULL SERVICE & SELF SERVICE TABS -->
-            <ul class="nav nav-pills mb-4" id="priceServiceTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active px-4 py-2 fs-5 fw-bold" id="full-service-tab" data-bs-toggle="pill" data-bs-target="#full-service" type="button" role="tab" aria-controls="full-service" aria-selected="true">
-                        Full Service
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link px-4 py-2 fs-5 fw-bold ms-2" id="self-service-tab" data-bs-toggle="pill" data-bs-target="#self-service" type="button" role="tab" aria-controls="self-service" aria-selected="false">
-                        Self Service
-                    </button>
-                </li>
-            </ul>
+            <!-- FORMAT & CURRENCY SELECTORS & TABS -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <ul class="nav nav-pills" id="priceServiceTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active px-4 py-2 fs-5 fw-bold" id="full-service-tab" data-bs-toggle="pill" data-bs-target="#full-service" type="button" role="tab" aria-controls="full-service" aria-selected="true">
+                            Full Service
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link px-4 py-2 fs-5 fw-bold ms-2" id="self-service-tab" data-bs-toggle="pill" data-bs-target="#self-service" type="button" role="tab" aria-controls="self-service" aria-selected="false">
+                            Self Service
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- CURRENCY AND DECIMAL PRECISION OPTIONS -->
+                <div class="d-flex align-items-center gap-3 bg-light p-2 rounded border">
+                    <div class="d-flex align-items-center">
+                        <label for="currencySelect" class="form-label small fw-bold text-secondary mb-0 me-2 text-nowrap">Currency:</label>
+                        <select id="currencySelect" class="form-select form-select-sm fw-bold shadow-sm" style="width: auto;">
+                            <option value="$" selected>USD ($)</option>
+                            <option value="₺">TRY (₺)</option>
+                            <option value="€">EUR (€)</option>
+                            <option value="£">GBP (£)</option>
+                        </select>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <label for="decimalSelect" class="form-label small fw-bold text-secondary mb-0 me-2 text-nowrap">Decimals:</label>
+                        <select id="decimalSelect" class="form-select form-select-sm fw-bold shadow-sm" style="width: auto;">
+                            <option value="2" selected>2 Decimals (0.00)</option>
+                            <option value="3">3 Decimals (0.000)</option>
+                            <option value="1">1 Decimal (0.0)</option>
+                            <option value="0">Integer (0)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
 
             <form id="priceForm">
                 <div class="tab-content" id="priceServiceTabsContent">
@@ -369,6 +393,10 @@
 
         let tuningOffsets = null;
         let productConfigs = null;
+
+        // Para birimi ve ondalık hassasiyeti durumu
+        let currentCurrency = "$";
+        let currentDecimals = 2;
 
         const colorMap =
         {
@@ -423,10 +451,55 @@
             // Başlangıçta hemen varsayılan renklerle satırları oluşturuyoruz
             renderRows(defaultProducts);
 
+            // Para birimi ve ondalık seçici dinleyicileri
+            document.getElementById("currencySelect").addEventListener("change", async function(e)
+            {
+
+                currentCurrency = e.target.value;
+                document.querySelectorAll(".currency-symbol").forEach(function(el)
+                {
+
+                    el.innerText = currentCurrency;
+                });
+
+                // Para birimi tercihini arka plana kaydet
+                const cFormData = new FormData();
+                cFormData.append("CURRENCY", currentCurrency);
+                await fetch("web_api.php?action=update_settings&sid=" + sid,
+                {
+                    method: "POST",
+                    body: cFormData
+                });
+            });
+
+            document.getElementById("decimalSelect").addEventListener("change", async function(e)
+            {
+
+                currentDecimals = parseInt(e.target.value, 10);
+                document.querySelectorAll(".price-matrix-input").forEach(function(input)
+                {
+
+                    if (input.value !== "")
+                    {
+                        input.value = formatPriceValue(input.value);
+                    }
+                });
+
+                // Ondalık basamak tercihini arka plana kaydet
+                const dFormData = new FormData();
+                dFormData.append("DECIMAL_PLACES", currentDecimals);
+                await fetch("web_api.php?action=update_settings&sid=" + sid,
+                {
+                    method: "POST",
+                    body: dFormData
+                });
+            });
+
             // İstasyon ve konfigürasyon verilerini yükleme
             await loadStationDetails();
             await loadProductConfigs();
             await loadTuningConfig();
+            await loadSettingsConfig();
             await loadCurrentPrices();
             setupEnterNavigation();
         }
@@ -467,20 +540,20 @@
                     </div>
                     <div class="col-md-3 mt-2 mt-md-0">
                         <div class="input-group">
-                            <span class="input-group-text">$</span>
-                            <input type="text" name="${cashId}" id="${cashId}" class="form-control price-matrix-input border-start-0 ps-0" value="0.00" data-prefix="${service}" data-index="${index}" data-type="cash">
+                            <span class="input-group-text currency-symbol">${currentCurrency}</span>
+                            <input type="text" name="${cashId}" id="${cashId}" class="form-control price-matrix-input border-start-0 ps-0" value="${formatPriceValue(0)}" data-prefix="${service}" data-index="${index}" data-type="cash">
                         </div>
                     </div>
                     <div class="col-md-3 mt-2 mt-md-0">
                         <div class="input-group">
-                            <span class="input-group-text">$</span>
-                            <input type="text" name="${creditId}" id="${creditId}" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                            <span class="input-group-text currency-symbol">${currentCurrency}</span>
+                            <input type="text" name="${creditId}" id="${creditId}" class="form-control price-matrix-input border-start-0 ps-0" value="${formatPriceValue(0)}">
                         </div>
                     </div>
                     <div class="col-md-3 mt-2 mt-md-0">
                         <div class="input-group">
-                            <span class="input-group-text">$</span>
-                            <input type="text" name="${debitId}" id="${debitId}" class="form-control price-matrix-input border-start-0 ps-0" value="0.00">
+                            <span class="input-group-text currency-symbol">${currentCurrency}</span>
+                            <input type="text" name="${debitId}" id="${debitId}" class="form-control price-matrix-input border-start-0 ps-0" value="${formatPriceValue(0)}">
                         </div>
                     </div>
                 </div>
@@ -607,17 +680,102 @@
             }
         }
 
-        function formatPriceValue(val)
+        // Ayarlardan para birimi ve ondalık konfigürasyonunu yükleme
+        async function loadSettingsConfig()
         {
-            if (!val) return "0.00";
-            let cleaned = val.toString().replace(/[^0-9.]/g, '');
-            if (!cleaned) return "0.00";
-            let num = parseFloat(cleaned);
-            if (isNaN(num)) return "0.00";
-            return num.toFixed(2);
+            try
+            {
+                const response = await fetch("web_api.php?action=get_settings&sid=" + sid);
+                const data = await response.json();
+                if (data.status === "success" && data.settings)
+                {
+                    if (data.settings.CURRENCY)
+                    {
+                        currentCurrency = data.settings.CURRENCY;
+                        const cSelect = document.getElementById("currencySelect");
+                        if (cSelect)
+                        {
+                            cSelect.value = currentCurrency;
+                        }
+                        document.querySelectorAll(".currency-symbol").forEach(function(el)
+                        {
+
+                            el.innerText = currentCurrency;
+                        });
+                    }
+
+                    if (data.settings.DECIMAL_PLACES !== undefined)
+                    {
+                        currentDecimals = parseInt(data.settings.DECIMAL_PLACES, 10);
+                        const dSelect = document.getElementById("decimalSelect");
+                        if (dSelect)
+                        {
+                            dSelect.value = currentDecimals.toString();
+                        }
+                    }
+                }
+            }
+            catch (e)
+            {
+                console.log("Settings config fallback.");
+            }
         }
 
-        // Enter tuşu navigasyonu ve ofset hesaplaması
+        // Fiyat değerini seçili ondalık sayısına göre formatlama
+        function formatPriceValue(val)
+        {
+            if (val === null || val === undefined || val === "")
+            {
+                return (0).toFixed(currentDecimals);
+            }
+            let cleaned = val.toString().replace(/,/g, '.').replace(/[^0-9.]/g, '');
+            if (!cleaned)
+            {
+                return (0).toFixed(currentDecimals);
+            }
+            let num = parseFloat(cleaned);
+            if (isNaN(num))
+            {
+                return (0).toFixed(currentDecimals);
+            }
+            return num.toFixed(currentDecimals);
+        }
+
+        // Giriş anında geçerli karakterleri ve ondalık kuralını zorlama fonksiyonu
+        function enforceRealtimeFormat(val, decimals)
+        {
+            // Virgülleri noktaya çevir
+            val = val.replace(/,/g, ".");
+
+            // Yalnızca rakamları ve noktayı koru
+            val = val.replace(/[^0-9.]/g, "");
+
+            // Birden fazla nokta girişini engelle
+            const parts = val.split(".");
+            if (parts.length > 2)
+            {
+                val = parts[0] + "." + parts.slice(1).join("");
+            }
+
+            // Ondalık basamak sınırını zorla
+            if (val.indexOf(".") !== -1 && decimals > 0)
+            {
+                let [intP, decP] = val.split(".");
+                if (decP.length > decimals)
+                {
+                    decP = decP.substring(0, decimals);
+                    val = intP + "." + decP;
+                }
+            }
+            else if (decimals === 0)
+            {
+                val = val.replace(/\./g, "");
+            }
+
+            return val;
+        }
+
+        // Enter tuşu navigasyonu, gerçek zamanlı giriş zorlama ve ofset hesaplaması
         function setupEnterNavigation()
         {
             ["FULL", "SELF"].forEach(service =>
@@ -630,6 +788,29 @@
                         const el = document.getElementById(inputId);
                         if (el)
                         {
+                            // Kullanıcı yazarken harfleri ve geçersiz karakterleri engelle
+                            el.addEventListener("input", () =>
+                            {
+                                const curPos = el.selectionStart;
+                                const originalLen = el.value.length;
+                                el.value = enforceRealtimeFormat(el.value, currentDecimals);
+                                const newLen = el.value.length;
+                                if (el.setSelectionRange)
+                                {
+                                    const diff = newLen - originalLen;
+                                    el.setSelectionRange(curPos + diff, curPos + diff);
+                                }
+                            }
+                            );
+
+                            // Odaklandığında metni kolay değiştirilebilmesi için seç
+                            el.addEventListener("focus", () =>
+                            {
+                                el.select();
+                            }
+                            );
+
+                            // Enter tuşuna basıldığında formatı tamamla ve sonraki satıra geç
                             el.addEventListener("keydown", (e) =>
                             {
                                 if (e.key === "Enter")
@@ -655,6 +836,7 @@
                             }
                             );
 
+                            // Kutudan çıkıldığında kesin formatlamayı uygula
                             el.addEventListener("blur", () =>
                             {
                                 el.value = formatPriceValue(el.value);
@@ -697,15 +879,15 @@
                 }
             }
 
-            if (creditInput && (!creditInput.value || creditInput.value === "0.00" || creditInput.dataset.autoFilled === "true"))
+            if (creditInput && (!creditInput.value || creditInput.value === (0).toFixed(currentDecimals) || creditInput.dataset.autoFilled === "true"))
             {
-                creditInput.value = (cashVal + creditOffset).toFixed(2);
+                creditInput.value = (cashVal + creditOffset).toFixed(currentDecimals);
                 creditInput.dataset.autoFilled = "true";
             }
 
-            if (debitInput && (!debitInput.value || debitInput.value === "0.00" || debitInput.dataset.autoFilled === "true"))
+            if (debitInput && (!debitInput.value || debitInput.value === (0).toFixed(currentDecimals) || debitInput.dataset.autoFilled === "true"))
             {
-                debitInput.value = (cashVal + debitOffset).toFixed(2);
+                debitInput.value = (cashVal + debitOffset).toFixed(currentDecimals);
                 debitInput.dataset.autoFilled = "true";
             }
         }
