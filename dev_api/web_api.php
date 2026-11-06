@@ -398,6 +398,125 @@ if ($action == 'update_settings')
 }
 
 // -----------------------------------------------------------------------------
+// EYLEM 10: PT Konfigürasyonu ve Donanım Parametrelerini Çekme (?action=get_pt_config)
+// -----------------------------------------------------------------------------
+if ($action == 'get_pt_config')
+{
+    $brightness = "33";
+    $speed = "27";
+    $ptList = array();
+
+    $ptlsPath = __DIR__ . '/jsons/ptls.json';
+    if (file_exists($ptlsPath))
+    {
+        $ptList = json_decode(file_get_contents($ptlsPath), true);
+        if (!is_array($ptList))
+        {
+            $ptList = array();
+        }
+    }
+
+    if ($mysqli && !empty($sid))
+    {
+        $sqlSelect = "SELECT ledcfg FROM station WHERE sid = '{$sid}'";
+        $resSelect = $mysqli->query($sqlSelect);
+        if ($resSelect && $resSelect->num_rows > 0)
+        {
+            $row = $resSelect->fetch_assoc();
+            $cfg = json_decode($row['ledcfg'], true);
+            if (isset($cfg['parameters'][0]['v']))
+            {
+                $brightness = $cfg['parameters'][0]['v'];
+            }
+            if (isset($cfg['parameters'][1]['v']))
+            {
+                $speed = $cfg['parameters'][1]['v'];
+            }
+            if (isset($cfg['ptlist']) && is_array($cfg['ptlist']))
+            {
+                $ptList = array_merge($ptList, $cfg['ptlist']);
+            }
+        }
+    }
+
+    echo json_encode(array(
+        "status" => "success",
+        "brightness" => $brightness,
+        "speed" => $speed,
+        "pt_list" => $ptList
+    ));
+    exit;
+}
+
+// -----------------------------------------------------------------------------
+// EYLEM 11: PT Konfigürasyonu ve Donanım Parametrelerini Güncelleme (?action=update_pt_config)
+// -----------------------------------------------------------------------------
+if ($action == 'update_pt_config' && !empty($sid))
+{
+    $brightness = isset($_POST['brightness']) ? $_POST['brightness'] : '33';
+    $speed      = isset($_POST['speed']) ? $_POST['speed'] : '27';
+
+    $ptlsPath = __DIR__ . '/jsons/ptls.json';
+    $currentPtData = array();
+    if (file_exists($ptlsPath))
+    {
+        $currentPtData = json_decode(file_get_contents($ptlsPath), true);
+        if (!is_array($currentPtData))
+        {
+            $currentPtData = array();
+        }
+    }
+
+    // Gelen PT alanlarını JSON'a işle
+    foreach ($_POST as $key => $val)
+    {
+        if ($key != 'brightness' && $key != 'speed')
+        {
+            $currentPtData[$key] = $val;
+        }
+    }
+
+    file_put_contents($ptlsPath, json_encode($currentPtData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+    if ($mysqli)
+    {
+        $sqlSelect = "SELECT ledcfg FROM station WHERE sid = '{$sid}'";
+        $resSelect = $mysqli->query($sqlSelect);
+
+        if ($resSelect && $resSelect->num_rows > 0)
+        {
+            $row = $resSelect->fetch_assoc();
+            $configArray = json_decode($row['ledcfg'], true);
+
+            if (!is_array($configArray))
+            {
+                $configArray = array();
+            }
+
+            $configArray['parameters'][0] = array("v" => strval($brightness));
+            $configArray['parameters'][1] = array("v" => strval($speed));
+            $configArray['ptlist'] = $currentPtData;
+
+            $processId = strval(rand(11111111, 99999999));
+            $configArray['ptype']   = "pm";
+            $configArray['pmaster'] = "sv";
+            $configArray['pid']     = $processId;
+            $configArray['pdate']   = date("Y-m-d H:i:s");
+
+            $updatedJson = $mysqli->real_escape_string(json_encode($configArray, JSON_UNESCAPED_UNICODE));
+            $mysqli->query("UPDATE station SET ledcfg = '{$updatedJson}' WHERE sid = '{$sid}'");
+            $mysqli->query("UPDATE ledresult SET ptype = 'pm', processid = '{$processId}' WHERE stationid = '{$sid}'");
+
+            echo json_encode(array("status" => "success", "message" => "PT configuration and hardware parameters queued."));
+            exit;
+        }
+    }
+
+    echo json_encode(array("status" => "success", "message" => "PT configuration successfully saved."));
+    exit;
+}
+
+// -----------------------------------------------------------------------------
 // EYLEM 9: Donanım Ayarlarını Güncelleme (?action=update_hardware)
 // -----------------------------------------------------------------------------
 if ($action == 'update_hardware' && !empty($sid))

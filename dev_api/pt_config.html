@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ledovate - PT Configuration & Hardware Parameters</title>
+    <!-- LOKAL BOOTSTRAP 5.3.3 CSS -->
+    <link rel="stylesheet" href="style/css/bootstrap.min.css">
+    <style>
+        body
+        {
+            background-color: #f4f6f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar
+        {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card
+        {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .pt-table th
+        {
+            background-color: #f8fafc;
+            color: #475569;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+        .pt-id-input
+        {
+            font-weight: bold;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 py-3">
+        <div class="container">
+            <span class="navbar-brand mb-0 h1">Ledovate IoT Control Panel</span>
+            <a href="index.html" class="btn btn-outline-light btn-sm">Back to Station List</a>
+        </div>
+    </nav>
+
+    <div class="container mb-5">
+
+        <!-- ÜST PANEL: SEÇİLEN İSTASYONA AİT DETAYLAR -->
+        <div class="card p-4 mb-4 bg-white border">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <span class="text-secondary small fw-bold d-block mb-1">PT CONFIGURATION & HARDWARE PARAMETERS</span>
+                    <h3 id="info_station_name" class="text-primary mb-1">Loading Station Name...</h3>
+                    <p id="info_station_address" class="text-muted mb-0 small">Loading station address details...</p>
+                </div>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <div class="mb-1"><span class="text-secondary small fw-bold">STATION ID:</span> <span id="info_station_id" class="badge bg-dark fs-6 py-2 px-3">---</span></div>
+                    <div><span class="text-secondary small fw-bold">LAST PULSE:</span> <span id="info_last_seen" class="fw-bold text-dark small">---</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODÜLER GEÇİŞ MENÜSÜ -->
+        <div class="d-flex flex-wrap gap-2 mb-4">
+            <a href="#" id="menu_price" class="btn btn-outline-secondary px-4 fw-bold">Price Station</a>
+            <a href="#" id="menu_settings" class="btn btn-outline-secondary px-4 fw-bold">Setting Station</a>
+            <a href="#" id="menu_ptconfig" class="btn btn-primary px-4 fw-bold shadow-sm">PTConfig Station</a>
+            <a href="#" id="menu_manage" class="btn btn-outline-secondary px-4 fw-bold">Manage Station</a>
+        </div>
+
+        <form id="ptConfigForm">
+            <!-- GENEL DONANIM PARAMETRELERİ (SETTING STATION'DAN TAŞINAN PARLAKLIK VE HIZ) -->
+            <div class="card p-4 mb-4 bg-white border">
+                <h4 class="text-dark fw-bold mb-3 border-bottom pb-2">Global Hardware Parameters</h4>
+                <div class="row g-4 mb-2">
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label for="brightnessRange" class="form-label fs-5 fw-medium mb-0">LED Panel Brightness</label>
+                            <span id="brightnessVal" class="badge bg-success fs-5 px-3 py-2">33%</span>
+                        </div>
+                        <input type="range" class="form-range" id="brightnessRange" name="brightness" min="0" max="100" step="1" value="33">
+                        <div class="form-text fs-7 text-muted">Global brightness duty cycle applied to connected LED display panels (0-100%).</div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label for="speedRange" class="form-label fs-5 fw-medium mb-0">Animation Scrolling Speed</label>
+                            <span id="speedVal" class="badge bg-primary fs-5 px-3 py-2">27</span>
+                        </div>
+                        <input type="range" class="form-range" id="speedRange" name="speed" min="1" max="50" step="1" value="27">
+                        <div class="form-text fs-7 text-muted">Scroll and digit transition step delay speed across hardware displays.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PT CİHAZ TABLOSU (PT1..PT24) -->
+            <div class="card p-4 bg-white border">
+                <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                    <div>
+                        <h4 class="text-dark fw-bold mb-1">PT Display Device Matrix</h4>
+                        <p class="text-muted small mb-0">Map each Price Terminal (PT1 to PT24) device type, RS485 slave ID, service classification, and schedule switch time.</p>
+                    </div>
+                    <span class="badge bg-secondary px-3 py-2 fs-6">24 PT Channels</span>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle mb-0 pt-table">
+                        <thead>
+                            <tr class="text-center">
+                                <th style="width: 8%;">PT Unit</th>
+                                <th style="width: 22%;">Device Type</th>
+                                <th style="width: 18%;">Device ID (Slave ID)</th>
+                                <th style="width: 18%;">Service Type</th>
+                                <th style="width: 18%;">Switch Time</th>
+                                <th style="width: 16%;">Channel Settings</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ptConfigTableBody">
+                            <!-- Satırlar JavaScript ile 1'den 24'e kadar doldurulacaktır -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-4 pt-3 border-top text-end">
+                    <a href="index.html" class="btn btn-secondary fw-bold px-4 me-2">Cancel</a>
+                    <button type="submit" id="btnSavePt" class="btn btn-primary fw-bold px-5 py-2 fs-5">Save PT Configuration</button>
+                </div>
+            </div>
+        </form>
+
+    </div>
+
+    <!-- BİREYSEL PT KANAL AYARLARI MODALI (Channel Brightness / Speed) -->
+    <div class="modal fade" id="ptChannelModal" tabindex="-1" aria-labelledby="ptChannelModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title" id="ptChannelModalLabel">Channel Settings (<span id="modalPtUnit">PT1</span>)</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="modalPtBrightness" class="form-label fw-bold">Individual Brightness (1 - 10)</label>
+                        <select id="modalPtBrightness" class="form-select form-select-lg fw-bold">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5" selected>5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="modalPtSpeed" class="form-label fw-bold">Individual Speed (1 - 10)</label>
+                        <select id="modalPtSpeed" class="form-select form-select-lg fw-bold">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5" selected>5</option>
+                            <option value="6">6</option>
+                            <option value="7">7</option>
+                            <option value="8">8</option>
+                            <option value="9">9</option>
+                            <option value="10">10</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" id="btnApplyPtModal" class="btn btn-primary fw-bold px-4">Apply Settings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOOTSTRAP 5.3.3 JS BUNDLE -->
+    <script src="style/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const sid = urlParams.get('sid') || 'demo1';
+
+        let activeModalIndex = null;
+        let ptModalInstance = null;
+
+        document.addEventListener("DOMContentLoaded", async () =>
+        {
+
+
+            document.getElementById("menu_price").href = "price.html?sid=" + sid;
+            document.getElementById("menu_settings").href = "settings.html?sid=" + sid;
+            document.getElementById("menu_ptconfig").href = "pt_config.html?sid=" + sid;
+            document.getElementById("menu_manage").href = "manage.html?sid=" + sid;
+
+            // Slider gösterge dinleyicileri
+            document.getElementById("brightnessRange").addEventListener("input", (e) =>
+            {
+                document.getElementById("brightnessVal").innerText = e.target.value + "%";
+            });
+
+            document.getElementById("speedRange").addEventListener("input", (e) =>
+            {
+                document.getElementById("speedVal").innerText = e.target.value;
+            });
+
+            // Modal referansı
+            const modalEl = document.getElementById("ptChannelModal");
+            if (modalEl)
+            {
+                ptModalInstance = new bootstrap.Modal(modalEl);
+            }
+
+            // PT Tablosunu 24 kanal olarak oluştur
+            buildPtMatrixRows();
+
+            // İstasyon ve donanım/PT verilerini yükle
+            await loadStationDetails();
+            await loadPtConfigAndHardware();
+        });
+
+        // 24 PT satırını oluşturan fonksiyon
+        function buildPtMatrixRows()
+        {
+            const tbody = document.getElementById("ptConfigTableBody");
+            tbody.innerHTML = "";
+
+            for (let i = 1; i <= 24; i++)
+            {
+                const padIndex = i < 10 ? "0" + i : "" + i;
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td class="text-center fw-bold text-primary">PT${i}</td>
+                    <td>
+                        <select name="TYP${padIndex}" id="TYP${padIndex}" class="form-select form-select-sm fw-medium">
+                            <option value="0">Disabled / Unused</option>
+                            <option value="1">Type 1 (Standard Display)</option>
+                            <option value="2">Type 2 (Compact Display)</option>
+                            <option value="3">Type 3 (Dual Line Display)</option>
+                            <option value="4">Type 4 (Multi Segment)</option>
+                            <option value="5">Type 5 (High Brightness)</option>
+                            <option value="6">Type 6 (Extended Totem)</option>
+                            <option value="7">Type 7 (Matrix Banner)</option>
+                            <option value="8">Type 8 (Auxiliary)</option>
+                        </select>
+                    </td>
+                    <td>
+                        <input type="text" name="ID${padIndex}" id="ID${padIndex}" class="form-control form-control-sm pt-id-input" value="${i <= 8 ? (34 + i) : '0'}">
+                    </td>
+                    <td>
+                        <select name="SRV${padIndex}" id="SRV${padIndex}" class="form-select form-select-sm">
+                            <option value="full" selected>Full Service</option>
+                            <option value="self">Self Service</option>
+                        </select>
+                    </td>
+                    <td>
+                        <input type="time" name="TIME${padIndex}" id="TIME${padIndex}" class="form-control form-control-sm text-center" value="00:00">
+                    </td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-outline-secondary btn-sm px-3 fw-bold" onclick="openChannelSettings(${i})">
+                            ⚙ Settings
+                        </button>
+                        <input type="hidden" name="BRIGHT${padIndex}" id="BRIGHT${padIndex}" value="5">
+                        <input type="hidden" name="SPEED${padIndex}" id="SPEED${padIndex}" value="5">
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            }
+        }
+
+        // İstasyon üst bilgilerini yükleme
+        async function loadStationDetails()
+        {
+            try
+            {
+                const response = await fetch("web_api.php?action=list");
+                const data = await response.json();
+                if (Array.isArray(data))
+                {
+                    const targetStation = data.find(item => item.sid === sid);
+                    if (targetStation)
+                    {
+                        document.getElementById("info_station_name").innerText = targetStation.station_name;
+                        document.getElementById("info_station_address").innerText = targetStation.address || "Station Address";
+                        document.getElementById("info_station_id").innerText = targetStation.sid;
+                        document.getElementById("info_last_seen").innerText = targetStation.last_seen || "Active";
+                    }
+                }
+            }
+            catch (e)
+            {
+                console.log("Station details sync fallback.");
+            }
+        }
+
+        // PT ve donanım ayarlarını yükleme
+        async function loadPtConfigAndHardware()
+        {
+            try
+            {
+                const response = await fetch("web_api.php?action=get_pt_config&sid=" + sid);
+                const data = await response.json();
+
+                if (data.status === "success")
+                {
+                    // Genel Donanım Ayarları (Brightness & Speed)
+                    if (data.brightness !== undefined)
+                    {
+                        document.getElementById("brightnessRange").value = data.brightness;
+                        document.getElementById("brightnessVal").innerText = data.brightness + "%";
+                    }
+                    if (data.speed !== undefined)
+                    {
+                        document.getElementById("speedRange").value = data.speed;
+                        document.getElementById("speedVal").innerText = data.speed;
+                    }
+
+                    // PT Matris Değerleri
+                    if (data.pt_list)
+                    {
+                        for (let i = 1; i <= 24; i++)
+                        {
+                            const padIndex = i < 10 ? "0" + i : "" + i;
+
+                            if (data.pt_list["TYP" + padIndex] !== undefined)
+                            {
+                                const typEl = document.getElementById("TYP" + padIndex);
+                                if (typEl) typEl.value = data.pt_list["TYP" + padIndex];
+                            }
+
+                            if (data.pt_list["ID" + padIndex] !== undefined)
+                            {
+                                const idEl = document.getElementById("ID" + padIndex);
+                                if (idEl) idEl.value = data.pt_list["ID" + padIndex];
+                            }
+
+                            if (data.pt_list["SRV" + padIndex] !== undefined)
+                            {
+                                const srvEl = document.getElementById("SRV" + padIndex);
+                                if (srvEl) srvEl.value = data.pt_list["SRV" + padIndex];
+                            }
+
+                            if (data.pt_list["TIME" + padIndex] !== undefined)
+                            {
+                                const timeEl = document.getElementById("TIME" + padIndex);
+                                if (timeEl) timeEl.value = data.pt_list["TIME" + padIndex];
+                            }
+
+                            if (data.pt_list["BRIGHT" + padIndex] !== undefined)
+                            {
+                                const bEl = document.getElementById("BRIGHT" + padIndex);
+                                if (bEl) bEl.value = data.pt_list["BRIGHT" + padIndex];
+                            }
+
+                            if (data.pt_list["SPEED" + padIndex] !== undefined)
+                            {
+                                const sEl = document.getElementById("SPEED" + padIndex);
+                                if (sEl) sEl.value = data.pt_list["SPEED" + padIndex];
+                            }
+                        }
+                    }
+                }
+            }
+            catch (e)
+            {
+                console.log("Error loading PT configs:", e);
+            }
+        }
+
+        // Bireysel PT modalını açma
+        function openChannelSettings(index)
+        {
+            activeModalIndex = index;
+            const padIndex = index < 10 ? "0" + index : "" + index;
+
+            document.getElementById("modalPtUnit").innerText = "PT" + index;
+
+            const bVal = document.getElementById("BRIGHT" + padIndex).value || "5";
+            const sVal = document.getElementById("SPEED" + padIndex).value || "5";
+
+            document.getElementById("modalPtBrightness").value = bVal;
+            document.getElementById("modalPtSpeed").value = sVal;
+
+            if (ptModalInstance)
+            {
+                ptModalInstance.show();
+            }
+        }
+
+        // Bireysel PT modalını kaydetme
+        document.getElementById("btnApplyPtModal").addEventListener("click", () =>
+        {
+
+            if (activeModalIndex !== null)
+            {
+                const padIndex = activeModalIndex < 10 ? "0" + activeModalIndex : "" + activeModalIndex;
+                const bVal = document.getElementById("modalPtBrightness").value;
+                const sVal = document.getElementById("modalPtSpeed").value;
+
+                document.getElementById("BRIGHT" + padIndex).value = bVal;
+                document.getElementById("SPEED" + padIndex).value = sVal;
+
+                if (ptModalInstance)
+                {
+                    ptModalInstance.hide();
+                }
+            }
+        });
+
+        // PT Konfigürasyon Formunu Gönderme
+        document.getElementById("ptConfigForm").addEventListener("submit", async (e) =>
+        {
+
+            e.preventDefault();
+            const form = document.getElementById("ptConfigForm");
+            const btnSave = document.getElementById("btnSavePt");
+            const formData = new FormData(form);
+
+            btnSave.disabled = true;
+
+            try
+            {
+                const response = await fetch("web_api.php?action=update_pt_config&sid=" + sid,
+                {
+                    method: "POST",
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (result.status === "success")
+                {
+                    alert("Success! PT configurations and hardware parameters saved.");
+                }
+                else
+                {
+                    alert("Error: " + result.message);
+                }
+            }
+            catch (error)
+            {
+                alert("Network communication timeout.");
+            }
+            finally
+            {
+                btnSave.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

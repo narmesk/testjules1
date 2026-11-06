@@ -88,11 +88,6 @@
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link px-4 py-2 fs-5 fw-bold ms-2" id="params-tab" data-bs-toggle="pill" data-bs-target="#params-pane" type="button" role="tab" aria-controls="params-pane" aria-selected="false">
-                        Hardware Parameters
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
                     <button class="nav-link px-4 py-2 fs-5 fw-bold ms-2" id="currency-tab" data-bs-toggle="pill" data-bs-target="#currency-pane" type="button" role="tab" aria-controls="currency-pane" aria-selected="false">
                         Currency & Decimals
                     </button>
@@ -563,32 +558,7 @@
                     </form>
                 </div>
 
-                <!-- SEKME 3: HARDWARE PARAMETERS (Brightness, Speed) -->
-                <div class="tab-pane fade" id="params-pane" role="tabpanel" aria-labelledby="params-tab">
-                    <form id="hardwareForm">
-                        <div class="mb-4">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label for="brightnessRange" class="form-label fs-5 fw-medium mb-0">LED Panel Brightness</label>
-                                <span id="brightnessVal" class="badge bg-success fs-5 px-3 py-2">33%</span>
-                            </div>
-                            <input type="range" class="form-range" id="brightnessRange" name="brightness" min="0" max="100" step="1" value="33">
-                            <div class="form-text fs-7 text-muted">Controls the duty cycle of the display LEDs (0-100%).</div>
-                        </div>
 
-                        <div class="mb-4">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label for="speedRange" class="form-label fs-5 fw-medium mb-0">Animation Scrolling Speed</label>
-                                <span id="speedVal" class="badge bg-primary fs-5 px-3 py-2">27</span>
-                            </div>
-                            <input type="range" class="form-range" id="speedRange" name="speed" min="1" max="50" step="1" value="27">
-                            <div class="form-text fs-7 text-muted">Defines the transition speed across digits.</div>
-                        </div>
-
-                        <div class="mt-4 pt-3 border-top text-end">
-                            <button type="submit" class="btn btn-dark fw-bold px-5 py-2 fs-5">Save Hardware Parameters</button>
-                        </div>
-                    </form>
-                </div>
 
                 <!-- SEKME 4: CURRENCY & DECIMAL FORMAT (settings.json) -->
                 <div class="tab-pane fade" id="currency-pane" role="tabpanel" aria-labelledby="currency-tab">
@@ -653,23 +623,12 @@
             document.getElementById("menu_ptconfig").href = "pt_config.html?sid=" + sid;
             document.getElementById("menu_manage").href = "manage.html?sid=" + sid;
 
-            // Slider gösterge olayları
-            document.getElementById("brightnessRange").addEventListener("input", (e) =>
-            {
-                document.getElementById("brightnessVal").innerText = e.target.value + "%";
-            }
-            );
 
-            document.getElementById("speedRange").addEventListener("input", (e) =>
-            {
-                document.getElementById("speedVal").innerText = e.target.value;
-            }
-            );
 
             loadStationDetails();
             loadTuningData();
             loadConfigsData();
-            loadHardwareParams();
+
             loadCurrencySettings();
         }
         );
@@ -746,32 +705,7 @@
             }
         }
 
-        async function loadHardwareParams()
-        {
-            try
-            {
-                const response = await fetch("web_api.php?action=get_settings&sid=" + sid);
-                const result = await response.json();
 
-                if (result.status === "success")
-                {
-                    if (result.brightness !== undefined)
-                    {
-                        document.getElementById("brightnessRange").value = result.brightness;
-                        document.getElementById("brightnessVal").innerText = result.brightness + "%";
-                    }
-                    if (result.speed !== undefined)
-                    {
-                        document.getElementById("speedRange").value = result.speed;
-                        document.getElementById("speedVal").innerText = result.speed;
-                    }
-                }
-            }
-            catch (e)
-            {
-                console.log("Error loading hardware settings:", e);
-            }
-        }
 
         // Tuning Form Submit
         document.getElementById("tuningForm").addEventListener("submit", async (e) =>
@@ -835,36 +769,7 @@
         }
         );
 
-        // Hardware Form Submit
-        document.getElementById("hardwareForm").addEventListener("submit", async (e) =>
-        {
-            e.preventDefault();
-            const formData = new FormData(e.target);
 
-            try
-            {
-                const response = await fetch("web_api.php?action=update_hardware&sid=" + sid,
-                {
-                    method: "POST",
-                    body: formData
-                }
-                );
-                const res = await response.json();
-                if (res.status === "success")
-                {
-                    alert("Success! Hardware brightness and speed saved.");
-                }
-                else
-                {
-                    alert("Error: " + res.message);
-                }
-            }
-            catch (err)
-            {
-                alert("Network transaction error.");
-            }
-        }
-        );
 
         // Para birimi ve ondalık ayarlarını yükleme
         async function loadCurrencySettings()
