@@ -46,6 +46,22 @@ void initserver() {
             request->send(404, "text/plain", "Hata: /settings.html bulunamadi.");
     });
 
+    server.on("/manage", HTTP_GET, [](AsyncWebServerRequest *request) {
+        serverlog("HTTP_GET /manage", "ln");
+        if (LittleFS.exists("/manage.html"))
+            sendNoCacheFile(request, "/manage.html", "text/html");
+        else
+            request->send(404, "text/plain", "Hata: /manage.html bulunamadi.");
+    });
+
+    server.on("/pt_config", HTTP_GET, [](AsyncWebServerRequest *request) {
+        serverlog("HTTP_GET /pt_config", "ln");
+        if (LittleFS.exists("/pt_config.html"))
+            sendNoCacheFile(request, "/pt_config.html", "text/html");
+        else
+            request->send(404, "text/plain", "Hata: /pt_config.html bulunamadi.");
+    });
+
     server.on("/style.css", HTTP_GET, [](AsyncWebServerRequest *request) {
         serverlog("HTTP_GET /style.css", "ln");
         if (LittleFS.exists("/style.css"))

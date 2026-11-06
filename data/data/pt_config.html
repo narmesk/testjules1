@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ledovate - PT Configuration</title>
+    <style>
+        /* Allman stili ile yazilmis modern ve yuzde sembollerinden arindirilmis css formatlama */
+        :root
+        {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success: #10b981;
+            --error: #ef4444;
+            --border: #e2e8f0;
+            --input-bg: #f8fafc;
+        }
+
+        *
+        {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body
+        {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding-bottom: 70px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header
+        {
+            background-color: #ffffff;
+            padding: 20px 10px;
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        h1
+        {
+            font-size: 1.4rem;
+            letter-spacing: 0.5px;
+            color: var(--primary);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .nav-group
+        {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 10px;
+        }
+
+        .nav-btn
+        {
+            flex: 1;
+            text-align: center;
+            background: var(--input-bg);
+            color: var(--text-main);
+            padding: 10px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+
+        .nav-btn.active, .nav-btn:hover
+        {
+            background: var(--primary);
+            color: #ffffff;
+            border-color: var(--primary);
+            font-weight: 600;
+        }
+
+        .container
+        {
+            width: 100vw;
+            max-width: 1050px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+
+        .card
+        {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-header-flex
+        {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .card-title
+        {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .table-container
+        {
+            overflow-x: auto;
+            margin-bottom: 15px;
+        }
+
+        table
+        {
+            width: 100vw;
+            max-width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.88rem;
+        }
+
+        th
+        {
+            background: #f8fafc;
+            color: var(--text-muted);
+            font-weight: 600;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            text-transform: uppercase;
+            font-size: 0.78rem;
+        }
+
+        td
+        {
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-main);
+            vertical-align: middle;
+        }
+
+        tr:last-child td
+        {
+            border-bottom: none;
+        }
+
+        tr:nth-child(even)
+        {
+            background-color: #f8fafc;
+        }
+
+        .sett-input
+        {
+            width: 100vw;
+            max-width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 6px 10px;
+            color: var(--text-main);
+            font-size: 0.88rem;
+            font-weight: 600;
+            outline: none;
+        }
+
+        .sett-input:focus
+        {
+            border-color: var(--primary);
+            background: #ffffff;
+        }
+
+        .btn-action
+        {
+            background: #64748b;
+            color: #ffffff;
+            border: none;
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-action:hover
+        {
+            background: #475569;
+        }
+
+        .btn-submit
+        {
+            width: 100vw;
+            max-width: 100%;
+            background: var(--primary);
+            color: #ffffff;
+            border: none;
+            padding: 14px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            transition: all 0.2s;
+        }
+
+        .btn-submit:hover
+        {
+            background: var(--primary-hover);
+        }
+
+        .btn-submit:disabled
+        {
+            background: #cbd5e1;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        /* Modal Pencereleri */
+        .modal-overlay
+        {
+            display: none;
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-dialog
+        {
+            background: #ffffff;
+            width: 100vw;
+            max-width: 440px;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .modal-title
+        {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .modal-body
+        {
+            font-size: 0.9rem;
+            color: var(--text-main);
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .modal-actions
+        {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-btn
+        {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        footer
+        {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100vw;
+            max-width: 100%;
+            background: #ffffff;
+            border-top: 1px solid var(--border);
+            padding: 14px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>LEDOVATE GAS PRICE CHANGER</h1>
+        <div class="nav-group">
+            <a class="nav-btn" href="./">Price</a>
+            <a class="nav-btn" href="./settings">Settings</a>
+            <a class="nav-btn active" href="./pt_config">PTConfig</a>
+            <a class="nav-btn" href="./manage">Manage</a>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <div class="card">
+            <div class="card-header-flex">
+                <span class="card-title">24-Channel PT Display Matrix</span>
+                <button type="button" class="btn-action" style="background:var(--primary);" onclick="OpenPTConfirmModal()">Save & Apply PT Config</button>
+            </div>
+
+            <form id="ptMatrixForm">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width: 8%;">PT</th>
+                                <th style="width: 22%;">Device Type</th>
+                                <th style="width: 16%;">Device ID</th>
+                                <th style="width: 18%;">Service Mode</th>
+                                <th style="width: 18%;">Switch Time</th>
+                                <th style="width: 18%; text-align: center;">Settings</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ptTableBody">
+                            <!-- Dinamik 24 kanal doldurulacak -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <button type="button" class="btn-submit" onclick="OpenPTConfirmModal()">Save & Apply PT Config</button>
+            </form>
+        </div>
+
+    </main>
+
+    <!-- Kanal Bazli Parlaklik ve Hiz Modali -->
+    <div id="channelParamModal" class="modal-overlay">
+        <div class="modal-dialog">
+            <div class="modal-title" id="channelModalTitle">Channel Parameters</div>
+            <div class="modal-body">
+                <div style="margin-bottom: 12px;">
+                    <label style="display:block; font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:5px;">CHANNEL BRIGHTNESS (1-10)</label>
+                    <select id="modalChannelBrightness" class="sett-input">
+                        <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                        <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                    </select>
+                </div>
+                <div>
+                    <label style="display:block; font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:5px;">CHANNEL ANIMATION SPEED (1-10)</label>
+                    <select id="modalChannelSpeed" class="sett-input">
+                        <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                        <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="modal-btn btn-action" onclick="CloseChannelModal()">Cancel</button>
+                <button type="button" class="modal-btn" style="background:var(--primary); color:#ffffff;" onclick="ApplyChannelModal()">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onay Modali (Pencere Icinde Pencere) -->
+    <div id="ptConfirmModal" class="modal-overlay">
+        <div class="modal-dialog">
+            <div class="modal-title">Confirm PT Configuration Push</div>
+            <div class="modal-body">
+                You are about to save the 24-channel PT matrix and channel parameters to the controller. Do you want to proceed?
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="modal-btn btn-action" onclick="ClosePTConfirmModal()">Cancel</button>
+                <button type="button" class="modal-btn" style="background:var(--success); color:#ffffff;" id="btnConfirmPTPush" onclick="ExecutePTSave()">Confirm & Save</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <span>© LEDOVATE - All Rights Reserved</span>
+        <a href="https://www.ledobe.com" target="_blank">ledobe.com</a>
+    </footer>
+
+    <script>
+        // Allman stili ile yazilmis PT istemci mantigi
+        let currentStockData = null;
+        let selectedPtIndex = null;
+
+        document.addEventListener("DOMContentLoaded", function ()
+        {
+            LoadPTConfig();
+        });
+
+        // ESP32 stock.json dosyasini ceken fonksiyon
+        function LoadPTConfig()
+        {
+            fetch("./getstock")
+                .then(function (res)
+                {
+                    return res.json();
+                })
+                .then(function (data)
+                {
+                    currentStockData = data;
+                    RenderPTTable(data);
+                })
+                .catch(function (err)
+                {
+                    console.error("stock.json alinamadi:", err);
+                });
+        }
+
+        // 24 kanalli PT tablosunu cizen fonksiyon
+        function RenderPTTable(data)
+        {
+            let tbody = document.getElementById("ptTableBody");
+            tbody.innerHTML = "";
+
+            let deviceTypes = ["tip1", "tip2", "tip3", "tip4", "tip5", "tip6", "tip7", "tip8"];
+
+            for (let i = 1; i <= 24; i++)
+            {
+                let tr = document.createElement("tr");
+
+                // Sira
+                let tdIdx = document.createElement("td");
+                tdIdx.innerHTML = "<strong>PT" + i + "</strong>";
+                tr.appendChild(tdIdx);
+
+                // Cihaz Tipi
+                let tdType = document.createElement("td");
+                let selType = document.createElement("select");
+                selType.className = "sett-input";
+                selType.name = "pttype" + i;
+                let optEmpty = document.createElement("option");
+                optEmpty.value = "";
+                optEmpty.innerText = "-";
+                selType.appendChild(optEmpty);
+
+                let curType = data["pttype" + i] || "";
+                for (let t = 0; t < deviceTypes.length; t++)
+                {
+                    let opt = document.createElement("option");
+                    opt.value = deviceTypes[t];
+                    opt.innerText = "Tip " + (t + 1);
+                    if (curType === deviceTypes[t])
+                    {
+                        opt.selected = true;
+                    }
+                    selType.appendChild(opt);
+                }
+                tdType.appendChild(selType);
+                tr.appendChild(tdType);
+
+                // Cihaz ID
+                let tdId = document.createElement("td");
+                let inputId = document.createElement("input");
+                inputId.className = "sett-input";
+                inputId.name = "ptid" + i;
+                inputId.value = data["ptid" + i] || "";
+                tdId.appendChild(inputId);
+                tr.appendChild(tdId);
+
+                // Servis Tipi
+                let tdService = document.createElement("td");
+                let selService = document.createElement("select");
+                selService.className = "sett-input";
+                selService.name = "ptservice" + i;
+                let curServ = data["ptservice" + i] || "full";
+                let optFull = document.createElement("option");
+                optFull.value = "full";
+                optFull.innerText = "Full Service";
+                if (curServ === "full") optFull.selected = true;
+                let optSelf = document.createElement("option");
+                optSelf.value = "self";
+                optSelf.innerText = "Self Service";
+                if (curServ === "self") optSelf.selected = true;
+                selService.appendChild(optFull);
+                selService.appendChild(optSelf);
+                tdService.appendChild(selService);
+                tr.appendChild(tdService);
+
+                // Gecis Saati
+                let tdTime = document.createElement("td");
+                let inputTime = document.createElement("input");
+                inputTime.type = "time";
+                inputTime.className = "sett-input";
+                inputTime.name = "ptswitchtime" + i;
+                inputTime.value = data["ptswitchtime" + i] || "";
+                tdTime.appendChild(inputTime);
+                tr.appendChild(tdTime);
+
+                // Ayarlar ve Gizli Parametreler
+                let tdSettings = document.createElement("td");
+                tdSettings.style.textAlign = "center";
+                let btnSettings = document.createElement("button");
+                btnSettings.type = "button";
+                btnSettings.className = "btn-action";
+                btnSettings.innerText = "⚙ Settings";
+                btnSettings.onclick = (function (idx)
+                {
+                    return function ()
+                    {
+                        OpenChannelModal(idx);
+                    };
+                })(i);
+
+                let hiddenBrightness = document.createElement("input");
+                hiddenBrightness.type = "hidden";
+                hiddenBrightness.name = "ptbrightness" + i;
+                hiddenBrightness.id = "ptbrightness" + i;
+                hiddenBrightness.value = data["ptbrightness" + i] || "5";
+
+                let hiddenSpeed = document.createElement("input");
+                hiddenSpeed.type = "hidden";
+                hiddenSpeed.name = "ptspeed" + i;
+                hiddenSpeed.id = "ptspeed" + i;
+                hiddenSpeed.value = data["ptspeed" + i] || "5";
+
+                tdSettings.appendChild(btnSettings);
+                tdSettings.appendChild(hiddenBrightness);
+                tdSettings.appendChild(hiddenSpeed);
+                tr.appendChild(tdSettings);
+
+                tbody.appendChild(tr);
+            }
+        }
+
+        // Kanal modalini acma
+        function OpenChannelModal(idx)
+        {
+            selectedPtIndex = idx;
+            document.getElementById("channelModalTitle").innerText = "Channel PT" + idx + " Parameters";
+            let bVal = document.getElementById("ptbrightness" + idx).value || "5";
+            let sVal = document.getElementById("ptspeed" + idx).value || "5";
+
+            document.getElementById("modalChannelBrightness").value = bVal;
+            document.getElementById("modalChannelSpeed").value = sVal;
+
+            document.getElementById("channelParamModal").style.display = "flex";
+        }
+
+        function CloseChannelModal()
+        {
+            document.getElementById("channelParamModal").style.display = "none";
+            selectedPtIndex = null;
+        }
+
+        function ApplyChannelModal()
+        {
+            if (selectedPtIndex)
+            {
+                document.getElementById("ptbrightness" + selectedPtIndex).value = document.getElementById("modalChannelBrightness").value;
+                document.getElementById("ptspeed" + selectedPtIndex).value = document.getElementById("modalChannelSpeed").value;
+            }
+            CloseChannelModal();
+        }
+
+        function OpenPTConfirmModal()
+        {
+            document.getElementById("ptConfirmModal").style.display = "flex";
+        }
+
+        function ClosePTConfirmModal()
+        {
+            document.getElementById("ptConfirmModal").style.display = "none";
+        }
+
+        // ESP32 /sendstock ucuna kaydetme
+        function ExecutePTSave()
+        {
+            let btn = document.getElementById("btnConfirmPTPush");
+            btn.disabled = true;
+            btn.innerText = "Saving...";
+
+            let formData = new URLSearchParams(new FormData(document.getElementById("ptMatrixForm")));
+
+            fetch("./sendstock", {
+                method: "POST",
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString()
+            })
+            .then(function (res)
+            {
+                return res.json();
+            })
+            .then(function (data)
+            {
+                ClosePTConfirmModal();
+                btn.disabled = false;
+                btn.innerText = "Confirm & Save";
+                alert("PT configuration saved successfully to LittleFS!");
+            })
+            .catch(function (err)
+            {
+                console.error("Hata:", err);
+                ClosePTConfirmModal();
+                btn.disabled = false;
+                btn.innerText = "Confirm & Save";
+                alert("Failed to save PT configuration.");
+            });
+        }
+    </script>
+</body>
+</html>

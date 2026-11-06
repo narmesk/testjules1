@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Ledovate - Manage Station</title>
+    <style>
+        /* Allman stili ile yazilmis modern ve yuzde sembollerinden arindirilmis css formatlama */
+        :root
+        {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success: #10b981;
+            --error: #ef4444;
+            --border: #e2e8f0;
+            --input-bg: #f8fafc;
+        }
+
+        *
+        {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        }
+
+        body
+        {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding-bottom: 70px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header
+        {
+            background-color: #ffffff;
+            padding: 20px 10px;
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        h1
+        {
+            font-size: 1.4rem;
+            letter-spacing: 0.5px;
+            color: var(--primary);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .nav-group
+        {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 10px;
+        }
+
+        .nav-btn
+        {
+            flex: 1;
+            text-align: center;
+            background: var(--input-bg);
+            color: var(--text-main);
+            padding: 10px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+
+        .nav-btn.active, .nav-btn:hover
+        {
+            background: var(--primary);
+            color: #ffffff;
+            border-color: var(--primary);
+            font-weight: 600;
+        }
+
+        .container
+        {
+            width: 100vw;
+            max-width: 850px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+
+        .info-bar
+        {
+            background: #eff6ff;
+            border: 1px solid rgba(37, 99, 235, 0.15);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #1e3a8a;
+            margin-bottom: 15px;
+        }
+
+        .info-bar span
+        {
+            color: var(--primary);
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        .card
+        {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .card-title
+        {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 8px;
+        }
+
+        .form-group
+        {
+            margin-bottom: 15px;
+        }
+
+        .form-label
+        {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .form-control
+        {
+            width: 100vw;
+            max-width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 0.95rem;
+            color: var(--text-main);
+            outline: none;
+            transition: border 0.2s;
+        }
+
+        .form-control:focus
+        {
+            border-color: var(--primary);
+            background: #ffffff;
+        }
+
+        .row
+        {
+            display: flex;
+            gap: 15px;
+        }
+
+        .col
+        {
+            flex: 1;
+        }
+
+        .table-container
+        {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        table
+        {
+            width: 100vw;
+            max-width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 0.9rem;
+        }
+
+        th
+        {
+            background: #f8fafc;
+            color: var(--text-muted);
+            font-weight: 600;
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--border);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+
+        td
+        {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-main);
+            vertical-align: middle;
+        }
+
+        tr:last-child td
+        {
+            border-bottom: none;
+        }
+
+        tr:nth-child(even)
+        {
+            background-color: #f8fafc;
+        }
+
+        .param-input
+        {
+            width: 90px;
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 6px 8px;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-align: right;
+            outline: none;
+        }
+
+        .param-input:focus
+        {
+            border-color: var(--primary);
+        }
+
+        .btn-submit
+        {
+            width: 100vw;
+            max-width: 100%;
+            background: var(--primary);
+            color: #ffffff;
+            border: none;
+            padding: 14px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            transition: all 0.2s;
+        }
+
+        .btn-submit:hover
+        {
+            background: var(--primary-hover);
+        }
+
+        .btn-secondary
+        {
+            background: #64748b;
+            box-shadow: 0 4px 12px rgba(100, 116, 139, 0.25);
+        }
+
+        .btn-secondary:hover
+        {
+            background: #475569;
+        }
+
+        /* Modal Onay Penceresi (Pencere Icinde Pencere) */
+        .modal-overlay
+        {
+            display: none;
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-dialog
+        {
+            background: #ffffff;
+            width: 100vw;
+            max-width: 440px;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .modal-title
+        {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .modal-body
+        {
+            font-size: 0.9rem;
+            color: var(--text-main);
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .modal-details
+        {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 10px;
+            font-size: 0.85rem;
+        }
+
+        .modal-actions
+        {
+            display: flex;
+            gap: 10px;
+        }
+
+        .modal-btn
+        {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        footer
+        {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100vw;
+            max-width: 100%;
+            background: #ffffff;
+            border-top: 1px solid var(--border);
+            padding: 14px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>LEDOVATE GAS PRICE CHANGER</h1>
+        <div class="nav-group">
+            <a class="nav-btn" href="./">Price</a>
+            <a class="nav-btn" href="./settings">Settings</a>
+            <a class="nav-btn" href="./pt_config">PTConfig</a>
+            <a class="nav-btn active" href="./manage">Manage</a>
+        </div>
+    </header>
+
+    <main class="container">
+
+        <div class="info-bar">
+            Customer ID: <span id="customerid">0</span>
+            Gas Station ID: <span id="gstationid">0</span>
+            Station Key: <span id="stationsid">N/A</span>
+        </div>
+
+        <!-- WiFi ve Sistem Ag Ayarlari -->
+        <div class="card">
+            <div class="card-title">WiFi & Network Configuration</div>
+            <form id="networkForm">
+                <div class="row">
+                    <div class="col form-group">
+                        <label class="form-label">Station WiFi SSID</label>
+                        <input type="text" class="form-control" id="wifiid" name="wifiid" placeholder="SSID">
+                    </div>
+                    <div class="col form-group">
+                        <label class="form-label">Station WiFi Password</label>
+                        <input type="password" class="form-control" id="wifipw" name="wifipw" placeholder="Password">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col form-group">
+                        <label class="form-label">Access Point SSID</label>
+                        <input type="text" class="form-control" id="apid" name="apid" placeholder="AP SSID">
+                    </div>
+                    <div class="col form-group">
+                        <label class="form-label">Access Point Password</label>
+                        <input type="password" class="form-control" id="appw" name="appw" placeholder="AP Password">
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col form-group">
+                        <label class="form-label">Environment Mode</label>
+                        <select class="form-control" id="devprod" name="devprod">
+                            <option value="d">Development (Dev)</option>
+                            <option value="p">Production (Prod)</option>
+                        </select>
+                    </div>
+                    <div class="col form-group">
+                        <label class="form-label">Serial Log Level</label>
+                        <select class="form-control" id="log" name="log">
+                            <option value="C">Compact (Prod)</option>
+                            <option value="D">Debug (Verbose)</option>
+                            <option value="E">Error Only</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="button" class="btn-submit" onclick="OpenManageConfirmModal()">Save & Apply Settings</button>
+            </form>
+        </div>
+
+        <!-- ESP32 Sistem Parametreleri Tablosu -->
+        <div class="card">
+            <div class="card-title">Controller System Parameters</div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 10%;">#</th>
+                            <th style="width: 50%;">Parameter Name</th>
+                            <th style="width: 40%; text-align: right;">Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="parametersdiv">
+                        <!-- Dinamik doldurulacak -->
+                    </tbody>
+                </table>
+            </div>
+
+            <button type="button" class="btn-submit btn-secondary" onclick="SaveSystemParameters()">Save Controller Parameters</button>
+        </div>
+
+    </main>
+
+    <!-- Modal Onay Penceresi (Pencere Icinde Pencere) -->
+    <div id="manageConfirmModal" class="modal-overlay">
+        <div class="modal-dialog">
+            <div class="modal-title">Confirm Configuration Push</div>
+            <div class="modal-body">
+                Are you sure you want to update the station WiFi and network configuration? The ESP32 may restart to apply changes.
+                <div class="modal-details" id="modalNetworkDetails">
+                    <!-- Dinamik detay -->
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="modal-btn btn-secondary" onclick="CloseManageConfirmModal()">Cancel</button>
+                <button type="button" class="modal-btn btn-submit" id="btnModalConfirm" onclick="ExecuteNetworkSave()">Confirm & Push</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <span>© LEDOVATE - All Rights Reserved</span>
+        <a href="https://www.ledobe.com" target="_blank">ledobe.com</a>
+    </footer>
+
+    <script>
+        // Allman stili ile yazilmis istemci mantigi
+        let globalConfig = null;
+
+        document.addEventListener("DOMContentLoaded", function ()
+        {
+            LoadStationConfig();
+        });
+
+        // ESP32'den konfigürasyon çeken fonksiyon
+        function LoadStationConfig()
+        {
+            fetch("./getledconfig")
+                .then(function (res)
+                {
+                    return res.json();
+                })
+                .then(function (data)
+                {
+                    globalConfig = data;
+                    document.getElementById('customerid').innerText = data.customerid || '0';
+                    document.getElementById('gstationid').innerText = data.gstationid || '0';
+                    document.getElementById('stationsid').innerText = data.sid || 'N/A';
+
+                    if (data.esp32sett)
+                    {
+                        document.getElementById('wifiid').value = data.esp32sett.wifiid || '';
+                        document.getElementById('wifipw').value = data.esp32sett.wifipw || '';
+                        document.getElementById('apid').value = data.esp32sett.apid || '';
+                        document.getElementById('appw').value = data.esp32sett.appw || '';
+                        document.getElementById('devprod').value = data.esp32sett.devprod || 'd';
+                        document.getElementById('log').value = data.esp32sett.log || 'C';
+                    }
+
+                    RenderParametersTable(data.parameters || []);
+                })
+                .catch(function (err)
+                {
+                    console.error("Config verisi çekilemedi:", err);
+                });
+        }
+
+        // Parametreleri tabloya basan fonksiyon
+        function RenderParametersTable(paramList)
+        {
+            let tbody = document.getElementById('parametersdiv');
+            tbody.innerHTML = '';
+
+            for (let i = 0; i < paramList.length; i++)
+            {
+                let p = paramList[i];
+                let tr = document.createElement('tr');
+
+                let tdIdx = document.createElement('td');
+                tdIdx.innerText = (i + 1);
+                tr.appendChild(tdIdx);
+
+                let tdName = document.createElement('td');
+                tdName.innerHTML = '<strong>' + p.n + '</strong>';
+                tr.appendChild(tdName);
+
+                let tdVal = document.createElement('td');
+                tdVal.style.textAlign = 'right';
+                let input = document.createElement('input');
+                input.className = 'param-input';
+                input.id = 'ledparam' + (i + 1);
+                input.name = 'ledparam' + (i + 1);
+                input.value = p.v;
+                tdVal.appendChild(input);
+                tr.appendChild(tdVal);
+
+                tbody.appendChild(tr);
+            }
+        }
+
+        // Onay modalini acan fonksiyon
+        function OpenManageConfirmModal()
+        {
+            let wifiSsid = document.getElementById('wifiid').value;
+            let apSsid = document.getElementById('apid').value;
+            let devprod = document.getElementById('devprod').value === 'p' ? 'Production' : 'Development';
+
+            let detailsHtml = '<strong>Target WiFi:</strong> ' + (wifiSsid || '(Not configured)') + '<br>' +
+                              '<strong>Local AP:</strong> ' + (apSsid || '(Not configured)') + '<br>' +
+                              '<strong>Mode:</strong> ' + devprod;
+
+            document.getElementById('modalNetworkDetails').innerHTML = detailsHtml;
+            document.getElementById('manageConfirmModal').style.display = 'flex';
+        }
+
+        function CloseManageConfirmModal()
+        {
+            document.getElementById('manageConfirmModal').style.display = 'none';
+        }
+
+        // Network ayarlarini ESP32 /sendsett ucuna gonderen fonksiyon
+        function ExecuteNetworkSave()
+        {
+            let btn = document.getElementById('btnModalConfirm');
+            btn.disabled = true;
+            btn.innerText = 'Applying...';
+
+            let formData = new URLSearchParams();
+            formData.append('sid', globalConfig ? globalConfig.sid : '');
+            formData.append('wifiid', document.getElementById('wifiid').value);
+            formData.append('wifipw', document.getElementById('wifipw').value);
+            formData.append('apid', document.getElementById('apid').value);
+            formData.append('appw', document.getElementById('appw').value);
+            formData.append('devprod', document.getElementById('devprod').value);
+            formData.append('log', document.getElementById('log').value);
+
+            fetch("./sendsett", {
+                method: "POST",
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString()
+            })
+            .then(function (res)
+            {
+                return res.json();
+            })
+            .then(function (data)
+            {
+                CloseManageConfirmModal();
+                btn.disabled = false;
+                btn.innerText = 'Confirm & Push';
+                alert('Network settings updated. ESP32 is restarting with new configuration.');
+            })
+            .catch(function (err)
+            {
+                console.error("Hata:", err);
+                CloseManageConfirmModal();
+                btn.disabled = false;
+                btn.innerText = 'Confirm & Push';
+                alert('Failed to update network settings.');
+            });
+        }
+
+        // Sistem parametrelerini ESP32 /sendparam ucuna gonderen fonksiyon
+        function SaveSystemParameters()
+        {
+            let formData = new URLSearchParams();
+            let inputs = document.querySelectorAll('.param-input');
+
+            for (let i = 0; i < inputs.length; i++)
+            {
+                formData.append(inputs[i].name, inputs[i].value);
+            }
+
+            fetch("./sendparam", {
+                method: "POST",
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: formData.toString()
+            })
+            .then(function (res)
+            {
+                return res.json();
+            })
+            .then(function (data)
+            {
+                alert('System parameters saved successfully!');
+            })
+            .catch(function (err)
+            {
+                console.error("Parametreler kaydedilemedi:", err);
+                alert('Error saving system parameters.');
+            });
+        }
+    </script>
+</body>
+</html>
