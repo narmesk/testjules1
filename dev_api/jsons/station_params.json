@@ -1,0 +1,65 @@
+{
+    "wifiid": "SUPERONLINE_WiFi_5172",
+    "wifipw": "N7XPXKWRJPER",
+    "apid": "LEDOVATE_AP",
+    "appw": "12345678",
+    "devprod": "d",
+    "log": "C",
+    "parameters": [
+        {
+            "name": "GROUP NUMBER",
+            "key": "param_group_no",
+            "val": "1"
+        },
+        {
+            "name": "FIRST PUMP ID",
+            "key": "param_first_pump_id",
+            "val": "36"
+        },
+        {
+            "name": "PUMP PIECE",
+            "key": "param_pump_piece",
+            "val": "24"
+        },
+        {
+            "name": "FIRST REPEATER ID",
+            "key": "param_first_repeater_id",
+            "val": "1"
+        },
+        {
+            "name": "REPEATER PIECE",
+            "key": "param_repeater_piece",
+            "val": "0"
+        },
+        {
+            "name": "LOOP COUNT",
+            "key": "param_loop_count",
+            "val": "1"
+        },
+        {
+            "name": "USE POS FLAG",
+            "key": "param_use_pos",
+            "val": "1"
+        },
+        {
+            "name": "PRODUCT PIECE",
+            "key": "param_product_piece",
+            "val": "4"
+        },
+        {
+            "name": "BACKWARDS COMP",
+            "key": "param_backwards_comp",
+            "val": "1"
+        },
+        {
+            "name": "RETRY TIME",
+            "key": "param_retry_time",
+            "val": "0"
+        },
+        {
+            "name": "ADVANCED MODE",
+            "key": "param_advanced_mode",
+            "val": "0"
+        }
+    ]
+}

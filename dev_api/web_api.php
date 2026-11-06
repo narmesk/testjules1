@@ -8,7 +8,7 @@ error_reporting(E_ALL);
 header('Content-Type: application/json; charset=utf-8');
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
-$sid    = isset($_GET['sid']) ? ($mysqli ? $mysqli->real_escape_string($_GET['sid']) : preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['sid'])) : '';
+$sid    = isset($_GET['sid']) ? ($mysqli ? $mysqli->real_escape_string($_GET['sid']) : preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['sid'])) : (isset($_GET['id']) ? ($mysqli ? $mysqli->real_escape_string($_GET['id']) : preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['id'])) : '');
 
 // -----------------------------------------------------------------------------
 // EYLEM 1: İstasyonları ve En Son Görülme Zamanlarını Listeleme (?action=list)
@@ -558,6 +558,194 @@ if ($action == 'update_hardware' && !empty($sid))
     }
 
     echo json_encode(array("status" => "success", "message" => "Hardware parameters queued successfully."));
+    exit;
+}
+
+// -----------------------------------------------------------------------------
+// EYLEM 12: İstasyon Spesifik Ağ/WiFi ve Donanım Parametrelerini Çekme (?action=get_manage_config)
+// -----------------------------------------------------------------------------
+if ($action == 'get_manage_config')
+{
+    $stationParamsPath = __DIR__ . '/jsons/station_params.json';
+    $manageData = array();
+
+    if (file_exists($stationParamsPath))
+    {
+        $manageData = json_decode(file_get_contents($stationParamsPath), true);
+        if (!is_array($manageData))
+        {
+            $manageData = array();
+        }
+    }
+
+    $stationInfo = array(
+        "id" => $sid ? $sid : "1",
+        "title" => "Demo Station Central",
+        "mac" => "CC:DB:A7:28:96:40",
+        "token" => "tk_demo_987213",
+        "last_pulse" => date("Y-m-d H:i:s")
+    );
+
+    if ($mysqli && !empty($sid))
+    {
+        $sqlSelect = "SELECT s.*, MAX(r.resdate) as last_seen FROM station s
+                      LEFT JOIN ledresult r ON s.sid = r.stationid
+                      WHERE s.sid = '{$sid}' GROUP BY s.sid";
+        $resSelect = $mysqli->query($sqlSelect);
+
+        if ($resSelect && $resSelect->num_rows > 0)
+        {
+            $row = $resSelect->fetch_assoc();
+            $stationInfo['title'] = isset($row['name']) ? $row['name'] : ("Station #" . $sid);
+            $stationInfo['last_pulse'] = isset($row['last_seen']) ? $row['last_seen'] : "Never";
+
+            $cfg = json_decode($row['ledcfg'], true);
+            if (is_array($cfg))
+            {
+                if (isset($cfg['wifiid']))
+                {
+                    $manageData['wifiid'] = $cfg['wifiid'];
+                }
+                if (isset($cfg['wifipw']))
+                {
+                    $manageData['wifipw'] = $cfg['wifipw'];
+                }
+                if (isset($cfg['apid']))
+                {
+                    $manageData['apid'] = $cfg['apid'];
+                }
+                if (isset($cfg['appw']))
+                {
+                    $manageData['appw'] = $cfg['appw'];
+                }
+                if (isset($cfg['devprod']))
+                {
+                    $manageData['devprod'] = $cfg['devprod'];
+                }
+                if (isset($cfg['log']))
+                {
+                    $manageData['log'] = $cfg['log'];
+                }
+                if (isset($cfg['parameters']) && is_array($cfg['parameters']))
+                {
+                    $manageData['parameters'] = $cfg['parameters'];
+                }
+            }
+        }
+    }
+
+    echo json_encode(array(
+        "status" => "success",
+        "station" => $stationInfo,
+        "data" => $manageData
+    ), JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// -----------------------------------------------------------------------------
+// EYLEM 13: İstasyon Ağ/WiFi ve Donanım Parametrelerini Güncelleme (?action=update_manage_config)
+// -----------------------------------------------------------------------------
+if ($action == 'update_manage_config')
+{
+    $inputRaw = file_get_contents('php://input');
+    $inputData = json_decode($inputRaw, true);
+
+    if (!is_array($inputData))
+    {
+        $inputData = $_POST;
+    }
+
+    $rawSid = !empty($sid) ? $sid : (isset($inputData['station_id']) ? $inputData['station_id'] : '1');
+    $targetSid = $mysqli ? $mysqli->real_escape_string($rawSid) : preg_replace('/[^a-zA-Z0-9_-]/', '', $rawSid);
+
+    $stationParamsPath = __DIR__ . '/jsons/station_params.json';
+    $currentParamsData = array();
+
+    if (file_exists($stationParamsPath))
+    {
+        $currentParamsData = json_decode(file_get_contents($stationParamsPath), true);
+        if (!is_array($currentParamsData))
+        {
+            $currentParamsData = array();
+        }
+    }
+
+    if (isset($inputData['wifiid']))
+    {
+        $currentParamsData['wifiid'] = $inputData['wifiid'];
+    }
+    if (isset($inputData['wifipw']))
+    {
+        $currentParamsData['wifipw'] = $inputData['wifipw'];
+    }
+    if (isset($inputData['apid']))
+    {
+        $currentParamsData['apid'] = $inputData['apid'];
+    }
+    if (isset($inputData['appw']))
+    {
+        $currentParamsData['appw'] = $inputData['appw'];
+    }
+    if (isset($inputData['devprod']))
+    {
+        $currentParamsData['devprod'] = $inputData['devprod'];
+    }
+    if (isset($inputData['log']))
+    {
+        $currentParamsData['log'] = $inputData['log'];
+    }
+    if (isset($inputData['parameters']) && is_array($inputData['parameters']))
+    {
+        $currentParamsData['parameters'] = $inputData['parameters'];
+    }
+
+    file_put_contents($stationParamsPath, json_encode($currentParamsData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+    if ($mysqli && !empty($targetSid))
+    {
+        $sqlSelect = "SELECT ledcfg FROM station WHERE sid = '{$targetSid}'";
+        $resSelect = $mysqli->query($sqlSelect);
+
+        if ($resSelect && $resSelect->num_rows > 0)
+        {
+            $row = $resSelect->fetch_assoc();
+            $configArray = json_decode($row['ledcfg'], true);
+
+            if (!is_array($configArray))
+            {
+                $configArray = array();
+            }
+
+            $configArray['wifiid'] = $currentParamsData['wifiid'];
+            $configArray['wifipw'] = $currentParamsData['wifipw'];
+            $configArray['apid']   = $currentParamsData['apid'];
+            $configArray['appw']   = $currentParamsData['appw'];
+            $configArray['devprod'] = $currentParamsData['devprod'];
+            $configArray['log']     = $currentParamsData['log'];
+            $configArray['parameters'] = $currentParamsData['parameters'];
+
+            $processId = strval(rand(11111111, 99999999));
+            $configArray['ptype']   = "pm";
+            $configArray['pmaster'] = "sv";
+            $configArray['pid']     = $processId;
+            $configArray['pdate']   = date("Y-m-d H:i:s");
+
+            $updatedJson = $mysqli->real_escape_string(json_encode($configArray, JSON_UNESCAPED_UNICODE));
+            $mysqli->query("UPDATE station SET ledcfg = '{$updatedJson}' WHERE sid = '{$targetSid}'");
+            $mysqli->query("UPDATE ledresult SET ptype = 'pm', processid = '{$processId}' WHERE stationid = '{$targetSid}'");
+
+            echo json_encode(array(
+                "status" => "success",
+                "message" => "Station WiFi and parameters updated and queued for ESP32 transmission."
+            ), JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    }
+
+    echo json_encode(array(
+        "status" => "success",
+        "message" => "Station parameters updated successfully in local storage."
+    ), JSON_UNESCAPED_UNICODE);
     exit;
 }
 
