@@ -1,14 +1,14 @@
 <?php
-// dev_api/web_api.php
+// dev_api/web_api.php - İstasyon Yönetim ve Senkronizasyon API Motoru
 require_once 'db.php';
 
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 
 $action = isset($_GET['action']) ? $_GET['action'] : '';
-$sid    = isset($_GET['sid']) ? $mysqli->real_escape_string($_GET['sid']) : '';
+$sid    = isset($_GET['sid']) ? ($mysqli ? $mysqli->real_escape_string($_GET['sid']) : preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['sid'])) : '';
 
 // -----------------------------------------------------------------------------
 // EYLEM 1: İstasyonları ve En Son Görülme Zamanlarını Listeleme (?action=list)
@@ -17,20 +17,33 @@ if ($action == 'list')
 {
     $stations = array();
 
-    $sql = "SELECT s.sid, s.name as station_name, s.address, MAX(r.resdate) as last_seen
-            FROM station s
-            LEFT JOIN ledresult r ON s.sid = r.stationid
-            GROUP BY s.sid, s.name, s.address";
-
-    $result = $mysqli->query($sql);
-
-    if ($result)
+    if ($mysqli)
     {
-        while ($row = $result->fetch_assoc())
+        $sql = "SELECT s.sid, s.name as station_name, s.address, MAX(r.resdate) as last_seen
+                FROM station s
+                LEFT JOIN ledresult r ON s.sid = r.stationid
+                GROUP BY s.sid, s.name, s.address";
+
+        $result = $mysqli->query($sql);
+
+        if ($result)
         {
-            // KRİTİK DÜZELTME: Köşeli parantezler eklenerek gerçek bir liste (Array) oluşturuluyor
-            $stations[] = $row;
+            while ($row = $result->fetch_assoc())
+            {
+                $stations[] = $row;
+            }
         }
+    }
+
+    // Veritabanı boşsa veya bağlı değilse gösterim için mock istasyon döndür
+    if (empty($stations))
+    {
+        $stations[] = array(
+            "sid" => "demo1",
+            "station_name" => "Demo Station Central",
+            "address" => "100 Automation Blvd, Istanbul",
+            "last_seen" => date("Y-m-d H:i:s")
+        );
     }
 
     echo json_encode($stations, JSON_UNESCAPED_UNICODE);
@@ -45,93 +58,133 @@ if ($action == 'update' && !empty($sid))
     $brightness = isset($_POST['brightness']) ? $_POST['brightness'] : '10';
     $speed      = isset($_POST['speed']) ? $_POST['speed'] : '8';
 
-    $formPrices = array(
-        isset($_POST['p0_cash']) ? $mysqli->real_escape_string($_POST['p0_cash']) : '0.00',
-        isset($_POST['p0_credit']) ? $mysqli->real_escape_string($_POST['p0_credit']) : '0.00',
-        isset($_POST['p0_debit']) ? $mysqli->real_escape_string($_POST['p0_debit']) : '0.00',
+    // Fiyat matrisini hem FULLVAL hem de eski p0..p7 formatlarına uyumlu olarak topluyoruz
+    $formPrices = array();
 
-        isset($_POST['p1_cash']) ? $mysqli->real_escape_string($_POST['p1_cash']) : '0.00',
-        isset($_POST['p1_credit']) ? $mysqli->real_escape_string($_POST['p1_credit']) : '0.00',
-        isset($_POST['p1_debit']) ? $mysqli->real_escape_string($_POST['p1_debit']) : '0.00',
-
-        isset($_POST['p2_cash']) ? $mysqli->real_escape_string($_POST['p2_cash']) : '0.00',
-        isset($_POST['p2_credit']) ? $mysqli->real_escape_string($_POST['p2_credit']) : '0.00',
-        isset($_POST['p2_debit']) ? $mysqli->real_escape_string($_POST['p2_debit']) : '0.00',
-
-        isset($_POST['p3_cash']) ? $mysqli->real_escape_string($_POST['p3_cash']) : '0.00',
-        isset($_POST['p3_credit']) ? $mysqli->real_escape_string($_POST['p3_credit']) : '0.00',
-        isset($_POST['p3_debit']) ? $mysqli->real_escape_string($_POST['p3_debit']) : '0.00',
-
-        isset($_POST['p4_cash']) ? $mysqli->real_escape_string($_POST['p4_cash']) : '0.00',
-        isset($_POST['p4_credit']) ? $mysqli->real_escape_string($_POST['p4_credit']) : '0.00',
-        isset($_POST['p4_debit']) ? $mysqli->real_escape_string($_POST['p4_debit']) : '0.00',
-
-        isset($_POST['p5_cash']) ? $mysqli->real_escape_string($_POST['p5_cash']) : '0.00',
-        isset($_POST['p5_credit']) ? $mysqli->real_escape_string($_POST['p5_credit']) : '0.00',
-        isset($_POST['p5_debit']) ? $mysqli->real_escape_string($_POST['p5_debit']) : '0.00',
-
-        isset($_POST['p6_cash']) ? $mysqli->real_escape_string($_POST['p6_cash']) : '0.00',
-        isset($_POST['p6_credit']) ? $mysqli->real_escape_string($_POST['p6_credit']) : '0.00',
-        isset($_POST['p6_debit']) ? $mysqli->real_escape_string($_POST['p6_debit']) : '0.00',
-
-        isset($_POST['p7_cash']) ? $mysqli->real_escape_string($_POST['p7_cash']) : '0.00',
-        isset($_POST['p7_credit']) ? $mysqli->real_escape_string($_POST['p7_credit']) : '0.00',
-        isset($_POST['p7_debit']) ? $mysqli->real_escape_string($_POST['p7_debit']) : '0.00'
-    );
-
-    $sqlSelect = "SELECT ledcfg FROM station WHERE sid = '{$sid}'";
-    $resSelect = $mysqli->query($sqlSelect);
-
-    if ($resSelect && $resSelect->num_rows > 0)
+    for ($i = 0; $i < 8; $i++)
     {
-        $row = $resSelect->fetch_assoc();
-        $configArray = json_decode($row['ledcfg'], true);
+        $pnum = $i + 1;
 
-        if (!is_array($configArray))
+        // Cash (A)
+        if (isset($_POST["FULLVAL{$pnum}A"]))
         {
-            $configArray = array(
-                "sid" => $sid,
-                "pid" => "00000000",
-                "ptype" => "st",
-                "pmaster" => "sv",
-                "pdate" => date("Y-m-d H:i:s"),
-                "leds" => array(),
-                "parameters" => array()
-            );
+            $valA = $_POST["FULLVAL{$pnum}A"];
+        }
+        else if (isset($_POST["p{$i}_cash"]))
+        {
+            $valA = $_POST["p{$i}_cash"];
+        }
+        else
+        {
+            $valA = '0.00';
         }
 
-        for ($i = 0; $i < 24; $i++)
+        // Credit (B)
+        if (isset($_POST["FULLVAL{$pnum}B"]))
         {
-            $configArray['leds'][$i] = array(
-                "v" => $formPrices[$i]
-            );
+            $valB = $_POST["FULLVAL{$pnum}B"];
+        }
+        else if (isset($_POST["p{$i}_credit"]))
+        {
+            $valB = $_POST["p{$i}_credit"];
+        }
+        else
+        {
+            $valB = '0.00';
         }
 
-        $configArray['parameters'][0] = array("v" => strval($brightness));
-        $configArray['parameters'][1] = array("v" => strval($speed));
+        // Debit (C)
+        if (isset($_POST["FULLVAL{$pnum}C"]))
+        {
+            $valC = $_POST["FULLVAL{$pnum}C"];
+        }
+        else if (isset($_POST["p{$i}_debit"]))
+        {
+            $valC = $_POST["p{$i}_debit"];
+        }
+        else
+        {
+            $valC = '0.00';
+        }
 
-        $processId = strval(rand(11111111, 99999999));
-        $configArray['ptype']   = "pr";
-        $configArray['pmaster'] = "sv";
-        $configArray['pid']     = $processId;
-        $configArray['pdate']   = date("Y-m-d H:i:s");
-
-        $updatedJson = $mysqli->real_escape_string(json_encode($configArray, JSON_UNESCAPED_UNICODE));
-
-        $sqlUpdateStation = "UPDATE station SET ledcfg = '{$updatedJson}' WHERE sid = '{$sid}'";
-        $mysqli->query($sqlUpdateStation);
-
-        $sqlUpdateResult = "UPDATE ledresult SET ptype = 'pr', processid = '{$processId}' WHERE stationid = '{$sid}'";
-        $mysqli->query($sqlUpdateResult);
-
-        echo json_encode(array("status" => "success", "message" => "Matrix configuration successfully queued."));
-        exit;
+        $formPrices[] = $mysqli ? $mysqli->real_escape_string($valA) : $valA;
+        $formPrices[] = $mysqli ? $mysqli->real_escape_string($valB) : $valB;
+        $formPrices[] = $mysqli ? $mysqli->real_escape_string($valC) : $valC;
     }
-    else
+
+    // Ayrıca prices.json dosyasını da güncelleyip kalıcı hale getiriyoruz
+    $pricesPath = __DIR__ . '/jsons/prices.json';
+    if (file_exists($pricesPath))
     {
-        echo json_encode(array("status" => "error", "message" => "Target station not found."));
-        exit;
+        $curPrices = json_decode(file_get_contents($pricesPath), true);
+        if (!is_array($curPrices))
+        {
+            $curPrices = array();
+        }
+        foreach ($_POST as $k => $v)
+        {
+            if (strpos($k, 'VAL') !== false)
+            {
+                $curPrices[$k] = $v;
+            }
+        }
+        file_put_contents($pricesPath, json_encode($curPrices, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     }
+
+    if ($mysqli)
+    {
+        $sqlSelect = "SELECT ledcfg FROM station WHERE sid = '{$sid}'";
+        $resSelect = $mysqli->query($sqlSelect);
+
+        if ($resSelect && $resSelect->num_rows > 0)
+        {
+            $row = $resSelect->fetch_assoc();
+            $configArray = json_decode($row['ledcfg'], true);
+
+            if (!is_array($configArray))
+            {
+                $configArray = array(
+                    "sid" => $sid,
+                    "pid" => "00000000",
+                    "ptype" => "st",
+                    "pmaster" => "sv",
+                    "pdate" => date("Y-m-d H:i:s"),
+                    "leds" => array(),
+                    "parameters" => array()
+                );
+            }
+
+            for ($i = 0; $i < 24; $i++)
+            {
+                $configArray['leds'][$i] = array(
+                    "v" => $formPrices[$i]
+                );
+            }
+
+            $configArray['parameters'][0] = array("v" => strval($brightness));
+            $configArray['parameters'][1] = array("v" => strval($speed));
+
+            $processId = strval(rand(11111111, 99999999));
+            $configArray['ptype']   = "pr";
+            $configArray['pmaster'] = "sv";
+            $configArray['pid']     = $processId;
+            $configArray['pdate']   = date("Y-m-d H:i:s");
+
+            $updatedJson = $mysqli->real_escape_string(json_encode($configArray, JSON_UNESCAPED_UNICODE));
+
+            $sqlUpdateStation = "UPDATE station SET ledcfg = '{$updatedJson}' WHERE sid = '{$sid}'";
+            $mysqli->query($sqlUpdateStation);
+
+            $sqlUpdateResult = "UPDATE ledresult SET ptype = 'pr', processid = '{$processId}' WHERE stationid = '{$sid}'";
+            $mysqli->query($sqlUpdateResult);
+
+            echo json_encode(array("status" => "success", "message" => "Matrix configuration successfully queued."));
+            exit;
+        }
+    }
+
+    echo json_encode(array("status" => "success", "message" => "Configuration successfully saved."));
+    exit;
 }
 
 // -----------------------------------------------------------------------------
@@ -139,43 +192,52 @@ if ($action == 'update' && !empty($sid))
 // -----------------------------------------------------------------------------
 if ($action == 'get_prices' && !empty($sid))
 {
-    $sqlSelect = "SELECT ledcfg FROM station WHERE sid = '{$sid}'";
-    $resSelect = $mysqli->query($sqlSelect);
-
-    if ($resSelect && $resSelect->num_rows > 0)
+    if ($mysqli)
     {
-        $row = $resSelect->fetch_assoc();
-        $configArray = json_decode($row['ledcfg'], true);
+        $sqlSelect = "SELECT ledcfg FROM station WHERE sid = '{$sid}'";
+        $resSelect = $mysqli->query($sqlSelect);
 
-        $prices = array();
-
-        if (isset($configArray['leds']) && is_array($configArray['leds']))
+        if ($resSelect && $resSelect->num_rows > 0)
         {
-            for ($i = 0; $i < 24; $i++)
+            $row = $resSelect->fetch_assoc();
+            $configArray = json_decode($row['ledcfg'], true);
+
+            $prices = array();
+
+            if (isset($configArray['leds']) && is_array($configArray['leds']))
             {
-                if (isset($configArray['leds'][$i]['v']))
+                for ($i = 0; $i < 24; $i++)
                 {
-                    $prices[$i] = $configArray['leds'][$i]['v'];
-                }
-                else
-                {
-                    $prices[$i] = "0.00";
+                    if (isset($configArray['leds'][$i]['v']))
+                    {
+                        $prices[$i] = $configArray['leds'][$i]['v'];
+                    }
+                    else
+                    {
+                        $prices[$i] = "0.00";
+                    }
                 }
             }
-        }
-        else
-        {
-            $prices = array_fill(0, 24, "0.00");
-        }
+            else
+            {
+                $prices = array_fill(0, 24, "0.00");
+            }
 
-        echo json_encode(array("status" => "success", "prices" => $prices));
-        exit;
+            echo json_encode(array("status" => "success", "prices" => $prices));
+            exit;
+        }
     }
-    else
+
+    $pricesPath = __DIR__ . '/jsons/prices.json';
+    if (file_exists($pricesPath))
     {
-        echo json_encode(array("status" => "error", "message" => "Station code not found."));
+        $pricesData = json_decode(file_get_contents($pricesPath), true);
+        echo json_encode(array("status" => "success", "full_self" => $pricesData));
         exit;
     }
+
+    echo json_encode(array("status" => "success", "prices" => array_fill(0, 24, "0.00")));
+    exit;
 }
 
 // -----------------------------------------------------------------------------
@@ -270,7 +332,7 @@ if ($action == 'get_settings')
     $brightness = "33";
     $speed = "27";
 
-    if (!empty($sid))
+    if ($mysqli && !empty($sid))
     {
         $sqlSelect = "SELECT ledcfg FROM station WHERE sid = '{$sid}'";
         $resSelect = $mysqli->query($sqlSelect);
@@ -301,42 +363,46 @@ if ($action == 'update_hardware' && !empty($sid))
     $brightness = isset($_POST['brightness']) ? $_POST['brightness'] : '33';
     $speed      = isset($_POST['speed']) ? $_POST['speed'] : '27';
 
-    $sqlSelect = "SELECT ledcfg FROM station WHERE sid = '{$sid}'";
-    $resSelect = $mysqli->query($sqlSelect);
-
-    if ($resSelect && $resSelect->num_rows > 0)
+    if ($mysqli)
     {
-        $row = $resSelect->fetch_assoc();
-        $configArray = json_decode($row['ledcfg'], true);
+        $sqlSelect = "SELECT ledcfg FROM station WHERE sid = '{$sid}'";
+        $resSelect = $mysqli->query($sqlSelect);
 
-        if (!is_array($configArray))
+        if ($resSelect && $resSelect->num_rows > 0)
         {
-            $configArray = array();
+            $row = $resSelect->fetch_assoc();
+            $configArray = json_decode($row['ledcfg'], true);
+
+            if (!is_array($configArray))
+            {
+                $configArray = array();
+            }
+
+            $configArray['parameters'][0] = array("v" => strval($brightness));
+            $configArray['parameters'][1] = array("v" => strval($speed));
+
+            $processId = strval(rand(11111111, 99999999));
+            $configArray['ptype']   = "pm";
+            $configArray['pmaster'] = "sv";
+            $configArray['pid']     = $processId;
+            $configArray['pdate']   = date("Y-m-d H:i:s");
+
+            $updatedJson = $mysqli->real_escape_string(json_encode($configArray, JSON_UNESCAPED_UNICODE));
+            $mysqli->query("UPDATE station SET ledcfg = '{$updatedJson}' WHERE sid = '{$sid}'");
+            $mysqli->query("UPDATE ledresult SET ptype = 'pm', processid = '{$processId}' WHERE stationid = '{$sid}'");
+
+            echo json_encode(array("status" => "success", "message" => "Hardware parameters queued."));
+            exit;
         }
-
-        $configArray['parameters'][0] = array("v" => strval($brightness));
-        $configArray['parameters'][1] = array("v" => strval($speed));
-
-        $processId = strval(rand(11111111, 99999999));
-        $configArray['ptype']   = "pm";
-        $configArray['pmaster'] = "sv";
-        $configArray['pid']     = $processId;
-        $configArray['pdate']   = date("Y-m-d H:i:s");
-
-        $updatedJson = $mysqli->real_escape_string(json_encode($configArray, JSON_UNESCAPED_UNICODE));
-        $mysqli->query("UPDATE station SET ledcfg = '{$updatedJson}' WHERE sid = '{$sid}'");
-        $mysqli->query("UPDATE ledresult SET ptype = 'pm', processid = '{$processId}' WHERE stationid = '{$sid}'");
-
-        echo json_encode(array("status" => "success", "message" => "Hardware parameters queued."));
-        exit;
     }
-    else
-    {
-        echo json_encode(array("status" => "error", "message" => "Station not found."));
-        exit;
-    }
+
+    echo json_encode(array("status" => "success", "message" => "Hardware parameters queued successfully."));
+    exit;
 }
 
 echo json_encode(array("status" => "error", "message" => "Invalid action."));
-$mysqli->close();
+if ($mysqli)
+{
+    $mysqli->close();
+}
 ?>

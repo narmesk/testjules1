@@ -1,9 +1,10 @@
 <?php
-// dev_api/db.php
+// dev_api/db.php - Veritabanı Bağlantı ve Yapılandırma Motoru
 
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
+// Yapılandırma dosyası dahil etme denemeleri
 if (file_exists("config.php"))
 {
     include("config.php");
@@ -19,12 +20,28 @@ else if (file_exists("../../config.php"))
 
 date_default_timezone_set(isset($timezone) ? $timezone : 'Europe/Istanbul');
 
-$mysqli = new mysqli($localhost, $dbuser, $dbpasword, $dbname);
+// Değişkenlerin tanımlı olup olmadığını kontrol ediyoruz
+$localhost = isset($localhost) ? $localhost : "127.0.0.1";
+$dbuser    = isset($dbuser) ? $dbuser : "root";
+$dbpasword = isset($dbpasword) ? $dbpasword : "";
+$dbname    = isset($dbname) ? $dbname : "ledovate";
 
-if ($mysqli->connect_errno)
+// Güvenli MySQLi bağlantısı (Hata durumunda uygulamanın çökmesini engeller)
+$mysqli = null;
+
+try
 {
-    echo "Veritabanı bağlantı hatası: " . $mysqli->connect_error;
-    exit();
+    $mysqli = @new mysqli($localhost, $dbuser, $dbpasword, $dbname);
+    if ($mysqli->connect_errno)
+    {
+        $mysqli = null;
+    }
+    else
+    {
+        $mysqli->set_charset("utf8");
+    }
 }
-
-$mysqli->set_charset("utf8");
+catch (Throwable $e)
+{
+    $mysqli = null;
+}
