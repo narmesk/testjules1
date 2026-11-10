@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Karakter kodlama seti -->
+    <meta charset="UTF-8">
+    <!-- Mobil uyumluluk viewport ayari -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Station - Network & System Parameters</title>
+    <!-- Bootstrap 5.3.3 Yerel CSS -->
+    <link href="style/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Allman stili ve duzenli css formatlama */
+        body
+        {
+            background-color: #f4f6f9;
+        }
+
+        .header-box
+        {
+            background-color: #ffffff;
+            border-bottom: 2px solid #e9ecef;
+            padding: 15px 0;
+            margin-bottom: 20px;
+        }
+
+        .card
+        {
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: none;
+            margin-bottom: 20px;
+        }
+
+        .card-header
+        {
+            background-color: #ffffff;
+            border-bottom: 1px solid #edf2f7;
+            font-weight: 600;
+        }
+
+        .table thead th
+        {
+            background-color: #f8fafc;
+            border-bottom: 2px solid #e2e8f0;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .table td
+        {
+            vertical-align: middle;
+        }
+
+        .btn-station-nav
+        {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Ust Bilgi ve Navigasyon Bari -->
+    <div class="header-box">
+        <div class="container-fluid px-4">
+            <div class="row align-items-center">
+                <div class="col-md-5">
+                    <h4 class="mb-0 text-primary fw-bold" id="stationTitle">Manage Station - Device & Network Setup</h4>
+                    <span class="text-muted small" id="stationDetails">Station ID: Loading... | ESP32 MAC: Loading...</span>
+                </div>
+                <div class="col-md-7 text-md-end mt-2 mt-md-0">
+                    <div class="btn-group me-2" role="group">
+                        <a href="index.html" class="btn btn-outline-secondary btn-sm">Dashboard</a>
+                        <a href="#" id="navPriceLink" class="btn btn-outline-primary btn-sm btn-station-nav">Price Station</a>
+                        <a href="#" id="navSettingLink" class="btn btn-outline-primary btn-sm btn-station-nav">Setting Station</a>
+                        <a href="#" id="navPTConfigLink" class="btn btn-outline-primary btn-sm btn-station-nav">PTConfig Station</a>
+                        <button type="button" class="btn btn-primary btn-sm btn-station-nav active" disabled>Manage Station</button>
+                    </div>
+                    <button type="button" class="btn btn-success btn-sm px-3" onclick="OpenManageConfirmModal()">Save & Push Parameters</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bildirim Alani -->
+    <div class="container-fluid px-4">
+        <div id="alertBox" class="alert d-none" role="alert"></div>
+    </div>
+
+    <!-- Ana Icerik -->
+    <div class="container-fluid px-4">
+        <div class="row">
+
+            <!-- Sol Kolon: WiFi ve Ag Yapilandirmasi -->
+            <div class="col-lg-5">
+                <!-- WiFi Ayarlari Karti -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">WiFi & Network Configuration</span>
+                        <span class="badge bg-light text-primary">Station & AP</span>
+                    </div>
+                    <div class="card-body">
+                        <form id="wifiForm">
+                            <h6 class="text-secondary fw-bold border-bottom pb-2 mb-3">Station WiFi (Client Mode)</h6>
+                            <div class="mb-3">
+                                <label for="wifiSsid" class="form-label small fw-bold text-muted">WiFi SSID (Network Name)</label>
+                                <input type="text" class="form-control" id="wifiSsid" placeholder="e.g. SUPERONLINE_WiFi_5172" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="wifiPassword" class="form-label small fw-bold text-muted">WiFi Password</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="wifiPassword" placeholder="Enter WiFi Password">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="TogglePasswordVisibility('wifiPassword')">Show</button>
+                                </div>
+                            </div>
+
+                            <h6 class="text-secondary fw-bold border-bottom pb-2 mb-3 mt-4">Access Point (Local AP Mode)</h6>
+                            <div class="mb-3">
+                                <label for="apSsid" class="form-label small fw-bold text-muted">Access Point SSID</label>
+                                <input type="text" class="form-control" id="apSsid" placeholder="e.g. LEDOVATE_AP" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="apPassword" class="form-label small fw-bold text-muted">Access Point Password</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="apPassword" placeholder="Enter AP Password (min 8 chars)">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="TogglePasswordVisibility('apPassword')">Show</button>
+                                </div>
+                            </div>
+
+                            <h6 class="text-secondary fw-bold border-bottom pb-2 mb-3 mt-4">System Operation Mode</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="devProdMode" class="form-label small fw-bold text-muted">Environment</label>
+                                    <select class="form-select" id="devProdMode">
+                                        <option value="d">Development (Dev)</option>
+                                        <option value="p">Production (Prod)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="logLevel" class="form-label small fw-bold text-muted">Serial Logging</label>
+                                    <select class="form-select" id="logLevel">
+                                        <option value="C">Compact (Production)</option>
+                                        <option value="D">Debug (Verbose)</option>
+                                        <option value="E">Error Only</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Cihaz Donanim Bilgileri Karti -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <span class="fw-bold">Hardware & Telemetry Info</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span class="text-muted">Station Token:</span>
+                                <span class="fw-bold text-monospace" id="stationTokenDisplay">-</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span class="text-muted">ESP32 MAC Address:</span>
+                                <span class="fw-bold" id="stationMacDisplay">-</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span class="text-muted">Last Pulse (Heartbeat):</span>
+                                <span class="fw-bold" id="stationLastPulseDisplay">-</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                <span class="text-muted">Firmware Engine:</span>
+                                <span class="badge bg-secondary">ESP32-C3 / LittleFS</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sag Kolon: Istasyon Parametreleri Tablosu -->
+            <div class="col-lg-7">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">Station Controller & Hardware Parameters</span>
+                        <span class="badge bg-secondary" id="paramCountBadge">11 Parameters</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 8%;">ID</th>
+                                        <th style="width: 42%;">Parameter Name</th>
+                                        <th style="width: 30%;">Configuration Key</th>
+                                        <th style="width: 20%;" class="text-end">Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="parametersTableBody">
+                                    <!-- Dinamik olarak doldurulacak -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-light text-muted small">
+                        These parameters configure Modbus RTU pump addresses, loop counts, POS terminal synchronization flags, and communication timeout settings directly on the ESP32 controller.
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Pencere Icinde Pencere Onay Modali (Manage Confirm Modal) -->
+    <div class="modal fade" id="manageConfirmModal" tabindex="-1" aria-labelledby="manageConfirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="manageConfirmModalLabel">Confirm Station Parameters Dispatch</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">You are about to push updated WiFi and system parameters to the target station controller:</p>
+
+                    <div class="bg-light p-3 rounded mb-3">
+                        <div class="row small mb-1">
+                            <div class="col-5 text-muted">Target Station:</div>
+                            <div class="col-7 fw-bold" id="modalStationTitle">Loading...</div>
+                        </div>
+                        <div class="row small mb-1">
+                            <div class="col-5 text-muted">WiFi SSID:</div>
+                            <div class="col-7 fw-bold" id="modalWifiSsid">-</div>
+                        </div>
+                        <div class="row small mb-1">
+                            <div class="col-5 text-muted">Access Point SSID:</div>
+                            <div class="col-7 fw-bold" id="modalApSsid">-</div>
+                        </div>
+                        <div class="row small mb-1">
+                            <div class="col-5 text-muted">Environment:</div>
+                            <div class="col-7 fw-bold" id="modalDevProd">-</div>
+                        </div>
+                        <div class="row small">
+                            <div class="col-5 text-muted">Parameters Count:</div>
+                            <div class="col-7 fw-bold" id="modalParamCount">-</div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning py-2 mb-0 small">
+                        <strong>Warning:</strong> Changing WiFi credentials may cause the ESP32 controller to restart and attempt reconnection to the new network.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" id="btnConfirmManagePush" onclick="ExecuteManagePush()">Confirm & Push</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5.3.3 Yerel JS -->
+    <script src="style/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Allman stili ile yazilmis yonetim istemci mantigi
+
+        // URL parametrelerinden station id alma
+        let urlParams = new URLSearchParams(window.location.search);
+        let stationId = urlParams.get('id') || urlParams.get('sid');
+
+        // Mevcut parametre verilerini tutacak nesne
+        let currentManageData = null;
+
+        // Sayfa yuklendiginde calisacak baslatici
+        document.addEventListener('DOMContentLoaded', function ()
+        {
+            // Eger station id yoksa dashboard sayfasina yonlendir
+            if (!stationId)
+            {
+                alert('No station ID provided!');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Diger sayfa baglantilarini guncelle
+            document.getElementById('navPriceLink').href = 'price.html?sid=' + stationId;
+            document.getElementById('navSettingLink').href = 'settings.html?sid=' + stationId;
+            document.getElementById('navPTConfigLink').href = 'pt_config.html?sid=' + stationId;
+
+            // Parametre verilerini yukle
+            LoadManageConfig();
+        });
+
+        // Sifre goster/gizle fonksiyonu
+        function TogglePasswordVisibility(inputId)
+        {
+            let inputElement = document.getElementById(inputId);
+            if (inputElement.type === 'password')
+            {
+                inputElement.type = 'text';
+            }
+            else
+            {
+                inputElement.type = 'password';
+            }
+        }
+
+        // Sunucudan istasyon yonetim yapilandirmasini ceken fonksiyon
+        function LoadManageConfig()
+        {
+            fetch('web_api.php?action=get_manage_config&id=' + stationId)
+                .then(function (response)
+                {
+                    return response.json();
+                })
+                .then(function (data)
+                {
+                    if (data.status === 'success')
+                    {
+                        currentManageData = data.data;
+
+                        // Istasyon baslik ve ust bilgileri guncelle
+                        document.getElementById('stationTitle').innerText = data.station.title + ' - Network & Device Setup';
+                        document.getElementById('stationDetails').innerText = 'Station ID: ' + data.station.id + ' | MAC: ' + (data.station.mac || 'N/A') + ' | Last Pulse: ' + (data.station.last_pulse || 'Never');
+                        document.getElementById('stationTokenDisplay').innerText = data.station.token || 'N/A';
+                        document.getElementById('stationMacDisplay').innerText = data.station.mac || 'N/A';
+                        document.getElementById('stationLastPulseDisplay').innerText = data.station.last_pulse || 'Never';
+
+                        // Form alanlarini doldur
+                        document.getElementById('wifiSsid').value = currentManageData.wifiid || '';
+                        document.getElementById('wifiPassword').value = currentManageData.wifipw || '';
+                        document.getElementById('apSsid').value = currentManageData.apid || '';
+                        document.getElementById('apPassword').value = currentManageData.appw || '';
+                        document.getElementById('devProdMode').value = currentManageData.devprod || 'd';
+                        document.getElementById('logLevel').value = currentManageData.log || 'C';
+
+                        // Parametre tablosunu ciz
+                        RenderParametersTable(currentManageData.parameters || []);
+                    }
+                    else
+                    {
+                        ShowAlert('danger', data.message || 'Failed to load station parameters.');
+                    }
+                })
+                .catch(function (error)
+                {
+                    console.error('Error fetching manage config:', error);
+                    ShowAlert('danger', 'Error connecting to web_api.php.');
+                });
+        }
+
+        // Parametreler tablosunu olusturan fonksiyon
+        function RenderParametersTable(parametersList)
+        {
+            let tbody = document.getElementById('parametersTableBody');
+            tbody.innerHTML = '';
+
+            document.getElementById('paramCountBadge').innerText = parametersList.length + ' Parameters';
+
+            for (let i = 0; i < parametersList.length; i++)
+            {
+                let param = parametersList[i];
+                let row = document.createElement('tr');
+
+                // Hucre 1: Sira Numarasi
+                let tdIndex = document.createElement('td');
+                tdIndex.className = 'text-muted fw-bold small';
+                tdIndex.innerText = '#' + (i + 1);
+                row.appendChild(tdIndex);
+
+                // Hucre 2: Parametre Ismi
+                let tdName = document.createElement('td');
+                tdName.className = 'fw-bold';
+                tdName.innerText = param.name;
+                row.appendChild(tdName);
+
+                // Hucre 3: Key
+                let tdKey = document.createElement('td');
+                tdKey.className = 'text-muted small text-monospace';
+                tdKey.innerText = param.key;
+                row.appendChild(tdKey);
+
+                // Hucre 4: Deger Inputu
+                let tdVal = document.createElement('td');
+                tdVal.className = 'text-end';
+                let inputVal = document.createElement('input');
+                inputVal.type = 'number';
+                inputVal.className = 'form-control form-control-sm text-end fw-bold param-input';
+                inputVal.dataset.index = i;
+                inputVal.dataset.key = param.key;
+                inputVal.value = param.val;
+                tdVal.appendChild(inputVal);
+                row.appendChild(tdVal);
+
+                tbody.appendChild(row);
+            }
+        }
+
+        // Onay modalini acan fonksiyon
+        function OpenManageConfirmModal()
+        {
+            // Modal icerigini mevcut form degerleriyle guncelle
+            document.getElementById('modalStationTitle').innerText = document.getElementById('stationTitle').innerText;
+            document.getElementById('modalWifiSsid').innerText = document.getElementById('wifiSsid').value || '(Empty)';
+            document.getElementById('modalApSsid').innerText = document.getElementById('apSsid').value || '(Empty)';
+
+            let devProdSelect = document.getElementById('devProdMode');
+            document.getElementById('modalDevProd').innerText = devProdSelect.options[devProdSelect.selectedIndex].text;
+
+            let paramInputs = document.querySelectorAll('.param-input');
+            document.getElementById('modalParamCount').innerText = paramInputs.length + ' Parameters configured';
+
+            let modalElement = document.getElementById('manageConfirmModal');
+            let confirmModal = new bootstrap.Modal(modalElement);
+            confirmModal.show();
+        }
+
+        // Parametreleri sunucuya gonderen asil fonksiyon
+        function ExecuteManagePush()
+        {
+            let btnConfirm = document.getElementById('btnConfirmManagePush');
+            btnConfirm.disabled = true;
+            btnConfirm.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Pushing...';
+
+            // Guncellenmis parametreleri topla
+            let updatedParams = [];
+            let paramInputs = document.querySelectorAll('.param-input');
+            for (let i = 0; i < paramInputs.length; i++)
+            {
+                let input = paramInputs[i];
+                let idx = parseInt(input.dataset.index);
+                let origName = currentManageData.parameters[idx].name;
+                let origKey = input.dataset.key;
+                let newVal = input.value;
+
+                updatedParams.push({
+                    name: origName,
+                    key: origKey,
+                    val: newVal
+                });
+            }
+
+            let payload = {
+                station_id: stationId,
+                wifiid: document.getElementById('wifiSsid').value,
+                wifipw: document.getElementById('wifiPassword').value,
+                apid: document.getElementById('apSsid').value,
+                appw: document.getElementById('apPassword').value,
+                devprod: document.getElementById('devProdMode').value,
+                log: document.getElementById('logLevel').value,
+                parameters: updatedParams
+            };
+
+            fetch('web_api.php?action=update_manage_config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(function (response)
+            {
+                return response.json();
+            })
+            .then(function (result)
+            {
+                // Modali kapat
+                let modalElement = document.getElementById('manageConfirmModal');
+                let modalInstance = bootstrap.Modal.getInstance(modalElement);
+                if (modalInstance)
+                {
+                    modalInstance.hide();
+                }
+
+                btnConfirm.disabled = false;
+                btnConfirm.innerHTML = 'Confirm & Push';
+
+                if (result.status === 'success')
+                {
+                    ShowAlert('success', result.message || 'Parameters pushed successfully to ESP32 queue!');
+                    // Verileri guncelle
+                    LoadManageConfig();
+                }
+                else
+                {
+                    ShowAlert('danger', result.message || 'Failed to update parameters.');
+                }
+            })
+            .catch(function (error)
+            {
+                console.error('Error updating manage config:', error);
+                btnConfirm.disabled = false;
+                btnConfirm.innerHTML = 'Confirm & Push';
+                ShowAlert('danger', 'Error connecting to web_api.php during parameter push.');
+            });
+        }
+
+        // Bilgi bildirim kutusunu gosteren yardimci fonksiyon
+        function ShowAlert(type, message)
+        {
+            let alertBox = document.getElementById('alertBox');
+            alertBox.className = 'alert alert-' + type;
+            alertBox.innerText = message;
+            alertBox.classList.remove('d-none');
+
+            // 5 saniye sonra gizle
+            setTimeout(function ()
+            {
+                alertBox.classList.add('d-none');
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

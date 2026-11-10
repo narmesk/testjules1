@@ -1,0 +1,67 @@
+{
+  "stock1": "Kurşunsuz98", "stock2": "Diesel", "stock3": "Lpg", "stock4": "Plus1", "stock5": "Plus2",
+  "stock6": "Plus3", "stock7": "Plus4", "stock8": "Plus5", "stock9": "", "stock10": "",
+  "stock11": "", "stock12": "", "stock13": "", "stock14": "",
+
+  "stockcolor1": "#ffffff", "stockcolor2": "#ffffff", "stockcolor3": "#ffffff", "stockcolor4": "#ffffff", "stockcolor5": "#ffffff",
+  "stockcolor6": "#ffffff", "stockcolor7": "#ffffff", "stockcolor8": "#ffffff", "stockcolor9": "#ffffff", "stockcolor10": "#ffffff",
+  "stockcolor11": "#ffffff", "stockcolor12": "#ffffff", "stockcolor13": "#ffffff", "stockcolor14": "#ffffff",
+
+  "stockcashprice1": "3.33", "stockcashprice2": "3.33", "stockcashprice3": "3.33", "stockcashprice4": "3.33", "stockcashprice5": "3.33",
+  "stockcashprice6": "3.33", "stockcashprice7": "3.33", "stockcashprice8": "3.33", "stockcashprice9": "0.00", "stockcashprice10": "0.00",
+  "stockcashprice11": "0.00", "stockcashprice12": "0.00", "stockcashprice13": "0.00", "stockcashprice14": "0.00",
+
+  "stockcreditprice1": "3.33", "stockcreditprice2": "3.33", "stockcreditprice3": "3.33", "stockcreditprice4": "3.33", "stockcreditprice5": "3.33",
+  "stockcreditprice6": "3.33", "stockcreditprice7": "3.33", "stockcreditprice8": "3.33", "stockcreditprice9": "0.00", "stockcreditprice10": "0.00",
+  "stockcreditprice11": "0.00", "stockcreditprice12": "0.00", "stockcreditprice13": "0.00", "stockcreditprice14": "0.00",
+
+  "stockdebitprice1": "3.33", "stockdebitprice2": "3.33", "stockdebitprice3": "3.33", "stockdebitprice4": "3.33", "stockdebitprice5": "3.33",
+  "stockdebitprice6": "3.33", "stockdebitprice7": "3.33", "stockdebitprice8": "3.33", "stockdebitprice9": "0.00", "stockdebitprice10": "0.00",
+  "stockdebitprice11": "0.00", "stockdebitprice12": "0.00", "stockdebitprice13": "0.00", "stockdebitprice14": "0.00",
+
+  "selfstockcolor1": "#ffffff", "selfstockcolor2": "#ffffff", "selfstockcolor3": "#ffffff", "selfstockcolor4": "#ffffff", "selfstockcolor5": "#ffffff",
+  "selfstockcolor6": "#ffffff", "selfstockcolor7": "#ffffff", "selfstockcolor8": "#ffffff", "selfstockcolor9": "#ffffff", "selfstockcolor10": "#ffffff",
+  "selfstockcolor11": "#ffffff", "selfstockcolor12": "#ffffff", "selfstockcolor13": "#ffffff", "selfstockcolor14": "#ffffff",
+
+  "selfstockcashprice1": "0.00", "selfstockcashprice2": "0.00", "selfstockcashprice3": "0.00", "selfstockcashprice4": "0.00", "selfstockcashprice5": "0.00",
+  "selfstockcashprice6": "0.00", "selfstockcashprice7": "0.00", "selfstockcashprice8": "0.00", "selfstockcashprice9": "0.00", "selfstockcashprice10": "0.00",
+  "selfstockcashprice11": "0.00", "selfstockcashprice12": "0.00", "selfstockcashprice13": "0.00", "selfstockcashprice14": "0.00",
+
+  "selfstockcreditprice1": "0.00", "selfstockcreditprice2": "0.00", "selfstockcreditprice3": "0.00", "selfstockcreditprice4": "0.00", "selfstockcreditprice5": "0.00",
+  "selfstockcreditprice6": "0.00", "selfstockcreditprice7": "0.00", "selfstockcreditprice8": "0.00", "selfstockcreditprice9": "0.00", "selfstockcreditprice10": "0.00",
+  "selfstockcreditprice11": "0.00", "selfstockcreditprice12": "0.00", "selfstockcreditprice13": "0.00", "selfstockcreditprice14": "0.00",
+
+  "selfstockdebitprice1": "0.00", "selfstockdebitprice2": "0.00", "selfstockdebitprice3": "0.00", "selfstockdebitprice4": "0.00", "selfstockdebitprice5": "0.00",
+  "selfstockdebitprice6": "0.00", "selfstockdebitprice7": "0.00", "selfstockdebitprice8": "0.00", "selfstockdebitprice9": "0.00", "selfstockdebitprice10": "0.00",
+  "selfstockdebitprice11": "0.00", "selfstockdebitprice12": "0.00", "selfstockdebitprice13": "0.00", "selfstockdebitprice14": "0.00",
+
+  "pttype1": "tip1", "pttype2": "tip2", "pttype3": "tip3", "pttype4": "tip4", "pttype5": "tip5", "pttype6": "tip6",
+  "pttype7": "", "pttype8": "", "pttype9": "", "pttype10": "", "pttype11": "", "pttype12": "",
+  "pttype13": "", "pttype14": "", "pttype15": "", "pttype16": "", "pttype17": "", "pttype18": "",
+  "pttype19": "", "pttype20": "", "pttype21": "", "pttype22": "", "pttype23": "", "pttype24": "",
+
+  "ptid1": "1", "ptid2": "2", "ptid3": "3", "ptid4": "4", "ptid5": "5", "ptid6": "6",
+  "ptid7": "", "ptid8": "", "ptid9": "", "ptid10": "", "ptid11": "", "ptid12": "",
+  "ptid13": "", "ptid14": "", "ptid15": "", "ptid16": "", "ptid17": "", "ptid18": "",
+  "ptid19": "", "ptid20": "", "ptid21": "", "ptid22": "", "ptid23": "", "ptid24": "",
+
+  "ptservice1": "", "ptservice2": "", "ptservice3": "", "ptservice4": "", "ptservice5": "", "ptservice6": "",
+  "ptservice7": "", "ptservice8": "", "ptservice9": "", "ptservice10": "", "ptservice11": "", "ptservice12": "",
+  "ptservice13": "", "ptservice14": "", "ptservice15": "", "ptservice16": "", "ptservice17": "", "ptservice18": "",
+  "ptservice19": "", "ptservice20": "", "ptservice21": "", "ptservice22": "", "ptservice23": "", "ptservice24": "",
+
+  "ptswitchtime1": "", "ptswitchtime2": "", "ptswitchtime3": "", "ptswitchtime4": "", "ptswitchtime5": "", "ptswitchtime6": "",
+  "ptswitchtime7": "", "ptswitchtime8": "", "ptswitchtime9": "", "ptswitchtime10": "", "ptswitchtime11": "", "ptswitchtime12": "",
+  "ptswitchtime13": "", "ptswitchtime14": "", "ptswitchtime15": "", "ptswitchtime16": "", "ptswitchtime17": "", "ptswitchtime18": "",
+  "ptswitchtime19": "", "ptswitchtime20": "", "ptswitchtime21": "", "ptswitchtime22": "", "ptswitchtime23": "", "ptswitchtime24": "",
+
+  "ptbrightness1": "5", "ptbrightness2": "5", "ptbrightness3": "5", "ptbrightness4": "5", "ptbrightness5": "5", "ptbrightness6": "5",
+  "ptbrightness7": "5", "ptbrightness8": "5", "ptbrightness9": "5", "ptbrightness10": "5", "ptbrightness11": "5", "ptbrightness12": "5",
+  "ptbrightness13": "5", "ptbrightness14": "5", "ptbrightness15": "5", "ptbrightness16": "5", "ptbrightness17": "5", "ptbrightness18": "5",
+  "ptbrightness19": "5", "ptbrightness20": "5", "ptbrightness21": "5", "ptbrightness22": "5", "ptbrightness23": "5", "ptbrightness24": "5",
+
+  "ptspeed1": "5", "ptspeed2": "5", "ptspeed3": "5", "ptspeed4": "5", "ptspeed5": "5", "ptspeed6": "5",
+  "ptspeed7": "5", "ptspeed8": "5", "ptspeed9": "5", "ptspeed10": "5", "ptspeed11": "5", "ptspeed12": "5",
+  "ptspeed13": "5", "ptspeed14": "5", "ptspeed15": "5", "ptspeed16": "5", "ptspeed17": "5", "ptspeed18": "5",
+  "ptspeed19": "5", "ptspeed20": "5", "ptspeed21": "5", "ptspeed22": "5", "ptspeed23": "5", "ptspeed24": "5"
+}

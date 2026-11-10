@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ledovate - Price Management</title>
+    <!-- LOKAL BOOTSTRAP 5.3.3 CSS DOSYASI -->
+    <link rel="stylesheet" href="style/css/bootstrap.min.css">
+    <style>
+        body
+        {
+            background-color: #f4f6f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .navbar
+        {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .card
+        {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .price-matrix-input
+        {
+            font-size: 1.6rem !important;
+            font-weight: 700;
+            text-align: center;
+            height: 52px;
+            letter-spacing: 1px;
+            background-color: #ffffff;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .input-group-text
+        {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+        .product-row
+        {
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            background-color: #ffffff;
+            transition: all 0.2s ease-in-out;
+            border-left-width: 14px !important;
+        }
+        .product-row:hover
+        {
+            box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+        }
+
+        /* ------------------------------------------------------------- */
+        /* HER RENK İÇİN ÖZEL BELİRGİN BANT, YAZI VE KUTU RENKLERİ      */
+        /* ------------------------------------------------------------- */
+
+        /* 1. KIRMIZI (RED - R) */
+        .prod-color-R
+        {
+            border-left-color: #dc3545 !important;
+            border-color: #f8d7da;
+            background-color: #fff8f8;
+        }
+        .prod-color-R .prod-badge-banner
+        {
+            background-color: #dc3545;
+            color: #ffffff;
+        }
+        .prod-color-R .prod-title-text
+        {
+            color: #dc3545;
+        }
+        .prod-color-R .price-matrix-input
+        {
+            color: #dc3545 !important;
+            border-color: #f1aeb5 !important;
+        }
+        .prod-color-R .input-group-text
+        {
+            background-color: #f8d7da;
+            color: #b02a37;
+            border-color: #f1aeb5;
+        }
+
+        /* 2. YEŞİL (GREEN - G) */
+        .prod-color-G
+        {
+            border-left-color: #198754 !important;
+            border-color: #d1e7dd;
+            background-color: #f6fcf8;
+        }
+        .prod-color-G .prod-badge-banner
+        {
+            background-color: #198754;
+            color: #ffffff;
+        }
+        .prod-color-G .prod-title-text
+        {
+            color: #198754;
+        }
+        .prod-color-G .price-matrix-input
+        {
+            color: #198754 !important;
+            border-color: #a3cfbb !important;
+        }
+        .prod-color-G .input-group-text
+        {
+            background-color: #d1e7dd;
+            color: #0f5132;
+            border-color: #a3cfbb;
+        }
+
+        /* 3. MAVİ (BLUE - B) */
+        .prod-color-B
+        {
+            border-left-color: #0d6efd !important;
+            border-color: #cfe2ff;
+            background-color: #f7faff;
+        }
+        .prod-color-B .prod-badge-banner
+        {
+            background-color: #0d6efd;
+            color: #ffffff;
+        }
+        .prod-color-B .prod-title-text
+        {
+            color: #0d6efd;
+        }
+        .prod-color-B .price-matrix-input
+        {
+            color: #0d6efd !important;
+            border-color: #9ec5fe !important;
+        }
+        .prod-color-B .input-group-text
+        {
+            background-color: #cfe2ff;
+            color: #084298;
+            border-color: #9ec5fe;
+        }
+
+        /* 4. SARI / AMBER (YELLOW - Y) */
+        .prod-color-Y
+        {
+            border-left-color: #ffc107 !important;
+            border-color: #fff3cd;
+            background-color: #fffef8;
+        }
+        .prod-color-Y .prod-badge-banner
+        {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        .prod-color-Y .prod-title-text
+        {
+            color: #c69500;
+        }
+        .prod-color-Y .price-matrix-input
+        {
+            color: #b58900 !important;
+            border-color: #ffe69c !important;
+        }
+        .prod-color-Y .input-group-text
+        {
+            background-color: #fff3cd;
+            color: #664d03;
+            border-color: #ffe69c;
+        }
+
+        /* 5. TURUNCU (ORANGE - O) */
+        .prod-color-O
+        {
+            border-left-color: #fd7e14 !important;
+            border-color: #ffe5d0;
+            background-color: #fffbf8;
+        }
+        .prod-color-O .prod-badge-banner
+        {
+            background-color: #fd7e14;
+            color: #ffffff;
+        }
+        .prod-color-O .prod-title-text
+        {
+            color: #e8590c;
+        }
+        .prod-color-O .price-matrix-input
+        {
+            color: #e8590c !important;
+            border-color: #fed7b4 !important;
+        }
+        .prod-color-O .input-group-text
+        {
+            background-color: #ffe5d0;
+            color: #9f3a00;
+            border-color: #fed7b4;
+        }
+
+        /* 6. BEYAZ / NÖTR (WHITE - W) */
+        .prod-color-W
+        {
+            border-left-color: #6c757d !important;
+            border-color: #e9ecef;
+            background-color: #ffffff;
+        }
+        .prod-color-W .prod-badge-banner
+        {
+            background-color: #6c757d;
+            color: #ffffff;
+        }
+        .prod-color-W .prod-title-text
+        {
+            color: #495057;
+        }
+        .prod-color-W .price-matrix-input
+        {
+            color: #495057 !important;
+            border-color: #ced4da !important;
+        }
+        .prod-color-W .input-group-text
+        {
+            background-color: #f8f9fa;
+            color: #495057;
+            border-color: #ced4da;
+        }
+
+        /* 7. SİYAH (BLACK - K) */
+        .prod-color-K
+        {
+            border-left-color: #212529 !important;
+            border-color: #ced4da;
+            background-color: #fdfdfd;
+        }
+        .prod-color-K .prod-badge-banner
+        {
+            background-color: #212529;
+            color: #ffffff;
+        }
+        .prod-color-K .prod-title-text
+        {
+            color: #212529;
+        }
+        .prod-color-K .price-matrix-input
+        {
+            color: #212529 !important;
+            border-color: #adb5bd !important;
+        }
+        .prod-color-K .input-group-text
+        {
+            background-color: #e9ecef;
+            color: #212529;
+            border-color: #adb5bd;
+        }
+
+        .prod-badge-banner
+        {
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 800;
+            display: inline-block;
+            margin-right: 10px;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+        }
+        .prod-title-text
+        {
+            letter-spacing: 0.5px;
+            font-weight: 800;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4 py-3">
+        <div class="container">
+            <span class="navbar-brand mb-0 h1">Ledovate IoT Control Panel</span>
+            <a href="index.html" class="btn btn-outline-light btn-sm">Back to Station List</a>
+        </div>
+    </nav>
+
+    <div class="container mb-5">
+
+        <!-- ÜST PANEL: SEÇİLEN İSTASYONA AİT DETAYLAR -->
+        <div class="card p-4 mb-4 bg-white border">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <span class="text-secondary small fw-bold d-block mb-1">CURRENTLY MANAGING STATION</span>
+                    <h3 id="info_station_name" class="text-primary mb-1">Central Station</h3>
+                    <p id="info_station_address" class="text-muted mb-0 small">Station Network Gateway</p>
+                </div>
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <div class="mb-1"><span class="text-secondary small fw-bold">STATION ID:</span> <span id="info_station_id" class="badge bg-dark fs-6 py-2 px-3">---</span></div>
+                    <div><span class="text-secondary small fw-bold">LAST PULSE:</span> <span id="info_last_seen" class="fw-bold text-dark small">Active</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODÜLER GEÇİŞ MENÜSÜ -->
+        <div class="d-flex flex-wrap gap-2 mb-4">
+            <a href="#" id="menu_price" class="btn btn-primary px-4 fw-bold shadow-sm">Price Station</a>
+            <a href="#" id="menu_settings" class="btn btn-outline-secondary px-4 fw-bold">Setting Station</a>
+            <a href="#" id="menu_ptconfig" class="btn btn-outline-secondary px-4 fw-bold">PTConfig Station</a>
+            <a href="#" id="menu_manage" class="btn btn-outline-secondary px-4 fw-bold">Manage Station</a>
+        </div>
+
+        <div id="sendingAlert" class="alert alert-warning d-none align-items-center fade show border-0 mb-4" role="alert">
+            <div><strong>Sending...</strong> Synchronizing data with ESP32 cloud queue. Please wait.</div>
+        </div>
+
+        <!-- 8 ÜRÜN X 3 ÖDEME TİPİ MATRİS FORMU -->
+        <div class="card p-4 bg-white border">
+            <!-- FORMAT & CURRENCY SELECTORS & TABS -->
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+                <ul class="nav nav-pills" id="priceServiceTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active px-4 py-2 fs-5 fw-bold" id="full-service-tab" data-bs-toggle="pill" data-bs-target="#full-service" type="button" role="tab" aria-controls="full-service" aria-selected="true">
+                            Full Service
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link px-4 py-2 fs-5 fw-bold ms-2" id="self-service-tab" data-bs-toggle="pill" data-bs-target="#self-service" type="button" role="tab" aria-controls="self-service" aria-selected="false">
+                            Self Service
+                        </button>
+                    </li>
+                </ul>
+
+                <!-- AKTİF BİLGİLENDİRME ROZETİ (Ayar istasyonundan otomatik çekilen para birimi) -->
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge bg-light text-dark border px-3 py-2 fs-6">
+                        Active Currency: <strong id="lblActiveCurrency" class="text-primary">$</strong>
+                    </span>
+                    <span class="badge bg-light text-dark border px-3 py-2 fs-6">
+                        Decimals: <strong id="lblActiveDecimals" class="text-primary">2</strong>
+                    </span>
+                </div>
+            </div>
+
+            <form id="priceForm">
+                <div class="tab-content" id="priceServiceTabsContent">
+                    <!-- FULL SERVICE TAB -->
+                    <div class="tab-pane fade show active" id="full-service" role="tabpanel" aria-labelledby="full-service-tab">
+                        <div class="row text-secondary small fw-bold mb-3 text-center d-none d-md-flex border-bottom pb-2">
+                            <div class="col-md-3 text-start ps-3">PRODUCT TYPE & COLOR</div>
+                            <div class="col-md-3">CASH PRICE</div>
+                            <div class="col-md-3">CREDIT PRICE</div>
+                            <div class="col-md-3">DEBIT PRICE</div>
+                        </div>
+
+                        <div id="full-service-rows">
+                            <!-- JavaScript dinamik olarak satırları dolduracaktır -->
+                        </div>
+                    </div>
+
+                    <!-- SELF SERVICE TAB -->
+                    <div class="tab-pane fade" id="self-service" role="tabpanel" aria-labelledby="self-service-tab">
+                        <div class="row text-secondary small fw-bold mb-3 text-center d-none d-md-flex border-bottom pb-2">
+                            <div class="col-md-3 text-start ps-3">PRODUCT TYPE & COLOR</div>
+                            <div class="col-md-3">CASH PRICE</div>
+                            <div class="col-md-3">CREDIT PRICE</div>
+                            <div class="col-md-3">DEBIT PRICE</div>
+                        </div>
+
+                        <div id="self-service-rows">
+                            <!-- JavaScript dinamik olarak satırları dolduracaktır -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-top text-end">
+                    <a href="index.html" class="btn btn-secondary fw-bold px-4 me-2">Cancel</a>
+                    <button type="button" id="btnOpenConfirmModal" class="btn btn-success fw-bold px-5 py-2 fs-5">Push Configuration</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- PENCERE İÇİNDE PENCERE: FİYAT GÖNDERME ONAY MODALI -->
+    <div class="modal fade" id="priceConfirmModal" tabindex="-1" aria-labelledby="priceConfirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold" id="priceConfirmModalLabel">Confirm Price Update</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">Are you sure you want to push all updated prices to the ESP32 cloud queue for station <strong id="modalStationId">demo1</strong>?</p>
+                    <div class="alert alert-info py-2 px-3 small mb-0">
+                        All 24 price points (Full &amp; Self Service across 8 products) will be synchronized with connected LED displays.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" id="btnConfirmPushPrices" class="btn btn-success fw-bold px-4">Yes, Push Prices</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const sid = urlParams.get('sid') || 'demo1';
+
+        let tuningOffsets = null;
+        let productConfigs = null;
+
+        // Para birimi ve ondalık hassasiyeti durumu
+        let currentCurrency = "$";
+        let currentDecimals = 2;
+
+        const colorMap =
+        {
+            "R": { name: "RED", code: "R" },
+            "G": { name: "GREEN", code: "G" },
+            "B": { name: "BLUE", code: "B" },
+            "Y": { name: "YELLOW", code: "Y" },
+            "O": { name: "ORANGE", code: "O" },
+            "W": { name: "WHITE", code: "W" },
+            "K": { name: "BLACK", code: "K" }
+        };
+
+        const defaultProducts =
+        [
+            { name: "REGULAR", color: "R" },
+            { name: "PLUS", color: "R" },
+            { name: "SUPREME", color: "R" },
+            { name: "DIESEL", color: "G" },
+            { name: "KEROSEN", color: "B" },
+            { name: "OFROAD", color: "Y" },
+            { name: "UNUSED", color: "Y" },
+            { name: "UNUSED", color: "Y" }
+        ];
+
+        document.addEventListener("DOMContentLoaded", async () =>
+        {
+            document.getElementById("info_station_id").innerText = sid;
+            document.getElementById("menu_price").href = "price.html?sid=" + sid;
+            document.getElementById("menu_settings").href = "settings.html?sid=" + sid;
+            document.getElementById("menu_ptconfig").href = "pt_config.html?sid=" + sid;
+            document.getElementById("menu_manage").href = "manage.html?sid=" + sid;
+
+            // Sekme geçişi mantığı
+            document.getElementById("full-service-tab").addEventListener("click", () =>
+            {
+                document.getElementById("full-service-tab").classList.add("active");
+                document.getElementById("self-service-tab").classList.remove("active");
+                document.getElementById("full-service").classList.add("show", "active");
+                document.getElementById("self-service").classList.remove("show", "active");
+            }
+            );
+
+            document.getElementById("self-service-tab").addEventListener("click", () =>
+            {
+                document.getElementById("self-service-tab").classList.add("active");
+                document.getElementById("full-service-tab").classList.remove("active");
+                document.getElementById("self-service").classList.add("show", "active");
+                document.getElementById("full-service").classList.remove("show", "active");
+            }
+            );
+
+            // Başlangıçta hemen varsayılan renklerle satırları oluşturuyoruz
+            renderRows(defaultProducts);
+
+            const modalPriceEl = document.getElementById("priceConfirmModal");
+            const priceModal = new bootstrap.Modal(modalPriceEl);
+            document.getElementById("modalStationId").innerText = sid;
+
+            // Fiyat Gönderme Butonuna basıldığında modalı aç (Pencere içinde pencere)
+            document.getElementById("btnOpenConfirmModal").addEventListener("click", () =>
+            {
+                priceModal.show();
+            });
+
+            // Modaldaki onay butonuna basıldığında asıl göndermeyi yap
+            document.getElementById("btnConfirmPushPrices").addEventListener("click", async () =>
+            {
+                priceModal.hide();
+                await submitPrices();
+            });
+
+            // İstasyon ve konfigürasyon verilerini yükleme
+            await loadStationDetails();
+            await loadProductConfigs();
+            await loadTuningConfig();
+            await loadSettingsConfig();
+            await loadCurrentPrices();
+            setupEnterNavigation();
+        }
+        );
+
+        // Satırları HTML içinde renkli olarak basan fonksiyon
+        function renderRows(products)
+        {
+            const fullContainer = document.getElementById("full-service-rows");
+            const selfContainer = document.getElementById("self-service-rows");
+
+            fullContainer.innerHTML = "";
+            selfContainer.innerHTML = "";
+
+            for (let i = 1; i <= 8; i++)
+            {
+                const prod = products[i - 1] || { name: "PRODUCT " + i, color: "R" };
+                const cInfo = colorMap[prod.color] || { name: "RED", code: "R" };
+
+                fullContainer.innerHTML += createRowHtml("FULL", i, prod.name, cInfo.code, cInfo.name);
+                selfContainer.innerHTML += createRowHtml("SELF", i, prod.name, cInfo.code, cInfo.name);
+            }
+        }
+
+        // Tek bir ürün satırının HTML yapısı (Bant ve renk vurgusu)
+        function createRowHtml(service, index, name, colorCode, colorName)
+        {
+            const cashId = `${service}VAL${index}A`;
+            const creditId = `${service}VAL${index}B`;
+            const debitId = `${service}VAL${index}C`;
+
+            return `
+                <div class="row product-row align-items-center prod-color-${colorCode}" id="row_${service}_${index}">
+                    <div class="col-md-3">
+                        <div class="d-flex align-items-center ps-2">
+                            <span class="prod-title-text fs-5">${name}</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mt-2 mt-md-0">
+                        <div class="input-group">
+                            <span class="input-group-text currency-symbol">${currentCurrency}</span>
+                            <input type="text" name="${cashId}" id="${cashId}" class="form-control price-matrix-input border-start-0 ps-0" value="${formatPriceValue(0)}" data-prefix="${service}" data-index="${index}" data-type="cash">
+                        </div>
+                    </div>
+                    <div class="col-md-3 mt-2 mt-md-0">
+                        <div class="input-group">
+                            <span class="input-group-text currency-symbol">${currentCurrency}</span>
+                            <input type="text" name="${creditId}" id="${creditId}" class="form-control price-matrix-input border-start-0 ps-0" value="${formatPriceValue(0)}">
+                        </div>
+                    </div>
+                    <div class="col-md-3 mt-2 mt-md-0">
+                        <div class="input-group">
+                            <span class="input-group-text currency-symbol">${currentCurrency}</span>
+                            <input type="text" name="${debitId}" id="${debitId}" class="form-control price-matrix-input border-start-0 ps-0" value="${formatPriceValue(0)}">
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // İstasyon konfigürasyonlarını yükleme (configs.json veya backend)
+        async function loadProductConfigs()
+        {
+            try
+            {
+                const response = await fetch("web_api.php?action=get_configs&sid=" + sid);
+                const data = await response.json();
+                if (data.status === "success" && data.configs)
+                {
+                    productConfigs = data.configs;
+                    const loadedProds = [];
+                    for (let i = 1; i <= 8; i++)
+                    {
+                        const name = productConfigs[`TEXT${i}`] || defaultProducts[i - 1].name;
+                        const col = (productConfigs[`COLOR${i}`] || defaultProducts[i - 1].color).toUpperCase();
+                        loadedProds.push({ name: name, color: col });
+                    }
+                    renderRows(loadedProds);
+                }
+            }
+            catch (e)
+            {
+                console.log("Using default product colors.");
+            }
+        }
+
+        // İstasyon detaylarını yükleme
+        async function loadStationDetails()
+        {
+            try
+            {
+                const response = await fetch("web_api.php?action=list");
+                const data = await response.json();
+                if (Array.isArray(data))
+                {
+                    const targetStation = data.find(item => item.sid === sid);
+                    if (targetStation)
+                    {
+                        document.getElementById("info_station_name").innerText = targetStation.station_name;
+                        document.getElementById("info_station_address").innerText = targetStation.address || "Station Address";
+                        document.getElementById("info_last_seen").innerText = targetStation.last_seen || "Online";
+                    }
+                }
+            }
+            catch (error)
+            {
+                console.log("Station details synced.");
+            }
+        }
+
+        // Tuning konfigürasyonunu yükleme
+        async function loadTuningConfig()
+        {
+            try
+            {
+                const response = await fetch("web_api.php?action=get_tuning&sid=" + sid);
+                const data = await response.json();
+                if (data.status === "success")
+                {
+                    tuningOffsets = data.tuning;
+                }
+            }
+            catch (e)
+            {
+                console.log("Tuning config load fallback.");
+            }
+        }
+
+        // Fiyatları yükleme
+        async function loadCurrentPrices()
+        {
+            try
+            {
+                const response = await fetch("web_api.php?action=get_prices&sid=" + sid);
+                const result = await response.json();
+
+                if (result.status === "success")
+                {
+                    if (result.full_self)
+                    {
+                        for (const [key, val] of Object.entries(result.full_self))
+                        {
+                            const el = document.getElementById(key);
+                            if (el)
+                            {
+                                el.value = val;
+                            }
+                        }
+                    }
+                    else if (result.prices && Array.isArray(result.prices))
+                    {
+                        for (let i = 0; i < 8; i++)
+                        {
+                            const pnum = i + 1;
+                            const cashEl = document.getElementById(`FULLVAL${pnum}A`);
+                            const creditEl = document.getElementById(`FULLVAL${pnum}B`);
+                            const debitEl = document.getElementById(`FULLVAL${pnum}C`);
+
+                            if (cashEl && result.prices[i * 3 + 0] !== undefined)
+                            {
+                                cashEl.value = result.prices[i * 3 + 0];
+                            }
+                            if (creditEl && result.prices[i * 3 + 1] !== undefined)
+                            {
+                                creditEl.value = result.prices[i * 3 + 1];
+                            }
+                            if (debitEl && result.prices[i * 3 + 2] !== undefined)
+                            {
+                                debitEl.value = result.prices[i * 3 + 2];
+                            }
+                        }
+                    }
+                }
+            }
+            catch (error)
+            {
+                console.error("Error loading matrix prices:", error);
+            }
+        }
+
+        // Ayarlardan para birimi ve ondalık konfigürasyonunu yükleme
+        async function loadSettingsConfig()
+        {
+            try
+            {
+                const response = await fetch("web_api.php?action=get_settings&sid=" + sid);
+                const data = await response.json();
+                if (data.status === "success" && data.settings)
+                {
+                    if (data.settings.CURRENCY)
+                    {
+                        currentCurrency = data.settings.CURRENCY;
+                        const lblCur = document.getElementById("lblActiveCurrency");
+                        if (lblCur)
+                        {
+                            lblCur.innerText = currentCurrency;
+                        }
+                        document.querySelectorAll(".currency-symbol").forEach(function(el)
+                        {
+
+                            el.innerText = currentCurrency;
+                        });
+                    }
+
+                    if (data.settings.DECIMAL_PLACES !== undefined)
+                    {
+                        currentDecimals = parseInt(data.settings.DECIMAL_PLACES, 10);
+                        const lblDec = document.getElementById("lblActiveDecimals");
+                        if (lblDec)
+                        {
+                            lblDec.innerText = currentDecimals.toString();
+                        }
+                    }
+                }
+            }
+            catch (e)
+            {
+                console.log("Settings config fallback.");
+            }
+        }
+
+        // Fiyat değerini seçili ondalık sayısına göre formatlama
+        function formatPriceValue(val)
+        {
+            if (val === null || val === undefined || val === "")
+            {
+                return (0).toFixed(currentDecimals);
+            }
+            let cleaned = val.toString().replace(/,/g, '.').replace(/[^0-9.]/g, '');
+            if (!cleaned)
+            {
+                return (0).toFixed(currentDecimals);
+            }
+            let num = parseFloat(cleaned);
+            if (isNaN(num))
+            {
+                return (0).toFixed(currentDecimals);
+            }
+            return num.toFixed(currentDecimals);
+        }
+
+        // Giriş anında geçerli karakterleri ve ondalık kuralını zorlama fonksiyonu
+        function enforceRealtimeFormat(val, decimals)
+        {
+            // Virgülleri noktaya çevir
+            val = val.replace(/,/g, ".");
+
+            // Yalnızca rakamları ve noktayı koru
+            val = val.replace(/[^0-9.]/g, "");
+
+            // Birden fazla nokta girişini engelle
+            const parts = val.split(".");
+            if (parts.length > 2)
+            {
+                val = parts[0] + "." + parts.slice(1).join("");
+            }
+
+            // Ondalık basamak sınırını zorla
+            if (val.indexOf(".") !== -1 && decimals > 0)
+            {
+                let [intP, decP] = val.split(".");
+                if (decP.length > decimals)
+                {
+                    decP = decP.substring(0, decimals);
+                    val = intP + "." + decP;
+                }
+            }
+            else if (decimals === 0)
+            {
+                val = val.replace(/\./g, "");
+            }
+
+            return val;
+        }
+
+        // Enter tuşu navigasyonu, gerçek zamanlı giriş zorlama ve ofset hesaplaması
+        function setupEnterNavigation()
+        {
+            ["FULL", "SELF"].forEach(service =>
+            {
+                ["A", "B", "C"].forEach(col =>
+                {
+                    for (let row = 1; row <= 8; row++)
+                    {
+                        const inputId = `${service}VAL${row}${col}`;
+                        const el = document.getElementById(inputId);
+                        if (el)
+                        {
+                            // Kullanıcı yazarken harfleri ve geçersiz karakterleri engelle
+                            el.addEventListener("input", () =>
+                            {
+                                const curPos = el.selectionStart;
+                                const originalLen = el.value.length;
+                                el.value = enforceRealtimeFormat(el.value, currentDecimals);
+                                const newLen = el.value.length;
+                                if (el.setSelectionRange)
+                                {
+                                    const diff = newLen - originalLen;
+                                    el.setSelectionRange(curPos + diff, curPos + diff);
+                                }
+                            }
+                            );
+
+                            // Odaklandığında metni kolay değiştirilebilmesi için seç
+                            el.addEventListener("focus", () =>
+                            {
+                                el.select();
+                            }
+                            );
+
+                            // Enter tuşuna basıldığında formatı tamamla ve sonraki satıra geç
+                            el.addEventListener("keydown", (e) =>
+                            {
+                                if (e.key === "Enter")
+                                {
+                                    e.preventDefault();
+                                    el.value = formatPriceValue(el.value);
+                                    if (col === "A")
+                                    {
+                                        applyTuningForInput(service, row, el.value);
+                                    }
+                                    let nextRow = row + 1;
+                                    if (nextRow > 8)
+                                    {
+                                        nextRow = 1;
+                                    }
+                                    const nextInput = document.getElementById(`${service}VAL${nextRow}${col}`);
+                                    if (nextInput)
+                                    {
+                                        nextInput.focus();
+                                        nextInput.select();
+                                    }
+                                }
+                            }
+                            );
+
+                            // Kutudan çıkıldığında kesin formatlamayı uygula
+                            el.addEventListener("blur", () =>
+                            {
+                                el.value = formatPriceValue(el.value);
+                                if (col === "A")
+                                {
+                                    applyTuningForInput(service, row, el.value);
+                                }
+                            }
+                            );
+                        }
+                    }
+                }
+                );
+            }
+            );
+        }
+
+        function applyTuningForInput(service, row, cashString)
+        {
+            const cashVal = parseFloat(cashString);
+            if (isNaN(cashVal)) return;
+
+            const creditInput = document.getElementById(`${service}VAL${row}B`);
+            const debitInput = document.getElementById(`${service}VAL${row}C`);
+
+            let creditOffset = 0.05;
+            let debitOffset = 0.00;
+
+            if (tuningOffsets)
+            {
+                const cKey = `${service}VAL${row}B`;
+                const dKey = `${service}VAL${row}C`;
+                if (tuningOffsets[cKey] !== undefined)
+                {
+                    creditOffset = parseFloat(tuningOffsets[cKey]) || 0;
+                }
+                if (tuningOffsets[dKey] !== undefined)
+                {
+                    debitOffset = parseFloat(tuningOffsets[dKey]) || 0;
+                }
+            }
+
+            if (creditInput && (!creditInput.value || creditInput.value === (0).toFixed(currentDecimals) || creditInput.dataset.autoFilled === "true"))
+            {
+                creditInput.value = (cashVal + creditOffset).toFixed(currentDecimals);
+                creditInput.dataset.autoFilled = "true";
+            }
+
+            if (debitInput && (!debitInput.value || debitInput.value === (0).toFixed(currentDecimals) || debitInput.dataset.autoFilled === "true"))
+            {
+                debitInput.value = (cashVal + debitOffset).toFixed(currentDecimals);
+                debitInput.dataset.autoFilled = "true";
+            }
+        }
+
+        async function submitPrices()
+        {
+            const form = document.getElementById("priceForm");
+            const submitBtn = document.getElementById("btnOpenConfirmModal");
+            const alertBox = document.getElementById("sendingAlert");
+
+            const formData = new FormData(form);
+            submitBtn.disabled = true;
+            alertBox.classList.remove("d-none");
+
+            try
+            {
+                const response = await fetch("web_api.php?action=update&sid=" + sid,
+                {
+                    method: "POST",
+                    body: formData
+                }
+                );
+                const result = await response.json();
+
+                if (result.status === "success")
+                {
+                    alert("Success! New configurations injected into the cloud node.");
+                }
+                else
+                {
+                    alert("Error from cloud backend: " + result.message);
+                }
+            }
+            catch (error)
+            {
+                alert("Transaction network timeout.");
+            }
+            finally
+            {
+                submitBtn.disabled = false;
+                alertBox.classList.add("d-none");
+            }
+        }
+    </script>
+<script src="style/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
