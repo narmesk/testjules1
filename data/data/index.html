@@ -186,7 +186,7 @@
         <div class="full-width status-panel">
           <div id="sendingdata" class="status-msg sendingdata blink">⏳ Sending Prices...</div>
           <div id="allupdated" class="status-msg allupdated">✓ All PTs Updated</div>
-          <div id="sendtimeout" class="status-msg" style="color:var(--error);">⚠ Zaman Aşımı: Bazı PT'ler yanıt vermedi</div>
+          <div id="sendtimeout" class="status-msg" style="color:var(--error);">⚠ Timeout: Some PT units did not respond</div>
           <div id="pumps"></div>
         </div>
 
@@ -248,7 +248,7 @@
   <!-- SANAL KLAVYE MODAL -->
   <div id="vkModal" class="vk-modal">
     <div class="vk-container">
-      <div id="vkPrevPrice" class="vk-prev-price">Önceki Fiyat: <span>0.00</span></div>
+      <div id="vkPrevPrice" class="vk-prev-price">Previous Price: <span>0.00</span></div>
       <div id="vkDisplay" class="vk-display"><div class="seg-display lg"></div></div>
       <div class="vk-grid">
         <button type="button" class="vk-btn" onclick="vkPress('1')">1</button>
@@ -271,7 +271,7 @@
   <!-- GÖNDERİM SİMÜLASYON MODALI -->
   <div id="sendModal" class="vk-modal">
     <div class="vk-container">
-      <p class="send-modal-title">Fiyatlar Gönderiliyor</p>
+      <p class="send-modal-title">Pushing Prices</p>
       <div class="send-progress-track"><div id="sendProgressBar" class="send-progress-fill"></div></div>
       <p id="sendProgressText" class="send-progress-text">0%</p>
     </div>
@@ -599,7 +599,7 @@
           .then(ok => {
             clearInterval(tickId);
             bar.style.width = '100%';
-            text.textContent = ok ? '✓ İşlem Başarılı' : '✕ Hata Oluştu';
+            text.textContent = ok ? '✓ Operation Successful' : '✕ Operation Failed';
             text.classList.add(ok ? 'done' : 'error');
             submitBtn.disabled = false;
             setTimeout(() => { modal.style.display = 'none'; }, 1200);

@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Ledovate - PT Configuration</title>
     <style>
-        /* Allman stili ile yazilmis modern ve yuzde sembollerinden arindirilmis css formatlama */
+        /* Allman stili ile yazilmis modern ve yuzde sembollerinden arindirilmis responsive css formatlama */
         :root
         {
             --bg-color: #f4f6f9;
@@ -95,8 +95,8 @@
 
         .container
         {
-            width: 100vw;
-            max-width: 1050px;
+            width: 100%;
+            max-width: 900px;
             margin: 0 auto;
             padding: 15px;
         }
@@ -116,8 +116,10 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
             border-bottom: 2px solid var(--border);
-            padding-bottom: 10px;
+            padding-bottom: 12px;
             margin-bottom: 15px;
         }
 
@@ -128,16 +130,28 @@
             color: var(--primary);
         }
 
-        .table-container
+        .card-subtitle
         {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Tablo Konteyneri ve Kaydirilabilir Alan */
+        .table-responsive
+        {
+            width: 100%;
             overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border: 1px solid var(--border);
+            border-radius: 8px;
             margin-bottom: 15px;
         }
 
         table
         {
-            width: 100vw;
-            max-width: 100%;
+            width: 100%;
+            min-width: 620px;
             border-collapse: collapse;
             text-align: left;
             font-size: 0.88rem;
@@ -148,18 +162,20 @@
             background: #f8fafc;
             color: var(--text-muted);
             font-weight: 600;
-            padding: 10px 12px;
+            padding: 10px 10px;
             border-bottom: 1px solid var(--border);
             text-transform: uppercase;
-            font-size: 0.78rem;
+            font-size: 0.75rem;
+            white-space: nowrap;
         }
 
         td
         {
-            padding: 8px 12px;
+            padding: 8px 10px;
             border-bottom: 1px solid var(--border);
             color: var(--text-main);
             vertical-align: middle;
+            white-space: nowrap;
         }
 
         tr:last-child td
@@ -172,16 +188,24 @@
             background-color: #f8fafc;
         }
 
+        .pt-badge
+        {
+            font-weight: 700;
+            color: var(--primary);
+            display: inline-block;
+            font-size: 0.9rem;
+        }
+
         .sett-input
         {
-            width: 100vw;
-            max-width: 100%;
+            width: 100%;
+            min-width: 80px;
             background: var(--input-bg);
             border: 1px solid var(--border);
             border-radius: 6px;
-            padding: 6px 10px;
+            padding: 6px 8px;
             color: var(--text-main);
-            font-size: 0.88rem;
+            font-size: 0.85rem;
             font-weight: 600;
             outline: none;
         }
@@ -192,17 +216,29 @@
             background: #ffffff;
         }
 
+        .param-badge
+        {
+            display: inline-block;
+            background: #e2e8f0;
+            color: #334155;
+            padding: 3px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
         .btn-action
         {
             background: #64748b;
             color: #ffffff;
             border: none;
-            padding: 6px 12px;
-            font-size: 0.8rem;
+            padding: 6px 10px;
+            font-size: 0.78rem;
             font-weight: 600;
             border-radius: 6px;
             cursor: pointer;
             transition: all 0.2s;
+            white-space: nowrap;
         }
 
         .btn-action:hover
@@ -212,15 +248,14 @@
 
         .btn-submit
         {
-            width: 100vw;
-            max-width: 100%;
+            width: 100%;
             background: var(--primary);
             color: #ffffff;
             border: none;
-            padding: 14px;
-            font-size: 1rem;
+            padding: 12px;
+            font-size: 0.95rem;
             font-weight: 600;
-            border-radius: 10px;
+            border-radius: 8px;
             cursor: pointer;
             text-transform: uppercase;
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
@@ -252,21 +287,22 @@
             z-index: 9999;
             justify-content: center;
             align-items: center;
+            padding: 15px;
         }
 
         .modal-dialog
         {
             background: #ffffff;
-            width: 100vw;
-            max-width: 440px;
-            border-radius: 16px;
-            padding: 24px;
+            width: 100%;
+            max-width: 420px;
+            border-radius: 14px;
+            padding: 22px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
         }
 
         .modal-title
         {
-            font-size: 1.15rem;
+            font-size: 1.1rem;
             font-weight: 700;
             color: var(--primary);
             margin-bottom: 12px;
@@ -275,9 +311,9 @@
 
         .modal-body
         {
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             color: var(--text-main);
-            margin-bottom: 20px;
+            margin-bottom: 18px;
             line-height: 1.5;
         }
 
@@ -294,6 +330,7 @@
             border-radius: 8px;
             border: none;
             font-weight: 600;
+            font-size: 0.88rem;
             cursor: pointer;
             text-align: center;
         }
@@ -303,15 +340,14 @@
             position: fixed;
             bottom: 0;
             left: 0;
-            width: 100vw;
-            max-width: 100%;
+            width: 100%;
             background: #ffffff;
             border-top: 1px solid var(--border);
-            padding: 14px 20px;
+            padding: 12px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 0.85rem;
+            font-size: 0.82rem;
             color: var(--text-muted);
         }
     </style>
@@ -332,21 +368,25 @@
 
         <div class="card">
             <div class="card-header-flex">
-                <span class="card-title">24-Channel PT Display Matrix</span>
-                <button type="button" class="btn-action" style="background:var(--primary);" onclick="OpenPTConfirmModal()">Save & Apply PT Config</button>
+                <div>
+                    <div class="card-title">24-Channel PT Display Matrix</div>
+                    <div class="card-subtitle">Configure hardware channel types, slave IDs, service modes, and timings</div>
+                </div>
+                <button type="button" class="btn-action" style="background:var(--primary); padding:8px 14px; font-size:0.85rem;" onclick="OpenPTConfirmModal()">Save &amp; Apply</button>
             </div>
 
             <form id="ptMatrixForm">
-                <div class="table-container">
+                <div class="table-responsive">
                     <table>
                         <thead>
                             <tr>
-                                <th style="width: 8%;">PT</th>
-                                <th style="width: 22%;">Device Type</th>
-                                <th style="width: 16%;">Device ID</th>
-                                <th style="width: 18%;">Service Mode</th>
-                                <th style="width: 18%;">Switch Time</th>
-                                <th style="width: 18%; text-align: center;">Settings</th>
+                                <th style="width: 50px;">PT</th>
+                                <th>Device Type</th>
+                                <th>Device ID</th>
+                                <th>Service Mode</th>
+                                <th>Switch Time</th>
+                                <th style="text-align: center;">Params</th>
+                                <th style="text-align: center;">Settings</th>
                             </tr>
                         </thead>
                         <tbody id="ptTableBody">
@@ -355,7 +395,7 @@
                     </table>
                 </div>
 
-                <button type="button" class="btn-submit" onclick="OpenPTConfirmModal()">Save & Apply PT Config</button>
+                <button type="button" class="btn-submit" onclick="OpenPTConfirmModal()">Save &amp; Apply PT Config</button>
             </form>
         </div>
 
@@ -367,14 +407,14 @@
             <div class="modal-title" id="channelModalTitle">Channel Parameters</div>
             <div class="modal-body">
                 <div style="margin-bottom: 12px;">
-                    <label style="display:block; font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:5px;">CHANNEL BRIGHTNESS (1-10)</label>
+                    <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-muted); margin-bottom:5px;">CHANNEL BRIGHTNESS (1-10)</label>
                     <select id="modalChannelBrightness" class="sett-input">
                         <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
                         <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
                     </select>
                 </div>
                 <div>
-                    <label style="display:block; font-size:0.8rem; font-weight:700; color:var(--text-muted); margin-bottom:5px;">CHANNEL ANIMATION SPEED (1-10)</label>
+                    <label style="display:block; font-size:0.78rem; font-weight:700; color:var(--text-muted); margin-bottom:5px;">CHANNEL ANIMATION SPEED (1-10)</label>
                     <select id="modalChannelSpeed" class="sett-input">
                         <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
                         <option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
@@ -397,7 +437,7 @@
             </div>
             <div class="modal-actions">
                 <button type="button" class="modal-btn btn-action" onclick="ClosePTConfirmModal()">Cancel</button>
-                <button type="button" class="modal-btn" style="background:var(--success); color:#ffffff;" id="btnConfirmPTPush" onclick="ExecutePTSave()">Confirm & Save</button>
+                <button type="button" class="modal-btn" style="background:var(--success); color:#ffffff;" id="btnConfirmPTPush" onclick="ExecutePTSave()">Confirm &amp; Save</button>
             </div>
         </div>
     </div>
@@ -432,7 +472,7 @@
                 })
                 .catch(function (err)
                 {
-                    console.error("stock.json alinamadi:", err);
+                    console.error("stock.json could not be loaded:", err);
                 });
         }
 
@@ -442,15 +482,24 @@
             let tbody = document.getElementById("ptTableBody");
             tbody.innerHTML = "";
 
-            let deviceTypes = ["tip1", "tip2", "tip3", "tip4", "tip5", "tip6", "tip7", "tip8"];
+            let deviceTypes = [
+                { val: "tip1", label: "Type 1" },
+                { val: "tip2", label: "Type 2" },
+                { val: "tip3", label: "Type 3" },
+                { val: "tip4", label: "Type 4" },
+                { val: "tip5", label: "Type 5" },
+                { val: "tip6", label: "Type 6" },
+                { val: "tip7", label: "Type 7" },
+                { val: "tip8", label: "Type 8" }
+            ];
 
             for (let i = 1; i <= 24; i++)
             {
                 let tr = document.createElement("tr");
 
-                // Sira
+                // PT Sira No
                 let tdIdx = document.createElement("td");
-                tdIdx.innerHTML = "<strong>PT" + i + "</strong>";
+                tdIdx.innerHTML = "<span class=\"pt-badge\">PT" + i + "</span>";
                 tr.appendChild(tdIdx);
 
                 // Cihaz Tipi
@@ -460,16 +509,16 @@
                 selType.name = "pttype" + i;
                 let optEmpty = document.createElement("option");
                 optEmpty.value = "";
-                optEmpty.innerText = "-";
+                optEmpty.innerText = "Disabled";
                 selType.appendChild(optEmpty);
 
                 let curType = data["pttype" + i] || "";
                 for (let t = 0; t < deviceTypes.length; t++)
                 {
                     let opt = document.createElement("option");
-                    opt.value = deviceTypes[t];
-                    opt.innerText = "Tip " + (t + 1);
-                    if (curType === deviceTypes[t])
+                    opt.value = deviceTypes[t].val;
+                    opt.innerText = deviceTypes[t].label;
+                    if (curType === deviceTypes[t].val)
                     {
                         opt.selected = true;
                     }
@@ -482,6 +531,7 @@
                 let tdId = document.createElement("td");
                 let inputId = document.createElement("input");
                 inputId.className = "sett-input";
+                inputId.style.width = "70px";
                 inputId.name = "ptid" + i;
                 inputId.value = data["ptid" + i] || "";
                 tdId.appendChild(inputId);
@@ -496,11 +546,17 @@
                 let optFull = document.createElement("option");
                 optFull.value = "full";
                 optFull.innerText = "Full Service";
-                if (curServ === "full") optFull.selected = true;
+                if (curServ === "full")
+                {
+                    optFull.selected = true;
+                }
                 let optSelf = document.createElement("option");
                 optSelf.value = "self";
                 optSelf.innerText = "Self Service";
-                if (curServ === "self") optSelf.selected = true;
+                if (curServ === "self")
+                {
+                    optSelf.selected = true;
+                }
                 selService.appendChild(optFull);
                 selService.appendChild(optSelf);
                 tdService.appendChild(selService);
@@ -511,10 +567,19 @@
                 let inputTime = document.createElement("input");
                 inputTime.type = "time";
                 inputTime.className = "sett-input";
+                inputTime.style.width = "95px";
                 inputTime.name = "ptswitchtime" + i;
                 inputTime.value = data["ptswitchtime" + i] || "";
                 tdTime.appendChild(inputTime);
                 tr.appendChild(tdTime);
+
+                // Parametreler Rozeti
+                let curB = data["ptbrightness" + i] || "5";
+                let curS = data["ptspeed" + i] || "5";
+                let tdParams = document.createElement("td");
+                tdParams.style.textAlign = "center";
+                tdParams.innerHTML = "<span class=\"param-badge\" id=\"badge_pt_" + i + "\">B:" + curB + " | S:" + curS + "</span>";
+                tr.appendChild(tdParams);
 
                 // Ayarlar ve Gizli Parametreler
                 let tdSettings = document.createElement("td");
@@ -522,7 +587,7 @@
                 let btnSettings = document.createElement("button");
                 btnSettings.type = "button";
                 btnSettings.className = "btn-action";
-                btnSettings.innerText = "⚙ Settings";
+                btnSettings.innerText = "⚙ Edit";
                 btnSettings.onclick = (function (idx)
                 {
                     return function ()
@@ -535,13 +600,13 @@
                 hiddenBrightness.type = "hidden";
                 hiddenBrightness.name = "ptbrightness" + i;
                 hiddenBrightness.id = "ptbrightness" + i;
-                hiddenBrightness.value = data["ptbrightness" + i] || "5";
+                hiddenBrightness.value = curB;
 
                 let hiddenSpeed = document.createElement("input");
                 hiddenSpeed.type = "hidden";
                 hiddenSpeed.name = "ptspeed" + i;
                 hiddenSpeed.id = "ptspeed" + i;
-                hiddenSpeed.value = data["ptspeed" + i] || "5";
+                hiddenSpeed.value = curS;
 
                 tdSettings.appendChild(btnSettings);
                 tdSettings.appendChild(hiddenBrightness);
@@ -576,8 +641,16 @@
         {
             if (selectedPtIndex)
             {
-                document.getElementById("ptbrightness" + selectedPtIndex).value = document.getElementById("modalChannelBrightness").value;
-                document.getElementById("ptspeed" + selectedPtIndex).value = document.getElementById("modalChannelSpeed").value;
+                let bVal = document.getElementById("modalChannelBrightness").value;
+                let sVal = document.getElementById("modalChannelSpeed").value;
+                document.getElementById("ptbrightness" + selectedPtIndex).value = bVal;
+                document.getElementById("ptspeed" + selectedPtIndex).value = sVal;
+
+                let badge = document.getElementById("badge_pt_" + selectedPtIndex);
+                if (badge)
+                {
+                    badge.innerText = "B:" + bVal + " | S:" + sVal;
+                }
             }
             CloseChannelModal();
         }
@@ -619,7 +692,7 @@
             })
             .catch(function (err)
             {
-                console.error("Hata:", err);
+                console.error("Error:", err);
                 ClosePTConfirmModal();
                 btn.disabled = false;
                 btn.innerText = "Confirm & Save";
